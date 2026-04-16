@@ -1,0 +1,173 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+
+const posts = (await getCollection('blog')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+const latest = posts.slice(0, 3);
+
+const pillars = [
+	{
+		title: 'AI agents',
+		blurb:
+			'What an agent actually is in 2026, what they can do today, and where they break.',
+	},
+	{
+		title: 'OpenClaw',
+		blurb:
+			'My local-first autonomous AI platform running natively on a Mac Mini. $0 cloud cost, full control.',
+	},
+	{
+		title: 'Claude Code',
+		blurb:
+			'Anthropic\u2019s coding agent as a daily driver \u2014 workflows, hooks, sub-agents, the lot.',
+	},
+	{
+		title: 'Codex',
+		blurb:
+			'OpenAI\u2019s Codex CLI via free ChatGPT OAuth. Surprisingly good. Surprisingly free.',
+	},
+	{
+		title: 'The future of working',
+		blurb:
+			'When every engineer has ten agents, what does a job look like? Notes from the inside.',
+	},
+];
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			.hero {
+				padding: 3em 0 2em;
+				border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+				margin-bottom: 2em;
+			}
+			.hero h1 {
+				font-size: 2.4em;
+				margin: 0 0 0.4em;
+				line-height: 1.1;
+			}
+			.hero p {
+				font-size: 1.15em;
+				color: rgb(var(--gray));
+				margin: 0;
+				max-width: 36em;
+			}
+			.handle {
+				display: inline-block;
+				font-size: 0.85em;
+				color: rgb(var(--gray));
+				margin-top: 0.6em;
+			}
+			.section-title {
+				font-size: 1.3em;
+				margin: 2em 0 1em;
+			}
+			.pillars {
+				display: grid;
+				gap: 1em;
+				grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+				margin-bottom: 3em;
+			}
+			.pillar {
+				padding: 1.2em;
+				border: 1px solid rgba(0, 0, 0, 0.08);
+				border-radius: 12px;
+				background: white;
+			}
+			.pillar h3 {
+				margin: 0 0 0.4em;
+				font-size: 1.05em;
+			}
+			.pillar p {
+				margin: 0;
+				font-size: 0.95em;
+				color: rgb(var(--gray));
+			}
+			.posts {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			.posts li {
+				padding: 0.8em 0;
+				border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+			}
+			.posts a {
+				text-decoration: none;
+				color: inherit;
+				display: flex;
+				justify-content: space-between;
+				gap: 1em;
+				align-items: baseline;
+			}
+			.posts a:hover .post-title {
+				color: rgb(var(--accent));
+			}
+			.post-title {
+				font-weight: 600;
+			}
+			.post-date {
+				font-size: 0.85em;
+				color: rgb(var(--gray));
+				white-space: nowrap;
+			}
+			.see-all {
+				display: inline-block;
+				margin-top: 1em;
+				font-size: 0.95em;
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section class="hero">
+				<h1>Building with AI agents.<br />Writing about what works.</h1>
+				<p>
+					Hi, I&rsquo;m Oliver. I run an autonomous AI platform called OpenClaw on a Mac Mini in my
+					flat and use Claude Code and Codex every day. This site is where I share what I learn.
+				</p>
+				<span class="handle">CanYouLikeNot &middot; UK</span>
+			</section>
+
+			<h2 class="section-title">What I write about</h2>
+			<div class="pillars">
+				{
+					pillars.map((p) => (
+						<div class="pillar">
+							<h3>{p.title}</h3>
+							<p>{p.blurb}</p>
+						</div>
+					))
+				}
+			</div>
+
+			<h2 class="section-title">Latest posts</h2>
+			<ul class="posts">
+				{
+					latest.map((post) => (
+						<li>
+							<a href={`/blog/${post.id}/`}>
+								<span class="post-title">{post.data.title}</span>
+								<span class="post-date">
+									<FormattedDate date={post.data.pubDate} />
+								</span>
+							</a>
+						</li>
+					))
+				}
+			</ul>
+			<a class="see-all" href="/blog">All posts &rarr;</a>
+		</main>
+		<Footer />
+	</body>
+</html>

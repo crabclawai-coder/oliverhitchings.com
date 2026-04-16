@@ -1,0 +1,45 @@
+---
+import AboutHeroImage from '../assets/blog-placeholder-about.jpg';
+import Layout from '../layouts/BlogPost.astro';
+---
+
+<Layout
+	title="About"
+	description="Oliver Hitchings — IT engineer, AI tinkerer, builder of OpenClaw."
+	pubDate={new Date('2026-04-16')}
+	heroImage={AboutHeroImage}
+>
+	<p>
+		I&rsquo;m Oliver Hitchings &mdash; an IT engineer based in the UK. Online I go by
+		<strong>CanYouLikeNot</strong>. I spend most of my free time building with AI: writing autonomous
+		agents, wiring up local models, and figuring out where the limits actually are.
+	</p>
+
+	<p>
+		The main project is <strong>OpenClaw</strong>: a local-first autonomous AI platform that runs
+		natively on a Mac Mini (M-series, 64GB RAM) in my flat. It has its own gateway, agents, cron
+		jobs, memory store, and channels into Telegram and Discord. It runs Qwen3.6 locally for the
+		background work and routes to Codex (via free ChatGPT OAuth) and Claude Opus when it needs the
+		big guns. Total cloud cost: $0.
+	</p>
+
+	<p>
+		Day to day I drive <strong>Claude Code</strong> and the <strong>Codex CLI</strong> for almost
+		every coding task. This site is where I write about what works, what doesn&rsquo;t, and what
+		feels like it&rsquo;s about to change everything about how engineers actually work.
+	</p>
+
+	<h2>What you&rsquo;ll find here</h2>
+	<ul>
+		<li>Practical write-ups on building with AI agents</li>
+		<li>Deep-dives into OpenClaw&rsquo;s architecture as it evolves</li>
+		<li>Workflows, hooks, and tricks for Claude Code and Codex</li>
+		<li>Honest takes on where the future of working is heading</li>
+	</ul>
+
+	<h2>Find me elsewhere</h2>
+	<ul>
+		<li>GitHub: <a href="https://github.com/CanYouLikeNot">@CanYouLikeNot</a></li>
+		<li>Email: <a href="mailto:oliverhit2008@gmail.com">oliverhit2008@gmail.com</a></li>
+	</ul>
+</Layout>
