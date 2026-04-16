@@ -1,0 +1,163 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+
+const lastUpdated = new Date('2026-04-16');
+const title = 'Now';
+const description = "What Oliver Hitchings is working on right now — updated monthly.";
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={title} description={description} />
+		<style>
+			.hero {
+				padding: 3em 0 2em;
+				border-bottom: 1px solid var(--border);
+				margin-bottom: 2.5em;
+			}
+			.eyebrow {
+				display: inline-block;
+				font-family: var(--font-mono);
+				font-size: 0.78em;
+				color: var(--accent);
+				background: var(--accent-soft);
+				padding: 0.3em 0.7em;
+				border-radius: 999px;
+				margin-bottom: 1.2em;
+				letter-spacing: 0.02em;
+			}
+			.hero h1 {
+				font-size: 2.4em;
+				margin: 0 0 0.4em;
+				line-height: 1.1;
+			}
+			.hero .lede {
+				font-size: 1.1em;
+				color: rgb(var(--gray));
+				margin: 0 0 0.8em;
+				max-width: 36em;
+			}
+			.updated {
+				display: inline-block;
+				font-family: var(--font-mono);
+				font-size: 0.82em;
+				color: rgb(var(--gray));
+			}
+			.section {
+				margin: 2em 0;
+			}
+			.section h2 {
+				font-size: 0.85em;
+				font-family: var(--font-mono);
+				color: rgb(var(--gray));
+				font-weight: 500;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				margin: 0 0 0.8em;
+			}
+			.section ul {
+				margin: 0;
+				padding-left: 1.2em;
+			}
+			.section li {
+				margin-bottom: 0.5em;
+			}
+			.section p {
+				margin: 0 0 1em;
+			}
+			.note {
+				margin-top: 3em;
+				padding: 1.2em 1.5em;
+				background: var(--surface);
+				border: 1px solid var(--border);
+				border-radius: 12px;
+				font-size: 0.95em;
+				color: rgb(var(--gray));
+			}
+			.note a {
+				color: var(--accent);
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section class="hero">
+				<span class="eyebrow">/ now</span>
+				<h1>What I&rsquo;m doing right now</h1>
+				<p class="lede">
+					A snapshot of what has my attention this month &mdash; the projects, the reading, the
+					experiments. Updated roughly monthly. Inspired by <a
+						href="https://nownownow.com/about"
+						target="_blank"
+						rel="noopener">Derek Sivers&rsquo; /now movement</a
+					>.
+				</p>
+				<span class="updated"
+					>Last updated <FormattedDate date={lastUpdated} /></span
+				>
+			</section>
+
+			<div class="section">
+				<h2>Building</h2>
+				<ul>
+					<li>
+						<strong>OpenClaw</strong> &mdash; my autonomous AI platform on a Mac Mini. Currently
+						tightening the agent-drift detection cron and migrating the memory layer off SQLite.
+					</li>
+					<li>
+						<strong>This site</strong> &mdash; just shipped it. Writing about AI agents, Claude Code,
+						Codex, OpenClaw, and the future of working.
+					</li>
+					<li>
+						<strong>Taking on first AI-agent contracting clients</strong> &mdash; helping small UK
+						businesses replace repetitive operational work with custom agents. <a href="/services"
+							>Details on the services page</a
+						>.
+					</li>
+				</ul>
+			</div>
+
+			<div class="section">
+				<h2>Reading and watching</h2>
+				<ul>
+					<li>Anthropic&rsquo;s Claude Agent SDK docs &mdash; thinking about what shifts in agent design.</li>
+					<li>
+						Following the Hugging Face new-model feed daily &mdash; small open models keep getting
+						good fast.
+					</li>
+					<li>
+						Reading <em>The Innermost Loop</em> on Substack for the longer-form AI engineering
+						takes.
+					</li>
+				</ul>
+			</div>
+
+			<div class="section">
+				<h2>Where</h2>
+				<p>UK, Europe/London. Available remote globally, on-site in the UK.</p>
+			</div>
+
+			<div class="section">
+				<h2>What I&rsquo;m saying no to</h2>
+				<ul>
+					<li>Anything that requires me to use a model I can&rsquo;t reason about.</li>
+					<li>
+						SaaS-only architectures when a local-first version would do the job at 1/10 the cost.
+					</li>
+					<li>Speaking gigs, for now.</li>
+				</ul>
+			</div>
+
+			<div class="note">
+				This page is intentionally short. If you want the longer story, the <a href="/about">about page</a>
+				is the place. If you want to work together, see <a href="/services">services</a>.
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>
