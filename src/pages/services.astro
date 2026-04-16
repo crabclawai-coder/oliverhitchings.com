@@ -1,0 +1,318 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+
+const title = 'AI agents for your business';
+const description =
+	'I help small and mid-sized businesses replace repetitive operational work with custom AI agents — built locally, owned by you.';
+
+const steps = [
+	{
+		num: '01',
+		title: 'Audit',
+		blurb:
+			'Half-day deep dive into how your team actually spends its time. I sit in on workflows, ask uncomfortable questions, and leave with a written list of what an agent could realistically take off your plate.',
+		note: 'Free, no commitment.',
+	},
+	{
+		num: '02',
+		title: 'Build',
+		blurb:
+			'Custom agents wired into the tools you already use \u2014 email, Slack, your CRM, your spreadsheets, your SOPs. Local-first when it makes sense, cloud when it has to be. Working software in 2\u20136 weeks, not 6 months.',
+		note: 'Fixed scope, fixed price.',
+	},
+	{
+		num: '03',
+		title: 'Handover',
+		blurb:
+			'You own the code, the agents, the workflows, the documentation. I train one of your team to maintain it. No black box, no monthly SaaS lock-in, no \u201Cbut what happens if Oliver disappears.\u201D',
+		note: 'Optional retainer for ongoing tuning.',
+	},
+];
+
+const fits = [
+	'You\u2019re a 10\u2013100 person business doing real operational work',
+	'Your team is drowning in admin, scheduling, support, or reporting',
+	'You want to own what you build, not rent it forever',
+	'You\u2019re comfortable being early \u2014 this is genuinely new territory',
+];
+
+const notFits = [
+	'You want a chatbot for your website (there are cheaper tools for that)',
+	'You need enterprise compliance, SOC 2, dedicated TAMs, etc.',
+	'You want someone to white-label OpenAI and call it AI strategy',
+];
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={title} description={description} />
+		<style>
+			.hero {
+				padding: 3em 0 2.5em;
+				border-bottom: 1px solid var(--border);
+				margin-bottom: 3em;
+			}
+			.eyebrow {
+				display: inline-block;
+				font-family: var(--font-mono);
+				font-size: 0.78em;
+				color: var(--accent);
+				background: var(--accent-soft);
+				padding: 0.3em 0.7em;
+				border-radius: 999px;
+				margin-bottom: 1.2em;
+				letter-spacing: 0.02em;
+			}
+			.hero h1 {
+				font-size: 2.6em;
+				margin: 0 0 0.4em;
+				line-height: 1.05;
+			}
+			.hero .lede {
+				font-size: 1.2em;
+				color: rgb(var(--gray));
+				max-width: 36em;
+				margin: 0;
+			}
+			.section {
+				margin: 2.8em 0;
+			}
+			.section-title {
+				font-size: 1.4em;
+				margin: 0 0 1em;
+			}
+			.steps {
+				display: grid;
+				gap: 1.1em;
+			}
+			.step {
+				background: var(--surface);
+				border: 1px solid var(--border);
+				border-radius: 14px;
+				padding: 1.6em;
+				display: grid;
+				grid-template-columns: auto 1fr;
+				gap: 1.4em;
+				align-items: start;
+			}
+			.step-num {
+				font-family: var(--font-mono);
+				font-size: 1.1em;
+				color: var(--accent);
+				font-weight: 600;
+			}
+			.step-body h3 {
+				margin: 0 0 0.4em;
+				font-size: 1.2em;
+			}
+			.step-body p {
+				margin: 0 0 0.6em;
+				color: rgb(var(--gray-dark));
+			}
+			.step-note {
+				font-family: var(--font-mono);
+				font-size: 0.82em;
+				color: rgb(var(--gray));
+			}
+			.fit-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 2em;
+			}
+			@media (max-width: 720px) {
+				.fit-grid {
+					grid-template-columns: 1fr;
+				}
+				.step {
+					grid-template-columns: 1fr;
+					gap: 0.8em;
+				}
+			}
+			.fit-list {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			.fit-list li {
+				padding: 0.5em 0;
+				padding-left: 1.5em;
+				position: relative;
+				color: rgb(var(--gray-dark));
+			}
+			.fit-list.yes li::before {
+				content: '\u2713';
+				position: absolute;
+				left: 0;
+				color: var(--accent);
+				font-weight: 700;
+			}
+			.fit-list.no li::before {
+				content: '\u00D7';
+				position: absolute;
+				left: 0;
+				color: rgb(var(--gray));
+				font-weight: 700;
+			}
+			.fit-list h3 {
+				font-size: 1em;
+				margin: 0 0 0.6em;
+				color: rgb(var(--gray));
+				font-family: var(--font-mono);
+				font-weight: 500;
+				letter-spacing: 0.02em;
+			}
+			.why {
+				background: var(--surface);
+				border: 1px solid var(--border);
+				border-radius: 14px;
+				padding: 1.8em;
+			}
+			.why ul {
+				margin: 0.5em 0 0;
+				padding-left: 1.2em;
+			}
+			.why li {
+				margin-bottom: 0.4em;
+			}
+			.cta {
+				margin-top: 3em;
+				padding: 2.5em;
+				background: rgb(var(--black));
+				color: var(--bg);
+				border-radius: 16px;
+				text-align: center;
+			}
+			.cta h2 {
+				color: var(--bg);
+				margin: 0 0 0.4em;
+				font-size: 1.8em;
+			}
+			.cta p {
+				color: rgba(255, 255, 255, 0.7);
+				margin: 0 0 1.5em;
+				max-width: 32em;
+				margin-left: auto;
+				margin-right: auto;
+			}
+			.btn {
+				display: inline-block;
+				background: var(--accent);
+				color: white !important;
+				padding: 0.85em 1.8em;
+				border-radius: 999px;
+				text-decoration: none;
+				font-weight: 600;
+				font-size: 1.05em;
+				transition:
+					background 0.15s ease,
+					transform 0.15s ease;
+			}
+			.btn:hover {
+				background: var(--accent-dark);
+				transform: translateY(-1px);
+				color: white !important;
+			}
+			.cta-secondary {
+				display: block;
+				margin-top: 1em;
+				color: rgba(255, 255, 255, 0.55);
+				font-size: 0.9em;
+				font-family: var(--font-mono);
+			}
+			.cta-secondary a {
+				color: rgba(255, 255, 255, 0.85);
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section class="hero">
+				<span class="eyebrow">work with me</span>
+				<h1>{title}</h1>
+				<p class="lede">{description}</p>
+			</section>
+
+			<section class="section">
+				<h2 class="section-title">How it works</h2>
+				<div class="steps">
+					{
+						steps.map((s) => (
+							<div class="step">
+								<div class="step-num">{s.num}</div>
+								<div class="step-body">
+									<h3>{s.title}</h3>
+									<p>{s.blurb}</p>
+									<span class="step-note">{s.note}</span>
+								</div>
+							</div>
+						))
+					}
+				</div>
+			</section>
+
+			<section class="section">
+				<h2 class="section-title">Who this is for</h2>
+				<div class="fit-grid">
+					<div>
+						<ul class="fit-list yes">
+							<h3>Good fit</h3>
+							{fits.map((f) => <li>{f}</li>)}
+						</ul>
+					</div>
+					<div>
+						<ul class="fit-list no">
+							<h3>Not a fit</h3>
+							{notFits.map((f) => <li>{f}</li>)}
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<section class="section">
+				<h2 class="section-title">Why me</h2>
+				<div class="why">
+					<p>
+						I&rsquo;m an IT engineer based in the UK. I built and run <strong>OpenClaw</strong>, an autonomous
+						AI platform on a Mac Mini in my flat &mdash; it runs ~40 cron jobs a day, manages two AI agents,
+						talks to me through Telegram and Discord, and routes between local Qwen, Claude, and Codex
+						depending on what the task needs.
+					</p>
+					<p>
+						Day to day I drive Claude Code and the OpenAI Codex CLI for almost every coding task. I
+						know what these tools can actually do, where they break, and what it takes to glue them
+						into a real business workflow rather than a demo.
+					</p>
+					<ul>
+						<li>10+ years in IT engineering &mdash; I understand business systems, not just AI.</li>
+						<li>Built a working autonomous AI platform from scratch, not vibes.</li>
+						<li>Local-first by default &mdash; you keep ownership and control.</li>
+						<li>Based in the UK, available remote across the world or on-site in the UK.</li>
+					</ul>
+				</div>
+			</section>
+
+			<section class="cta">
+				<h2>Let&rsquo;s talk</h2>
+				<p>
+					Email me one paragraph about your business and what&rsquo;s eating your team&rsquo;s time. If
+					it sounds like a fit I&rsquo;ll book a free discovery call.
+				</p>
+				<a
+					class="btn"
+					href="mailto:oliverhit2008@gmail.com?subject=AI agents for my business&body=Hi Oliver,%0D%0A%0D%0AAbout my business: %0D%0A%0D%0AWhat's eating my team's time: %0D%0A%0D%0A"
+					>Email Oliver</a
+				>
+				<span class="cta-secondary"
+					>or just write to <a href="mailto:oliverhit2008@gmail.com"
+						>oliverhit2008@gmail.com</a
+					></span
+				>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>

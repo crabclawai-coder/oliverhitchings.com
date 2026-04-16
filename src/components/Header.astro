@@ -9,6 +9,7 @@ import HeaderLink from './HeaderLink.astro';
 		<div class="internal-links">
 			<HeaderLink href="/">Home</HeaderLink>
 			<HeaderLink href="/blog">Blog</HeaderLink>
+			<HeaderLink href="/services">Work with me</HeaderLink>
 			<HeaderLink href="/about">About</HeaderLink>
 		</div>
 		<div class="social-links">
@@ -27,33 +28,55 @@ import HeaderLink from './HeaderLink.astro';
 <style>
 	header {
 		margin: 0;
-		padding: 0 1em;
-		background: white;
-		box-shadow: 0 2px 8px rgba(var(--black), 5%);
+		padding: 0 1.2em;
+		background: var(--bg);
+		border-bottom: 1px solid var(--border);
+		position: sticky;
+		top: 0;
+		z-index: 50;
+		backdrop-filter: saturate(180%) blur(10px);
+		background: rgba(250, 250, 249, 0.85);
 	}
 	h2 {
 		margin: 0;
-		font-size: 1em;
+		font-size: 0.95em;
+		font-weight: 700;
+		letter-spacing: -0.01em;
 	}
 
 	h2 a,
 	h2 a.active {
 		text-decoration: none;
+		color: rgb(var(--black));
 	}
 	nav {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		max-width: 960px;
+		margin: 0 auto;
 	}
 	nav a {
-		padding: 1em 0.5em;
-		color: var(--black);
-		border-bottom: 4px solid transparent;
+		padding: 1em 0.7em;
+		color: rgb(var(--gray-dark));
+		border-bottom: 2px solid transparent;
 		text-decoration: none;
+		font-size: 0.95em;
+		transition: color 0.15s ease;
+	}
+	nav a:hover {
+		color: var(--accent);
 	}
 	nav a.active {
 		text-decoration: none;
+		color: var(--accent);
 		border-bottom-color: var(--accent);
+	}
+	@media (max-width: 600px) {
+		nav a {
+			padding: 1em 0.45em;
+			font-size: 0.88em;
+		}
 	}
 	.social-links,
 	.social-links a {

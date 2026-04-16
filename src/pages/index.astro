@@ -46,30 +46,47 @@ const pillars = [
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
 		<style>
 			.hero {
-				padding: 3em 0 2em;
-				border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-				margin-bottom: 2em;
+				padding: 3.5em 0 2.5em;
+				border-bottom: 1px solid var(--border);
+				margin-bottom: 3em;
+			}
+			.eyebrow {
+				display: inline-block;
+				font-family: var(--font-mono);
+				font-size: 0.78em;
+				color: var(--accent);
+				background: var(--accent-soft);
+				padding: 0.3em 0.7em;
+				border-radius: 999px;
+				margin-bottom: 1.2em;
+				letter-spacing: 0.02em;
 			}
 			.hero h1 {
-				font-size: 2.4em;
-				margin: 0 0 0.4em;
-				line-height: 1.1;
+				font-size: 2.6em;
+				margin: 0 0 0.5em;
+				line-height: 1.05;
 			}
-			.hero p {
-				font-size: 1.15em;
+			.hero p.lede {
+				font-size: 1.2em;
 				color: rgb(var(--gray));
 				margin: 0;
 				max-width: 36em;
 			}
 			.handle {
 				display: inline-block;
-				font-size: 0.85em;
+				font-family: var(--font-mono);
+				font-size: 0.82em;
 				color: rgb(var(--gray));
-				margin-top: 0.6em;
+				margin-top: 1em;
 			}
 			.section-title {
-				font-size: 1.3em;
-				margin: 2em 0 1em;
+				font-size: 0.85em;
+				font-family: var(--font-mono);
+				color: rgb(var(--gray));
+				font-weight: 500;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				margin: 2.2em 0 1em;
 			}
 			.pillars {
 				display: grid;
@@ -78,10 +95,17 @@ const pillars = [
 				margin-bottom: 3em;
 			}
 			.pillar {
-				padding: 1.2em;
-				border: 1px solid rgba(0, 0, 0, 0.08);
+				padding: 1.4em;
+				border: 1px solid var(--border);
 				border-radius: 12px;
-				background: white;
+				background: var(--surface);
+				transition:
+					transform 0.15s ease,
+					border-color 0.15s ease;
+			}
+			.pillar:hover {
+				transform: translateY(-2px);
+				border-color: var(--accent);
 			}
 			.pillar h3 {
 				margin: 0 0 0.4em;
@@ -89,8 +113,9 @@ const pillars = [
 			}
 			.pillar p {
 				margin: 0;
-				font-size: 0.95em;
+				font-size: 0.94em;
 				color: rgb(var(--gray));
+				line-height: 1.5;
 			}
 			.posts {
 				list-style: none;
@@ -98,8 +123,11 @@ const pillars = [
 				margin: 0;
 			}
 			.posts li {
-				padding: 0.8em 0;
-				border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+				padding: 1em 0;
+				border-bottom: 1px solid var(--border);
+			}
+			.posts li:last-child {
+				border-bottom: none;
 			}
 			.posts a {
 				text-decoration: none;
@@ -110,20 +138,59 @@ const pillars = [
 				align-items: baseline;
 			}
 			.posts a:hover .post-title {
-				color: rgb(var(--accent));
+				color: var(--accent);
 			}
 			.post-title {
 				font-weight: 600;
 			}
 			.post-date {
-				font-size: 0.85em;
+				font-family: var(--font-mono);
+				font-size: 0.82em;
 				color: rgb(var(--gray));
 				white-space: nowrap;
 			}
 			.see-all {
 				display: inline-block;
-				margin-top: 1em;
+				margin-top: 1.2em;
 				font-size: 0.95em;
+				text-decoration: none;
+			}
+			.work-cta {
+				margin-top: 3.5em;
+				padding: 2em;
+				background: var(--surface);
+				border: 1px solid var(--border);
+				border-radius: 14px;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 1.5em;
+				flex-wrap: wrap;
+			}
+			.work-cta-text strong {
+				display: block;
+				margin-bottom: 0.2em;
+				font-size: 1.05em;
+			}
+			.work-cta-text span {
+				color: rgb(var(--gray));
+				font-size: 0.95em;
+			}
+			.work-cta a.btn {
+				display: inline-block;
+				background: rgb(var(--black));
+				color: var(--bg) !important;
+				padding: 0.7em 1.3em;
+				border-radius: 999px;
+				text-decoration: none;
+				font-weight: 600;
+				font-size: 0.95em;
+				white-space: nowrap;
+				transition: background 0.15s ease;
+			}
+			.work-cta a.btn:hover {
+				background: var(--accent);
+				color: white !important;
 			}
 		</style>
 	</head>
@@ -131,12 +198,14 @@ const pillars = [
 		<Header />
 		<main>
 			<section class="hero">
+				<span class="eyebrow">oliver hitchings</span>
 				<h1>Building with AI agents.<br />Writing about what works.</h1>
-				<p>
-					Hi, I&rsquo;m Oliver. I run an autonomous AI platform called OpenClaw on a Mac Mini in my
-					flat and use Claude Code and Codex every day. This site is where I share what I learn.
+				<p class="lede">
+					I&rsquo;m an IT engineer in the UK. I run an autonomous AI platform called OpenClaw on a Mac
+					Mini in my flat and use Claude Code and Codex every day. This site is where I share what I
+					learn &mdash; and where I help businesses do the same.
 				</p>
-				<span class="handle">CanYouLikeNot &middot; UK</span>
+				<span class="handle">@CanYouLikeNot &middot; UK</span>
 			</section>
 
 			<h2 class="section-title">What I write about</h2>
@@ -167,6 +236,16 @@ const pillars = [
 				}
 			</ul>
 			<a class="see-all" href="/blog">All posts &rarr;</a>
+
+			<div class="work-cta">
+				<div class="work-cta-text">
+					<strong>Need AI agents for your business?</strong>
+					<span
+						>I help small businesses replace repetitive operational work with custom AI agents.</span
+					>
+				</div>
+				<a class="btn" href="/services">Work with me &rarr;</a>
+			</div>
 		</main>
 		<Footer />
 	</body>
