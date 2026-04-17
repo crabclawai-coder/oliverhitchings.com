@@ -1,6 +1,6 @@
 ---
 title: 'OpenClaw: an autonomous AI on a Mac Mini, for $0/month'
-description: 'How my Mac Mini ended up running 40 cron jobs, two agents, and a local 35B model — and why I&apos;d never put it in the cloud.'
+description: "How my Mac Mini ended up running 40 cron jobs, two agents, and a local 35B model — and why I'd never put it in the cloud."
 pubDate: '2026-04-15'
 ---
 

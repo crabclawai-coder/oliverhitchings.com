@@ -1,6 +1,6 @@
 ---
 title: 'What an AI agent actually is in 2026'
-description: 'Cutting through the marketing: what makes something an agent, what doesn&apos;t, and why the distinction matters.'
+description: "Cutting through the marketing: what makes something an agent, what doesn't, and why the distinction matters."
 pubDate: '2026-04-16'
 ---
 
