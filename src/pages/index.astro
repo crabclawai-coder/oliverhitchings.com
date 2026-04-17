@@ -46,7 +46,7 @@ const description =
 
 				<div class="animate-float-up-delay-3 hero-badge">
 					<div class="badge-pill">
-						<Logo class="badge-logo" fill="white" />
+						<Logo size={28} fill="white" />
 						<span class="badge-text">Your team&rsquo;s new operational layer</span>
 						<svg
 							class="badge-svg"
@@ -269,7 +269,7 @@ const description =
 			<div class="cta-block">
 				<div class="cta-inner cinema-container">
 					<div class="cta-logo-box animate-float-up">
-						<Logo class="cta-logo" fill="white" />
+						<Logo size={40} fill="white" />
 					</div>
 
 					<h2 class="animate-float-up cta-headline">
@@ -295,7 +295,7 @@ const description =
 					<div class="footer-top">
 						<div class="footer-brand">
 							<div class="brand-row">
-								<Logo class="footer-logo" fill="white" />
+								<Logo size={28} fill="white" />
 								<span class="brand-text">OLIVER HITCHINGS</span>
 							</div>
 							<p class="brand-tagline">
@@ -657,8 +657,14 @@ const description =
 				bottom: 0;
 				left: 0;
 				right: 0;
-				height: 40%;
-				background: linear-gradient(to top, #000, rgba(0, 0, 0, 0.8), transparent);
+				height: 65%;
+				background: linear-gradient(
+					to top,
+					#000 0%,
+					rgba(0, 0, 0, 0.95) 30%,
+					rgba(0, 0, 0, 0.6) 60%,
+					transparent 100%
+				);
 				z-index: 10;
 			}
 			.process-content {
@@ -817,7 +823,13 @@ const description =
 			.bento-fade {
 				position: absolute;
 				inset: 0;
-				background: linear-gradient(to right, #000, rgba(0, 0, 0, 0.6), transparent);
+				background: linear-gradient(
+					to right,
+					rgba(0, 0, 0, 0.92) 0%,
+					rgba(0, 0, 0, 0.85) 30%,
+					rgba(0, 0, 0, 0.5) 65%,
+					rgba(0, 0, 0, 0.2) 100%
+				);
 				z-index: 10;
 			}
 			.bento-card-content {
