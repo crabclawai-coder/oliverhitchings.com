@@ -198,3 +198,143 @@ hr {
 	clip-path: inset(50%);
 	white-space: nowrap;
 }
+
+/* ============================================================
+   Cinematic mode — opt-in via body[data-theme="cinematic"]
+   Applied to the homepage only. All other pages stay light.
+   ============================================================ */
+
+body[data-theme='cinematic'] {
+	background: #000;
+	color: #fff;
+	font-size: 16px;
+}
+body[data-theme='cinematic'] html,
+html:has(body[data-theme='cinematic']) {
+	background: #000;
+}
+body[data-theme='cinematic'] ::selection {
+	background: rgba(245, 158, 11, 0.3);
+	color: #fff;
+}
+body[data-theme='cinematic'] a {
+	color: inherit;
+	text-decoration: none;
+}
+body[data-theme='cinematic'] h1,
+body[data-theme='cinematic'] h2,
+body[data-theme='cinematic'] h3,
+body[data-theme='cinematic'] h4 {
+	color: #fff;
+}
+
+/* Float-up stagger animations */
+@keyframes float-up {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+.animate-float-up {
+	opacity: 0;
+	animation: float-up 0.8s ease-out forwards;
+}
+.animate-float-up-delay {
+	opacity: 0;
+	animation: float-up 0.8s ease-out 0.2s forwards;
+}
+.animate-float-up-delay-2 {
+	opacity: 0;
+	animation: float-up 0.8s ease-out 0.4s forwards;
+}
+.animate-float-up-delay-3 {
+	opacity: 0;
+	animation: float-up 0.8s ease-out 0.6s forwards;
+}
+
+/* Spin ring (for the animated badge indicator) */
+@keyframes spin-ring {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+.spin-ring {
+	animation: spin-ring 1.4s linear infinite;
+	transform-origin: center;
+}
+
+/* Gradient border pill button (amber → blue).
+   Uses ::before with mask-composite to create a transparent
+   interior with a perfect gradient outline. */
+.gradient-border-btn {
+	position: relative;
+	z-index: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	color: #fff;
+	font-family: inherit;
+	font-weight: 600;
+	line-height: 1;
+	cursor: pointer;
+	text-decoration: none;
+	transition: opacity 0.15s ease;
+	border: 0;
+	padding: 0.7em 1.4em;
+	border-radius: 9999px;
+}
+.gradient-border-btn::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	padding: 1.5px;
+	border-radius: 9999px;
+	background: linear-gradient(135deg, #f59e0b, #3b82f6);
+	-webkit-mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	-webkit-mask-composite: xor;
+	mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	mask-composite: exclude;
+	pointer-events: none;
+}
+.gradient-border-btn:hover {
+	opacity: 0.85;
+}
+
+/* Fade-in on scroll (used by bento icons via IntersectionObserver hook) */
+.fade-in-on-view {
+	opacity: 0;
+	transform: translateY(20px);
+	transition:
+		opacity 0.5s ease,
+		transform 0.5s ease;
+}
+.fade-in-on-view.is-visible {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+/* Utility helpers for the cinematic sections */
+.cinema-container {
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 0 1.5rem;
+}
+
+@media (max-width: 900px) {
+	body[data-theme='cinematic'] {
+		font-size: 15px;
+	}
+}
+
