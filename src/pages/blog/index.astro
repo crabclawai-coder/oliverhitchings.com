@@ -1,114 +1,159 @@
 ---
-import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import { SITE_TITLE } from '../../consts';
 
 const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
+
+const pageTitle = `Writing — ${SITE_TITLE}`;
+const pageDescription =
+	'Notes on AI agents, OpenClaw, Claude Code, Codex, and the future of working with machines that think.';
 ---
 
 <!doctype html>
 <html lang="en">
 	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<style>
-			main {
-				width: 960px;
-			}
-			ul {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 2rem;
-				list-style-type: none;
-				margin: 0;
-				padding: 0;
-			}
-			ul li {
-				width: calc(50% - 1rem);
-			}
-			ul li * {
-				text-decoration: none;
-				transition: 0.2s ease;
-			}
-			ul li:first-child {
-				width: 100%;
-				margin-bottom: 1rem;
-				text-align: center;
-			}
-			ul li:first-child img {
-				width: 100%;
-			}
-			ul li:first-child .title {
-				font-size: 2.369rem;
-			}
-			ul li img {
-				margin-bottom: 0.5rem;
-				border-radius: 12px;
-			}
-			ul li a {
-				display: block;
-			}
-			.title {
-				margin: 0;
-				color: rgb(var(--black));
-				line-height: 1;
-			}
-			.date {
-				margin: 0;
-				color: rgb(var(--gray));
-			}
-			ul li a:hover h4,
-			ul li a:hover .date {
-				color: rgb(var(--accent));
-			}
-			ul a:hover img {
-				box-shadow: var(--box-shadow);
-			}
-			@media (max-width: 720px) {
-				ul {
-					gap: 0.5em;
-				}
-				ul li {
-					width: 100%;
-					text-align: center;
-				}
-				ul li:first-child {
-					margin-bottom: 0;
-				}
-				ul li:first-child .title {
-					font-size: 1.563em;
-				}
-			}
-		</style>
+		<BaseHead title={pageTitle} description={pageDescription} />
 	</head>
 	<body>
 		<Header />
 		<main>
-			<section>
-				<ul>
-					{
-						posts.map((post) => (
-							<li>
-								<a href={`/blog/${post.id}/`}>
-									{post.data.heroImage && (
-										<Image width={720} height={360} src={post.data.heroImage} alt="" />
-									)}
-									<h4 class="title">{post.data.title}</h4>
-									<p class="date">
-										<FormattedDate date={post.data.pubDate} />
-									</p>
-								</a>
-							</li>
-						))
-					}
-				</ul>
-			</section>
+			<header class="page-header">
+				<span class="eyebrow">writing</span>
+				<h1>Notes on agents, code, and the work that&rsquo;s changing.</h1>
+				<p class="lede">
+					Field reports from building OpenClaw, daily-driving Claude Code and Codex, and figuring
+					out what AI actually replaces vs what it doesn&rsquo;t.
+				</p>
+			</header>
+
+			<ul class="post-list">
+				{
+					posts.map((post) => (
+						<li>
+							<a href={`/blog/${post.id}/`} class="post-row">
+								<div class="post-text">
+									<h2 class="post-title">{post.data.title}</h2>
+									<p class="post-desc">{post.data.description}</p>
+								</div>
+								<time class="post-date">
+									<FormattedDate date={post.data.pubDate} />
+								</time>
+							</a>
+						</li>
+					))
+				}
+			</ul>
 		</main>
 		<Footer />
+
+		<style>
+			main {
+				width: 720px;
+				max-width: calc(100% - 2em);
+				margin: 0 auto;
+				padding: 7rem 1em 4rem;
+			}
+			.page-header {
+				margin-bottom: 4rem;
+				padding-bottom: 3rem;
+				border-bottom: 1px solid var(--border);
+			}
+			.eyebrow {
+				display: inline-block;
+				font-family: var(--font-mono);
+				font-size: 0.78rem;
+				color: var(--accent);
+				background: var(--accent-soft);
+				padding: 0.3em 0.7em;
+				border-radius: 999px;
+				margin-bottom: 1.2em;
+				letter-spacing: 0.02em;
+			}
+			.page-header h1 {
+				font-size: 2.4em;
+				margin: 0 0 0.6em;
+				line-height: 1.1;
+				letter-spacing: -0.03em;
+				color: var(--text-bright);
+			}
+			.page-header .lede {
+				font-size: 1.05rem;
+				color: var(--text-muted);
+				margin: 0;
+				max-width: 36em;
+				line-height: 1.6;
+			}
+			.post-list {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			.post-list li {
+				border-bottom: 1px solid var(--border);
+			}
+			.post-list li:last-child {
+				border-bottom: none;
+			}
+			.post-row {
+				display: grid;
+				grid-template-columns: 1fr auto;
+				align-items: baseline;
+				gap: 2rem;
+				padding: 1.8rem 0;
+				text-decoration: none;
+				color: inherit;
+				transition: transform 0.15s ease;
+			}
+			.post-row:hover {
+				transform: translateX(4px);
+			}
+			.post-title {
+				font-size: 1.25rem;
+				font-weight: 600;
+				margin: 0 0 0.4em;
+				color: var(--text-bright);
+				line-height: 1.3;
+				letter-spacing: -0.01em;
+			}
+			.post-row:hover .post-title {
+				color: var(--accent);
+			}
+			.post-desc {
+				margin: 0;
+				color: var(--text-muted);
+				font-size: 0.95rem;
+				line-height: 1.55;
+				max-width: 38em;
+			}
+			.post-date {
+				font-family: var(--font-mono);
+				font-size: 0.82rem;
+				color: var(--text-faint);
+				white-space: nowrap;
+				letter-spacing: 0.02em;
+			}
+			@media (max-width: 720px) {
+				main {
+					padding: 6rem 1em 2rem;
+				}
+				.page-header h1 {
+					font-size: 1.8em;
+				}
+				.post-row {
+					grid-template-columns: 1fr;
+					gap: 0.5rem;
+					padding: 1.4rem 0;
+				}
+				.post-date {
+					order: -1;
+				}
+			}
+		</style>
 	</body>
 </html>

@@ -1,58 +1,29 @@
 ---
-import HeaderLink from './HeaderLink.astro';
 import Logo from './Logo.astro';
 
-const isHome = Astro.url.pathname === '/' || Astro.url.pathname === '';
+const path = Astro.url.pathname;
+function isActive(href: string) {
+	if (href === '/') return path === '/' || path === '';
+	return path === href || path === href + '/' || path.startsWith(href + '/');
+}
 ---
 
-{
-	isHome ? (
-		<nav class="cinema-nav">
-			<div class="pill">
-				<a href="/" class="brand" aria-label="Oliver Hitchings home">
-					<Logo size={28} fill="white" />
-				</a>
-				<div class="links">
-					<a href="/blog">Blog</a>
-					<a href="/services">Work with me</a>
-					<a href="/about">About</a>
-					<a href="/now">Now</a>
-				</div>
-				<a href="/services" class="gradient-border-btn cta">
-					Get started
-				</a>
-			</div>
-		</nav>
-	) : (
-		<header class="light-header">
-			<nav>
-				<h2>
-					<a href="/">Oliver Hitchings</a>
-				</h2>
-				<div class="internal-links">
-					<HeaderLink href="/">Home</HeaderLink>
-					<HeaderLink href="/blog">Blog</HeaderLink>
-					<HeaderLink href="/services">Work with me</HeaderLink>
-					<HeaderLink href="/about">About</HeaderLink>
-				</div>
-				<div class="social-links">
-					<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">
-						<span class="sr-only">Oliver's GitHub</span>
-						<svg viewBox="0 0 16 16" aria-hidden="true" width="32" height="32">
-							<path
-								fill="currentColor"
-								d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"
-							/>
-						</svg>
-					</a>
-				</div>
-			</nav>
-		</header>
-	)
-}
+<nav class="cinema-nav">
+	<div class="pill">
+		<a href="/" class="brand" aria-label="Oliver Hitchings home">
+			<Logo size={28} fill="white" />
+		</a>
+		<div class="links">
+			<a href="/blog" class:list={[{ active: isActive('/blog') }]} aria-current={isActive('/blog') ? 'page' : undefined}>Blog</a>
+			<a href="/services" class:list={[{ active: isActive('/services') }]} aria-current={isActive('/services') ? 'page' : undefined}>Work with me</a>
+			<a href="/about" class:list={[{ active: isActive('/about') }]} aria-current={isActive('/about') ? 'page' : undefined}>About</a>
+			<a href="/now" class:list={[{ active: isActive('/now') }]} aria-current={isActive('/now') ? 'page' : undefined}>Now</a>
+		</div>
+		<a href="/services" class="gradient-border-btn cta">Get started</a>
+	</div>
+</nav>
 
 <style>
-	/* ===== Cinematic pill nav (homepage) ===== */
 	.cinema-nav {
 		position: fixed;
 		top: 0;
@@ -69,21 +40,17 @@ const isHome = Astro.url.pathname === '/' || Astro.url.pathname === '';
 		display: flex;
 		align-items: center;
 		gap: 2rem;
-		background: rgba(255, 255, 255, 0.05);
+		background: rgba(10, 10, 10, 0.7);
 		backdrop-filter: blur(24px) saturate(180%);
 		-webkit-backdrop-filter: blur(24px) saturate(180%);
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		border-radius: 9999px;
 		padding: 0.6rem 0.6rem 0.6rem 1.5rem;
-		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
 	}
 	.pill .brand {
 		display: flex;
 		align-items: center;
-	}
-	.pill .logo {
-		width: 1.75rem;
-		height: 1.75rem;
 	}
 	.pill .links {
 		display: flex;
@@ -96,9 +63,24 @@ const isHome = Astro.url.pathname === '/' || Astro.url.pathname === '';
 		color: #a1a1aa;
 		transition: color 0.15s ease;
 		text-decoration: none;
+		position: relative;
+		padding: 0.25rem 0;
 	}
 	.pill .links a:hover {
 		color: #fff;
+	}
+	.pill .links a.active {
+		color: #fff;
+	}
+	.pill .links a.active::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -4px;
+		height: 1px;
+		background: var(--gradient);
+		border-radius: 1px;
 	}
 	.pill .cta {
 		font-size: 0.875rem;
@@ -111,63 +93,6 @@ const isHome = Astro.url.pathname === '/' || Astro.url.pathname === '';
 		}
 		.pill .links {
 			display: none;
-		}
-	}
-
-	/* ===== Light header (all other pages) — existing styles preserved ===== */
-	.light-header {
-		margin: 0;
-		padding: 0 1.2em;
-		background: rgba(250, 250, 249, 0.85);
-		border-bottom: 1px solid var(--border);
-		position: sticky;
-		top: 0;
-		z-index: 50;
-		backdrop-filter: saturate(180%) blur(10px);
-	}
-	.light-header h2 {
-		margin: 0;
-		font-size: 0.95em;
-		font-weight: 700;
-		letter-spacing: -0.01em;
-	}
-	.light-header h2 a,
-	.light-header h2 a.active {
-		text-decoration: none;
-		color: rgb(var(--black));
-	}
-	.light-header nav {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		max-width: 960px;
-		margin: 0 auto;
-	}
-	.light-header nav a {
-		padding: 1em 0.7em;
-		color: rgb(var(--gray-dark));
-		border-bottom: 2px solid transparent;
-		text-decoration: none;
-		font-size: 0.95em;
-		transition: color 0.15s ease;
-	}
-	.light-header nav a:hover {
-		color: var(--accent);
-	}
-	.light-header nav a.active {
-		text-decoration: none;
-		color: var(--accent);
-		border-bottom-color: var(--accent);
-	}
-	.light-header .social-links,
-	.light-header .social-links a {
-		display: flex;
-		color: rgb(var(--gray-dark));
-	}
-	@media (max-width: 600px) {
-		.light-header nav a {
-			padding: 1em 0.45em;
-			font-size: 0.88em;
 		}
 	}
 </style>

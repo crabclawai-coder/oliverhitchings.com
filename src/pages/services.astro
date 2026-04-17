@@ -1,318 +1,1056 @@
 ---
 import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
+import Logo from '../components/Logo.astro';
 
-const title = 'AI agents for your business';
+const title = 'AI agents, built for your business — Oliver Hitchings';
 const description =
-	'I help small and mid-sized businesses replace repetitive operational work with custom AI agents — built locally, owned by you.';
-
-const steps = [
-	{
-		num: '01',
-		title: 'Audit',
-		blurb:
-			'Half-day deep dive into how your team actually spends its time. I sit in on workflows, ask uncomfortable questions, and leave with a written list of what an agent could realistically take off your plate.',
-		note: 'Free, no commitment.',
-	},
-	{
-		num: '02',
-		title: 'Build',
-		blurb:
-			'Custom agents wired into the tools you already use \u2014 email, Slack, your CRM, your spreadsheets, your SOPs. Local-first when it makes sense, cloud when it has to be. Working software in 2\u20136 weeks, not 6 months.',
-		note: 'Fixed scope, fixed price.',
-	},
-	{
-		num: '03',
-		title: 'Handover',
-		blurb:
-			'You own the code, the agents, the workflows, the documentation. I train one of your team to maintain it. No black box, no monthly SaaS lock-in, no \u201Cbut what happens if Oliver disappears.\u201D',
-		note: 'Optional retainer for ongoing tuning.',
-	},
-];
-
-const fits = [
-	'You\u2019re a 10\u2013100 person business doing real operational work',
-	'Your team is drowning in admin, scheduling, support, or reporting',
-	'You want to own what you build, not rent it forever',
-	'You\u2019re comfortable being early \u2014 this is genuinely new territory',
-];
-
-const notFits = [
-	'You want a chatbot for your website (there are cheaper tools for that)',
-	'You need enterprise compliance, SOC 2, dedicated TAMs, etc.',
-	'You want someone to white-label OpenAI and call it AI strategy',
-];
+	'I help small businesses replace repetitive operational work with custom AI agents — built locally, owned by you.';
 ---
 
 <!doctype html>
 <html lang="en">
 	<head>
 		<BaseHead title={title} description={description} />
+	</head>
+	<body data-theme="cinematic">
+		<Header />
+
+		<!-- ============================================================
+		     1. HERO
+		     ============================================================ -->
+		<main class="hero">
+			<video
+				class="hero-bg"
+				src="/videos/hero.mp4"
+				autoplay
+				muted
+				loop
+				playsinline
+				preload="auto"></video>
+			<div class="hero-fade"></div>
+
+			<div class="hero-content">
+				<span class="eyebrow animate-float-up">work with me</span>
+				<h1 class="animate-float-up hero-headline">
+					AI agents,<br />
+					built for<br />
+					<span class="muted">your business</span>
+				</h1>
+
+				<p class="animate-float-up-delay hero-lede">
+					I sit with your team, find the workflows eating their day, and replace them with custom
+					agents you actually understand and own. Local-first. No SaaS lock-in.
+				</p>
+
+				<div class="animate-float-up-delay-3 hero-badge">
+					<div class="badge-pill">
+						<Logo size={28} fill="white" />
+						<span class="badge-text">Free 30-min discovery call</span>
+						<svg
+							class="badge-svg"
+							viewBox="0 0 28 28"
+							xmlns="http://www.w3.org/2000/svg"
+							aria-hidden="true"
+						>
+							<defs>
+								<linearGradient id="ring-grad-svc" x1="0" y1="0" x2="1" y2="1">
+									<stop offset="0%" stop-color="#F59E0B" />
+									<stop offset="100%" stop-color="#3B82F6" />
+								</linearGradient>
+							</defs>
+							<circle cx="14" cy="14" r="11" stroke="#3f3f46" stroke-width="3" fill="none"></circle>
+							<circle
+								class="spin-ring"
+								cx="14"
+								cy="14"
+								r="11"
+								stroke="url(#ring-grad-svc)"
+								stroke-width="3"
+								fill="none"
+								stroke-dasharray="18 100"
+								stroke-linecap="round"></circle>
+						</svg>
+					</div>
+				</div>
+			</div>
+		</main>
+
+		<!-- ============================================================
+		     2. STATS GRID
+		     ============================================================ -->
+		<section class="stats">
+			<div class="stats-inner cinema-container">
+				<div class="stat">
+					<div class="stat-num">3</div>
+					<div class="stat-label">Step process</div>
+				</div>
+				<div class="stat">
+					<div class="stat-num">2&ndash;6</div>
+					<div class="stat-label">Weeks typical</div>
+				</div>
+				<div class="stat">
+					<div class="stat-num">$0</div>
+					<div class="stat-label">Monthly recurring</div>
+				</div>
+				<div class="stat last">
+					<div class="stat-num">100%</div>
+					<div class="stat-label">Yours after handover</div>
+				</div>
+			</div>
+			<div class="stats-banner">Free discovery call &middot; Fixed-scope, fixed-price builds</div>
+		</section>
+
+		<!-- ============================================================
+		     3. FEATURE BLOCK
+		     ============================================================ -->
+		<section class="feature">
+			<div class="feature-inner cinema-container">
+				<div class="feature-text">
+					<h2 class="feature-headline">
+						Master your<br />
+						<span class="muted">team&rsquo;s workflows</span>
+					</h2>
+					<p class="feature-copy">
+						Most businesses have 5&ndash;15 recurring rituals that quietly eat senior time every day
+						&mdash; morning reports, queue triage, status compiles, monitoring. Each one is an
+						agent waiting to be built.
+					</p>
+					<a class="gradient-border-btn feature-btn" href="#process">How it works</a>
+				</div>
+
+				<div class="feature-card">
+					<div class="feature-card-glow"></div>
+					<div class="feature-card-inner">
+						<video
+							src="/videos/feature-card.mp4"
+							autoplay
+							muted
+							loop
+							playsinline
+							preload="metadata"></video>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- ============================================================
+		     4. SCROLL-SCRUBBED SECTION
+		     ============================================================ -->
+		<section class="process" id="process-section">
+			<div class="process-bg">
+				<video
+					id="process-video"
+					src="/videos/process.mp4"
+					muted
+					playsinline
+					preload="auto"></video>
+				<div class="process-fade-top"></div>
+				<div class="process-fade-bottom"></div>
+			</div>
+
+			<div class="process-content cinema-container">
+				<h2 class="animate-float-up process-headline">
+					Where workflows<br />
+					get rebuilt
+				</h2>
+				<p class="animate-float-up-delay process-sub">
+					From your team&rsquo;s daily friction to a working agent in 2&ndash;6 weeks. You own the
+					code, the prompts, the cost.
+				</p>
+				<a
+					href="mailto:oliverhit2008@gmail.com?subject=AI agents for my business"
+					class="animate-float-up-delay-3 process-btn">Get in touch</a
+				>
+			</div>
+		</section>
+
+		<!-- ============================================================
+		     5. BENTO GRID (the 3 steps)
+		     ============================================================ -->
+		<section class="bento" id="process">
+			<div class="bento-inner cinema-container">
+				<h2 class="bento-header">How it <span class="muted">works</span></h2>
+
+				<div class="bento-grid">
+					<!-- Step 01 -->
+					<div class="bento-card">
+						<div class="bento-card-bg">
+							<video
+								src="/videos/bento.mp4"
+								autoplay
+								muted
+								loop
+								playsinline
+								preload="metadata"
+								style="object-position: top;"></video>
+							<div class="bento-fade"></div>
+						</div>
+						<div class="bento-card-content">
+							<div class="step-num">01</div>
+							<h3>Audit</h3>
+							<p>
+								Half-day deep dive into how your team actually spends its time. I leave with a
+								written list of what an agent could realistically take off your plate.
+							</p>
+							<span class="step-note">Free. No commitment.</span>
+						</div>
+					</div>
+
+					<!-- Step 02 -->
+					<div class="bento-card">
+						<div class="bento-card-bg">
+							<video
+								src="/videos/bento.mp4"
+								autoplay
+								muted
+								loop
+								playsinline
+								preload="metadata"
+								style="object-position: center;"></video>
+							<div class="bento-fade"></div>
+						</div>
+						<div class="bento-card-content">
+							<div class="step-num">02</div>
+							<h3>Build</h3>
+							<p>
+								Custom agents wired into the tools you already use &mdash; email, Slack, your CRM,
+								your spreadsheets. Working software in 2&ndash;6 weeks.
+							</p>
+							<span class="step-note">Fixed scope. Fixed price.</span>
+						</div>
+					</div>
+
+					<!-- Step 03 (wide) -->
+					<div class="bento-card bento-card-wide">
+						<div class="bento-card-bg">
+							<video
+								src="/videos/bento.mp4"
+								autoplay
+								muted
+								loop
+								playsinline
+								preload="metadata"
+								style="object-position: bottom;"></video>
+							<div class="bento-fade"></div>
+						</div>
+						<div class="bento-card-content">
+							<div class="step-num">03</div>
+							<h3>Handover</h3>
+							<p>
+								You own the code, the agents, the workflows, the docs. I train one of your team to
+								maintain it. No black box, no monthly SaaS lock-in, no &ldquo;but what happens if
+								Oliver disappears.&rdquo;
+							</p>
+							<span class="step-note">Optional retainer for ongoing tuning.</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- ============================================================
+		     6. COMBINED CTA + FOOTER
+		     ============================================================ -->
+		<section class="combined" id="combined-section">
+			<div class="combined-bg">
+				<video
+					id="combined-video"
+					src="/videos/cta-footer.mp4"
+					muted
+					playsinline
+					preload="auto"></video>
+				<div class="combined-fade"></div>
+			</div>
+
+			<div class="cta-block">
+				<div class="cta-inner cinema-container">
+					<div class="cta-logo-box animate-float-up">
+						<Logo size={40} fill="white" />
+					</div>
+
+					<h2 class="animate-float-up cta-headline">
+						Ready to talk?
+					</h2>
+
+					<p class="animate-float-up-delay cta-copy">
+						Email me one paragraph about your business and what&rsquo;s eating your team&rsquo;s
+						time. If it sounds like a fit, I&rsquo;ll book a free discovery call.
+					</p>
+
+					<div class="animate-float-up-delay-3 cta-buttons">
+						<a
+							class="cta-primary"
+							href="mailto:oliverhit2008@gmail.com?subject=AI agents for my business&body=Hi Oliver,%0D%0A%0D%0AAbout my business: %0D%0A%0D%0AWhat's eating my team's time: %0D%0A%0D%0A"
+							>Email me</a
+						>
+						<a class="cta-secondary" href="/blog">Read the blog</a>
+					</div>
+				</div>
+			</div>
+
+			<footer class="cinema-footer">
+				<div class="cinema-footer-inner cinema-container">
+					<div class="footer-top">
+						<div class="footer-brand">
+							<div class="brand-row">
+								<Logo size={28} fill="white" />
+								<span class="brand-text">OLIVER HITCHINGS</span>
+							</div>
+							<p class="brand-tagline">
+								AI agents for real businesses. Built locally. Owned by you.
+							</p>
+						</div>
+
+						<div class="footer-columns">
+							<div>
+								<h4>Site</h4>
+								<a href="/">Home</a>
+								<a href="/services">Services</a>
+								<a href="/about">About</a>
+								<a href="/now">Now</a>
+							</div>
+							<div>
+								<h4>Writing</h4>
+								<a href="/blog">Blog</a>
+								<a href="/rss.xml">RSS</a>
+								<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener"
+									>GitHub</a
+								>
+							</div>
+							<div>
+								<h4>Contact</h4>
+								<a href="mailto:oliverhit2008@gmail.com">Email</a>
+								<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener"
+									>GitHub</a
+								>
+							</div>
+						</div>
+					</div>
+
+					<div class="footer-bottom">
+						<span class="copyright">&copy; 2026 Oliver Hitchings. All rights reserved.</span>
+						<div class="socials">
+							<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GITHUB</a>
+							<a href="mailto:oliverhit2008@gmail.com">EMAIL</a>
+						</div>
+					</div>
+				</div>
+			</footer>
+		</section>
+
+		<script>
+			import { initScrollScrubbedVideos, scrubFallback } from '../scripts/scroll-video';
+
+			const pairs: { video: HTMLVideoElement; container: HTMLElement }[] = [];
+
+			const processVideo = document.getElementById('process-video') as HTMLVideoElement | null;
+			const processSection = document.getElementById('process-section') as HTMLElement | null;
+			if (processVideo && processSection) pairs.push({ video: processVideo, container: processSection });
+
+			const combinedVideo = document.getElementById('combined-video') as HTMLVideoElement | null;
+			const combinedSection = document.getElementById('combined-section') as HTMLElement | null;
+			if (combinedVideo && combinedSection)
+				pairs.push({ video: combinedVideo, container: combinedSection });
+
+			if (pairs.length > 0) {
+				initScrollScrubbedVideos(pairs);
+				scrubFallback(pairs.map((p) => p.video));
+			}
+		</script>
+
 		<style>
+			.muted {
+				color: #71717a;
+			}
+
+			/* ===== HERO ===== */
 			.hero {
-				padding: 3em 0 2.5em;
-				border-bottom: 1px solid var(--border);
-				margin-bottom: 3em;
+				position: relative;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: flex-start;
+				padding: 140px 1.5rem 6rem;
+				text-align: center;
+				min-height: 100vh;
+				overflow: hidden;
+			}
+			.hero-bg {
+				position: absolute;
+				inset: 0;
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				pointer-events: none;
+				z-index: 0;
+				transform: scale(1.5) translateY(25%) rotate(-36deg);
+				opacity: 1;
+			}
+			.hero-fade {
+				position: absolute;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				height: 33%;
+				background: linear-gradient(to top, #000, transparent);
+				z-index: 10;
+				pointer-events: none;
+			}
+			.hero-content {
+				position: relative;
+				z-index: 20;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
 			}
 			.eyebrow {
 				display: inline-block;
 				font-family: var(--font-mono);
-				font-size: 0.78em;
-				color: var(--accent);
-				background: var(--accent-soft);
-				padding: 0.3em 0.7em;
+				font-size: 0.78rem;
+				color: #fff;
+				background: rgba(255, 255, 255, 0.08);
+				border: 1px solid rgba(255, 255, 255, 0.15);
+				padding: 0.35em 0.9em;
 				border-radius: 999px;
-				margin-bottom: 1.2em;
-				letter-spacing: 0.02em;
+				margin-bottom: 1.5em;
+				letter-spacing: 0.05em;
 			}
-			.hero h1 {
-				font-size: 2.6em;
-				margin: 0 0 0.4em;
+			.hero-headline {
+				font-size: 60px;
 				line-height: 1.05;
-			}
-			.hero .lede {
-				font-size: 1.2em;
-				color: rgb(var(--gray));
-				max-width: 36em;
+				letter-spacing: -0.04em;
+				font-weight: 600;
+				color: #fff;
+				max-width: 700px;
 				margin: 0;
 			}
-			.section {
-				margin: 2.8em 0;
+			.hero-lede {
+				margin-top: 2rem;
+				font-size: 1.125rem;
+				color: #a1a1aa;
+				max-width: 480px;
+				line-height: 1.6;
 			}
-			.section-title {
-				font-size: 1.4em;
-				margin: 0 0 1em;
+			.hero-badge {
+				margin-top: 4rem;
 			}
-			.steps {
+			.badge-pill {
+				background: rgba(24, 24, 27, 0.8);
+				backdrop-filter: blur(24px);
+				border-radius: 20px;
+				box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+				border: 1px solid #27272a;
+				padding: 1rem 1.5rem;
+				display: flex;
+				align-items: center;
+				gap: 1rem;
+			}
+			.badge-text {
+				font-size: 0.875rem;
+				font-weight: 500;
+				color: #e4e4e7;
+				white-space: nowrap;
+			}
+			.badge-svg {
+				width: 1.75rem;
+				height: 1.75rem;
+			}
+			@media (max-width: 720px) {
+				.hero-headline {
+					font-size: 40px;
+				}
+				.badge-text {
+					font-size: 0.75rem;
+				}
+			}
+
+			/* ===== STATS ===== */
+			.stats {
+				position: relative;
+				z-index: 20;
+				background: #000;
+				border-top: 1px solid #27272a;
+				border-bottom: 1px solid #27272a;
+			}
+			.stats-inner {
 				display: grid;
-				gap: 1.1em;
+				grid-template-columns: repeat(4, 1fr);
 			}
-			.step {
-				background: var(--surface);
-				border: 1px solid var(--border);
-				border-radius: 14px;
-				padding: 1.6em;
+			.stat {
+				padding: 3rem;
+				border-right: 1px solid #27272a;
+				display: flex;
+				flex-direction: column;
+				gap: 1rem;
+			}
+			.stat.last {
+				border-right: none;
+			}
+			.stat-num {
+				font-size: 3rem;
+				font-weight: 600;
+				letter-spacing: -0.02em;
+				color: #fff;
+			}
+			.stat-label {
+				font-size: 0.75rem;
+				color: #71717a;
+				text-transform: uppercase;
+				letter-spacing: 0.15em;
+			}
+			.stats-banner {
+				text-align: center;
+				padding: 1.5rem 1rem;
+				border-top: 1px solid #27272a;
+				font-size: 0.75rem;
+				color: #52525b;
+				text-transform: uppercase;
+				letter-spacing: 0.3em;
+			}
+			@media (max-width: 900px) {
+				.stats-inner {
+					grid-template-columns: repeat(2, 1fr);
+				}
+				.stat {
+					border-right: 1px solid #27272a;
+					border-bottom: 1px solid #27272a;
+					padding: 2rem 1.5rem;
+				}
+				.stat:nth-child(2),
+				.stat:nth-child(4) {
+					border-right: none;
+				}
+				.stat-num {
+					font-size: 2.5rem;
+				}
+			}
+
+			/* ===== FEATURE ===== */
+			.feature {
+				position: relative;
+				z-index: 20;
+				padding: 8rem 0;
+				background: #000;
+			}
+			.feature-inner {
 				display: grid;
-				grid-template-columns: auto 1fr;
-				gap: 1.4em;
-				align-items: start;
+				grid-template-columns: 1fr 1fr;
+				gap: 5rem;
+				align-items: center;
+			}
+			.feature-headline {
+				font-size: 60px;
+				line-height: 1.05;
+				letter-spacing: -0.04em;
+				font-weight: 600;
+				margin: 0 0 2rem;
+				color: #fff;
+			}
+			.feature-copy {
+				font-size: 1.125rem;
+				color: #a1a1aa;
+				max-width: 28em;
+				line-height: 1.6;
+				margin-bottom: 2.5rem;
+			}
+			.feature-btn {
+				padding: 0.8rem 2rem;
+			}
+			.feature-card {
+				position: relative;
+			}
+			.feature-card-glow {
+				position: absolute;
+				inset: -1rem;
+				background: linear-gradient(to right, rgba(245, 158, 11, 0.2), rgba(59, 130, 246, 0.2));
+				border-radius: 32px;
+				filter: blur(40px);
+				opacity: 0.5;
+				transition: opacity 0.5s ease;
+				pointer-events: none;
+			}
+			.feature-card:hover .feature-card-glow {
+				opacity: 1;
+			}
+			.feature-card-inner {
+				position: relative;
+				background: rgba(24, 24, 27, 0.8);
+				backdrop-filter: blur(24px);
+				border: 1px solid #27272a;
+				border-radius: 32px;
+				overflow: hidden;
+				box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+				aspect-ratio: 3 / 4;
+			}
+			.feature-card-inner video {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				opacity: 0.9;
+				transition: opacity 0.5s ease;
+			}
+			.feature-card:hover .feature-card-inner video {
+				opacity: 1;
+			}
+			@media (max-width: 900px) {
+				.feature-inner {
+					grid-template-columns: 1fr;
+					gap: 3rem;
+				}
+				.feature-headline {
+					font-size: 42px;
+				}
+			}
+
+			/* ===== PROCESS ===== */
+			.process {
+				position: relative;
+				display: flex;
+				flex-direction: column;
+				align-items: flex-start;
+				justify-content: flex-end;
+				padding: 10rem 1.5rem;
+				text-align: left;
+				background: #000;
+				border-top: 1px solid #18181b;
+				margin-top: -200px;
+				overflow: hidden;
+				min-height: 900px;
+			}
+			.process-bg {
+				position: absolute;
+				inset: 0;
+				z-index: 0;
+			}
+			.process-bg video {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				object-position: top;
+				opacity: 0.6;
+			}
+			.process-fade-top {
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				height: 40%;
+				background: linear-gradient(to bottom, #000, rgba(0, 0, 0, 0.4), transparent);
+				z-index: 10;
+			}
+			.process-fade-bottom {
+				position: absolute;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				height: 65%;
+				background: linear-gradient(
+					to top,
+					#000 0%,
+					rgba(0, 0, 0, 0.95) 30%,
+					rgba(0, 0, 0, 0.6) 60%,
+					transparent 100%
+				);
+				z-index: 10;
+			}
+			.process-content {
+				position: relative;
+				z-index: 20;
+				display: flex;
+				flex-direction: column;
+				align-items: flex-start;
+				margin-bottom: 5rem;
+				width: 100%;
+			}
+			.process-headline {
+				font-size: 80px;
+				line-height: 1;
+				letter-spacing: -0.05em;
+				font-weight: 600;
+				color: #fff;
+				max-width: 900px;
+				margin: 0;
+			}
+			.process-sub {
+				margin-top: 2.5rem;
+				font-size: 1.125rem;
+				color: #a1a1aa;
+				max-width: 40em;
+				line-height: 1.6;
+			}
+			.process-btn {
+				display: inline-block;
+				margin-top: 3.5rem;
+				background: #fff;
+				color: #000;
+				padding: 1.1rem 3rem;
+				border-radius: 9999px;
+				font-weight: 700;
+				font-size: 1.125rem;
+				transition:
+					transform 0.2s ease,
+					background 0.2s ease;
+				box-shadow: 0 20px 40px rgba(255, 255, 255, 0.1);
+				text-decoration: none;
+			}
+			.process-btn:hover {
+				background: #e4e4e7;
+				transform: scale(1.05);
+			}
+			@media (max-width: 720px) {
+				.process {
+					padding: 6rem 1.5rem;
+					min-height: 700px;
+				}
+				.process-headline {
+					font-size: 46px;
+				}
+				.process-btn {
+					font-size: 1rem;
+					padding: 0.9rem 2rem;
+				}
+			}
+
+			/* ===== BENTO ===== */
+			.bento {
+				position: relative;
+				z-index: 20;
+				padding: 10rem 0;
+				background: #000;
+				scroll-margin-top: 4rem;
+			}
+			.bento-header {
+				text-align: center;
+				font-size: 60px;
+				line-height: 1.05;
+				letter-spacing: -0.04em;
+				font-weight: 600;
+				margin: 0 0 6rem;
+				color: #fff;
+			}
+			.bento-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 2rem;
+			}
+			.bento-card {
+				position: relative;
+				background: rgba(24, 24, 27, 0.8);
+				backdrop-filter: blur(24px);
+				border: 1px solid #27272a;
+				border-radius: 40px;
+				padding: 3rem;
+				display: flex;
+				flex-direction: column;
+				justify-content: space-between;
+				transition: border-color 0.5s ease;
+				box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+				overflow: hidden;
+				min-height: 400px;
+			}
+			.bento-card:hover {
+				border-color: #52525b;
+			}
+			.bento-card-wide {
+				grid-column: 1 / -1;
+			}
+			.bento-card-bg {
+				position: absolute;
+				inset: 0;
+				z-index: 0;
+			}
+			.bento-card-bg video {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				opacity: 1;
+			}
+			.bento-fade {
+				position: absolute;
+				inset: 0;
+				background: linear-gradient(
+					to right,
+					rgba(0, 0, 0, 0.92) 0%,
+					rgba(0, 0, 0, 0.85) 30%,
+					rgba(0, 0, 0, 0.5) 65%,
+					rgba(0, 0, 0, 0.2) 100%
+				);
+				z-index: 10;
+			}
+			.bento-card-content {
+				position: relative;
+				z-index: 20;
 			}
 			.step-num {
 				font-family: var(--font-mono);
-				font-size: 1.1em;
-				color: var(--accent);
+				font-size: 0.85rem;
+				color: #f59e0b;
+				margin-bottom: 1.2rem;
+				letter-spacing: 0.05em;
+			}
+			.bento-card-content h3 {
+				font-size: 2.25rem;
 				font-weight: 600;
+				margin: 0 0 1rem;
+				letter-spacing: -0.02em;
+				color: #fff;
 			}
-			.step-body h3 {
-				margin: 0 0 0.4em;
-				font-size: 1.2em;
-			}
-			.step-body p {
-				margin: 0 0 0.6em;
-				color: rgb(var(--gray-dark));
+			.bento-card-content p {
+				font-size: 1.05rem;
+				color: #a1a1aa;
+				line-height: 1.6;
+				margin: 0 0 1rem;
+				max-width: 36em;
 			}
 			.step-note {
+				display: inline-block;
 				font-family: var(--font-mono);
-				font-size: 0.82em;
-				color: rgb(var(--gray));
-			}
-			.fit-grid {
-				display: grid;
-				grid-template-columns: 1fr 1fr;
-				gap: 2em;
-			}
-			@media (max-width: 720px) {
-				.fit-grid {
-					grid-template-columns: 1fr;
-				}
-				.step {
-					grid-template-columns: 1fr;
-					gap: 0.8em;
-				}
-			}
-			.fit-list {
-				list-style: none;
-				padding: 0;
-				margin: 0;
-			}
-			.fit-list li {
-				padding: 0.5em 0;
-				padding-left: 1.5em;
-				position: relative;
-				color: rgb(var(--gray-dark));
-			}
-			.fit-list.yes li::before {
-				content: '✓';
-				position: absolute;
-				left: 0;
-				color: var(--accent);
-				font-weight: 700;
-			}
-			.fit-list.no li::before {
-				content: '×';
-				position: absolute;
-				left: 0;
-				color: rgb(var(--gray));
-				font-weight: 700;
-			}
-			.fit-list h3 {
-				font-size: 1em;
-				margin: 0 0 0.6em;
-				color: rgb(var(--gray));
-				font-family: var(--font-mono);
-				font-weight: 500;
+				font-size: 0.78rem;
+				color: #71717a;
 				letter-spacing: 0.02em;
 			}
-			.why {
-				background: var(--surface);
-				border: 1px solid var(--border);
-				border-radius: 14px;
-				padding: 1.8em;
+			@media (max-width: 900px) {
+				.bento {
+					padding: 6rem 0;
+				}
+				.bento-header {
+					font-size: 42px;
+					margin-bottom: 3rem;
+				}
+				.bento-grid {
+					grid-template-columns: 1fr;
+					gap: 1.5rem;
+				}
+				.bento-card {
+					border-radius: 28px;
+					padding: 2rem;
+					min-height: 320px;
+				}
+				.bento-card-wide {
+					grid-column: 1;
+				}
+				.bento-card-content h3 {
+					font-size: 1.75rem;
+				}
 			}
-			.why ul {
-				margin: 0.5em 0 0;
-				padding-left: 1.2em;
+
+			/* ===== COMBINED CTA + FOOTER ===== */
+			.combined {
+				position: relative;
+				z-index: 20;
+				background: #000;
+				overflow: hidden;
 			}
-			.why li {
-				margin-bottom: 0.4em;
+			.combined-bg {
+				position: absolute;
+				inset: 0;
+				z-index: 0;
 			}
-			.cta {
-				margin-top: 3em;
-				padding: 2.5em;
-				background: rgb(var(--black));
-				color: var(--bg);
-				border-radius: 16px;
+			.combined-bg video {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				opacity: 0.3;
+			}
+			.combined-fade {
+				position: absolute;
+				inset: 0;
+				background: linear-gradient(to bottom, #000, transparent, #000);
+				z-index: 10;
+			}
+			.cta-block {
+				position: relative;
+				z-index: 20;
+				padding: 12rem 0;
 				text-align: center;
 			}
-			.cta h2 {
-				color: var(--bg);
-				margin: 0 0 0.4em;
-				font-size: 1.8em;
+			.cta-inner {
+				max-width: 1024px;
 			}
-			.cta p {
-				color: rgba(255, 255, 255, 0.7);
-				margin: 0 0 1.5em;
-				max-width: 32em;
-				margin-left: auto;
-				margin-right: auto;
+			.cta-logo-box {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 5rem;
+				height: 5rem;
+				background: rgba(24, 24, 27, 0.8);
+				backdrop-filter: blur(24px);
+				border: 1px solid #27272a;
+				border-radius: 24px;
+				box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+				margin-bottom: 4rem;
 			}
-			.btn {
-				display: inline-block;
-				background: var(--accent);
-				color: white !important;
-				padding: 0.85em 1.8em;
-				border-radius: 999px;
-				text-decoration: none;
+			.cta-headline {
+				font-size: 80px;
+				line-height: 1;
+				letter-spacing: -0.05em;
 				font-weight: 600;
-				font-size: 1.05em;
-				transition:
-					background 0.15s ease,
-					transform 0.15s ease;
+				color: #fff;
+				margin: 0 0 2.5rem;
 			}
-			.btn:hover {
-				background: var(--accent-dark);
-				transform: translateY(-1px);
-				color: white !important;
+			.cta-copy {
+				font-size: 1.25rem;
+				color: #a1a1aa;
+				margin: 0 auto 4rem;
+				max-width: 38em;
+				line-height: 1.6;
+			}
+			.cta-buttons {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 2rem;
+				flex-wrap: wrap;
+			}
+			.cta-primary {
+				background: #fff;
+				color: #000;
+				padding: 1.1rem 3rem;
+				border-radius: 9999px;
+				font-weight: 700;
+				font-size: 1.125rem;
+				transition:
+					background 0.2s ease,
+					transform 0.2s ease;
+				box-shadow: 0 20px 40px rgba(255, 255, 255, 0.1);
+				text-decoration: none;
+			}
+			.cta-primary:hover {
+				background: #e4e4e7;
+				transform: scale(1.05);
 			}
 			.cta-secondary {
-				display: block;
-				margin-top: 1em;
-				color: rgba(255, 255, 255, 0.55);
-				font-size: 0.9em;
-				font-family: var(--font-mono);
+				background: transparent;
+				color: #fff;
+				border: 1px solid #27272a;
+				padding: 1.1rem 3rem;
+				border-radius: 9999px;
+				font-weight: 700;
+				font-size: 1.125rem;
+				text-decoration: none;
+				transition: background 0.2s ease;
 			}
-			.cta-secondary a {
-				color: rgba(255, 255, 255, 0.85);
+			.cta-secondary:hover {
+				background: rgba(255, 255, 255, 0.05);
+			}
+			@media (max-width: 720px) {
+				.cta-block {
+					padding: 6rem 0;
+				}
+				.cta-headline {
+					font-size: 44px;
+				}
+				.cta-copy {
+					font-size: 1.05rem;
+				}
+				.cta-primary,
+				.cta-secondary {
+					font-size: 1rem;
+					padding: 0.9rem 2rem;
+					width: 100%;
+					text-align: center;
+				}
+				.cta-buttons {
+					flex-direction: column;
+					gap: 1rem;
+				}
+			}
+
+			.cinema-footer {
+				position: relative;
+				z-index: 20;
+				padding: 6rem 0;
+			}
+			.footer-top {
+				display: grid;
+				grid-template-columns: 1fr 2fr;
+				gap: 4rem;
+				margin-bottom: 6rem;
+			}
+			.brand-row {
+				display: flex;
+				align-items: center;
+				gap: 0.75rem;
+				margin-bottom: 1rem;
+			}
+			.brand-text {
+				font-size: 1.25rem;
+				font-weight: 600;
+				letter-spacing: -0.02em;
+			}
+			.brand-tagline {
+				color: #71717a;
+				max-width: 20em;
+				line-height: 1.6;
+				margin: 0;
+			}
+			.footer-columns {
+				display: grid;
+				grid-template-columns: repeat(3, 1fr);
+				gap: 3rem;
+			}
+			.footer-columns h4 {
+				font-size: 0.75rem;
+				font-weight: 700;
+				color: #a1a1aa;
+				text-transform: uppercase;
+				letter-spacing: 0.15em;
+				margin: 0 0 1rem;
+			}
+			.footer-columns a {
+				display: block;
+				font-size: 0.9rem;
+				color: #71717a;
+				margin-bottom: 0.75rem;
+				text-decoration: none;
+				transition: color 0.15s ease;
+			}
+			.footer-columns a:hover {
+				color: #fff;
+			}
+			.footer-bottom {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				gap: 1.5rem;
+				padding-top: 3rem;
+			}
+			.copyright {
+				font-size: 0.875rem;
+				color: #52525b;
+			}
+			.socials {
+				display: flex;
+				gap: 2rem;
+				font-size: 0.75rem;
+				color: #71717a;
+				text-transform: uppercase;
+				letter-spacing: 0.15em;
+				font-weight: 700;
+			}
+			.socials a {
+				text-decoration: none;
+				transition: color 0.15s ease;
+			}
+			.socials a:hover {
+				color: #fff;
+			}
+			@media (max-width: 900px) {
+				.footer-top {
+					grid-template-columns: 1fr;
+					gap: 3rem;
+				}
+				.footer-bottom {
+					flex-direction: column;
+					align-items: flex-start;
+				}
+			}
+			@media (max-width: 600px) {
+				.footer-columns {
+					grid-template-columns: 1fr 1fr;
+				}
 			}
 		</style>
-	</head>
-	<body>
-		<Header />
-		<main>
-			<section class="hero">
-				<span class="eyebrow">work with me</span>
-				<h1>{title}</h1>
-				<p class="lede">{description}</p>
-			</section>
-
-			<section class="section">
-				<h2 class="section-title">How it works</h2>
-				<div class="steps">
-					{
-						steps.map((s) => (
-							<div class="step">
-								<div class="step-num">{s.num}</div>
-								<div class="step-body">
-									<h3>{s.title}</h3>
-									<p>{s.blurb}</p>
-									<span class="step-note">{s.note}</span>
-								</div>
-							</div>
-						))
-					}
-				</div>
-			</section>
-
-			<section class="section">
-				<h2 class="section-title">Who this is for</h2>
-				<div class="fit-grid">
-					<div>
-						<ul class="fit-list yes">
-							<h3>Good fit</h3>
-							{fits.map((f) => <li>{f}</li>)}
-						</ul>
-					</div>
-					<div>
-						<ul class="fit-list no">
-							<h3>Not a fit</h3>
-							{notFits.map((f) => <li>{f}</li>)}
-						</ul>
-					</div>
-				</div>
-			</section>
-
-			<section class="section">
-				<h2 class="section-title">Why me</h2>
-				<div class="why">
-					<p>
-						I&rsquo;m an IT engineer based in the UK. I built and run <strong>OpenClaw</strong>, an autonomous
-						AI platform on a Mac Mini in my flat &mdash; it runs ~40 cron jobs a day, manages two AI agents,
-						talks to me through Telegram and Discord, and routes between local Qwen, Claude, and Codex
-						depending on what the task needs.
-					</p>
-					<p>
-						Day to day I drive Claude Code and the OpenAI Codex CLI for almost every coding task. I
-						know what these tools can actually do, where they break, and what it takes to glue them
-						into a real business workflow rather than a demo.
-					</p>
-					<ul>
-						<li>10+ years in IT engineering &mdash; I understand business systems, not just AI.</li>
-						<li>Built a working autonomous AI platform from scratch, not vibes.</li>
-						<li>Local-first by default &mdash; you keep ownership and control.</li>
-						<li>Based in the UK, available remote across the world or on-site in the UK.</li>
-					</ul>
-				</div>
-			</section>
-
-			<section class="cta">
-				<h2>Let&rsquo;s talk</h2>
-				<p>
-					Email me one paragraph about your business and what&rsquo;s eating your team&rsquo;s time. If
-					it sounds like a fit I&rsquo;ll book a free discovery call.
-				</p>
-				<a
-					class="btn"
-					href="mailto:oliverhit2008@gmail.com?subject=AI agents for my business&body=Hi Oliver,%0D%0A%0D%0AAbout my business: %0D%0A%0D%0AWhat's eating my team's time: %0D%0A%0D%0A"
-					>Email Oliver</a
-				>
-				<span class="cta-secondary"
-					>or just write to <a href="mailto:oliverhit2008@gmail.com"
-						>oliverhit2008@gmail.com</a
-					></span
-				>
-			</section>
-		</main>
-		<Footer />
 	</body>
 </html>

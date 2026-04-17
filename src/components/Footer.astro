@@ -1,39 +1,152 @@
 ---
-const today = new Date();
+import Logo from './Logo.astro';
+const year = new Date().getFullYear();
 ---
 
-<footer>
-	&copy; {today.getFullYear()} Oliver Hitchings &middot; <a href="/now">/now</a> &middot; <a href="/services">work with me</a> &middot; built with Astro
-	<div class="social-links">
-		<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">
-			<span class="sr-only">Oliver's GitHub</span>
-			<svg viewBox="0 0 16 16" aria-hidden="true" width="32" height="32" astro-icon="social/github"
-				><path
-					fill="currentColor"
-					d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"
-				></path></svg
-			>
-		</a>
+<footer class="cinema-footer">
+	<div class="cinema-footer-inner cinema-container">
+		<div class="footer-top">
+			<div class="footer-brand">
+				<div class="brand-row">
+					<Logo size={28} fill="white" />
+					<span class="brand-text">OLIVER HITCHINGS</span>
+				</div>
+				<p class="brand-tagline">
+					AI agents for real businesses. Built locally. Owned by you.
+				</p>
+			</div>
+
+			<div class="footer-columns">
+				<div>
+					<h4>Site</h4>
+					<a href="/">Home</a>
+					<a href="/services">Services</a>
+					<a href="/about">About</a>
+					<a href="/now">Now</a>
+				</div>
+				<div>
+					<h4>Writing</h4>
+					<a href="/blog">Blog</a>
+					<a href="/rss.xml">RSS</a>
+					<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GitHub</a>
+				</div>
+				<div>
+					<h4>Contact</h4>
+					<a href="mailto:oliverhit2008@gmail.com">Email</a>
+					<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GitHub</a>
+				</div>
+			</div>
+		</div>
+
+		<div class="footer-bottom">
+			<span class="copyright">&copy; {year} Oliver Hitchings. All rights reserved.</span>
+			<div class="socials">
+				<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GITHUB</a>
+				<a href="mailto:oliverhit2008@gmail.com">EMAIL</a>
+			</div>
+		</div>
 	</div>
 </footer>
+
 <style>
-	footer {
-		padding: 2em 1em 6em 1em;
-		background: linear-gradient(var(--gray-gradient)) no-repeat;
-		color: rgb(var(--gray));
-		text-align: center;
+	.cinema-footer {
+		position: relative;
+		padding: 6rem 0 4rem;
+		background: var(--bg);
 	}
-	.social-links {
+	.footer-top {
+		display: grid;
+		grid-template-columns: 1fr 2fr;
+		gap: 4rem;
+		margin-bottom: 6rem;
+	}
+	.brand-row {
 		display: flex;
-		justify-content: center;
-		gap: 1em;
-		margin-top: 1em;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 1rem;
 	}
-	.social-links a {
+	.brand-text {
+		font-size: 1.25rem;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		color: var(--text-bright);
+	}
+	.brand-tagline {
+		color: var(--text-faint);
+		max-width: 20em;
+		line-height: 1.6;
+		margin: 0;
+	}
+	.footer-columns {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 3rem;
+	}
+	.footer-columns h4 {
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.15em;
+		margin: 0 0 1rem;
+	}
+	.footer-columns a {
+		display: block;
+		font-size: 0.9rem;
+		color: var(--text-faint);
+		margin-bottom: 0.75rem;
 		text-decoration: none;
-		color: rgb(var(--gray));
+		transition: color 0.15s ease;
 	}
-	.social-links a:hover {
-		color: rgb(var(--gray-dark));
+	.footer-columns a:hover {
+		color: var(--text-bright);
+	}
+	.footer-bottom {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1.5rem;
+		padding-top: 3rem;
+	}
+	.copyright {
+		font-size: 0.875rem;
+		color: var(--text-faint);
+	}
+	.socials {
+		display: flex;
+		gap: 2rem;
+		font-size: 0.75rem;
+		color: var(--text-faint);
+		text-transform: uppercase;
+		letter-spacing: 0.15em;
+		font-weight: 700;
+	}
+	.socials a {
+		text-decoration: none;
+		color: var(--text-faint);
+		transition: color 0.15s ease;
+	}
+	.socials a:hover {
+		color: var(--text-bright);
+	}
+	@media (max-width: 900px) {
+		.footer-top {
+			grid-template-columns: 1fr;
+			gap: 3rem;
+			margin-bottom: 3rem;
+		}
+		.footer-columns {
+			gap: 1.5rem;
+		}
+		.footer-bottom {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+	}
+	@media (max-width: 600px) {
+		.footer-columns {
+			grid-template-columns: 1fr 1fr;
+		}
 	}
 </style>

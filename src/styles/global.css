@@ -1,33 +1,48 @@
 /*
   oliverhitchings.com — global styles
-  Visual identity: warm neutrals, deep teal accent, system fonts.
+  Visual identity: dark by default, cinematic on the homepage + /services.
 */
 
 :root {
-	--accent: #0f766e;
-	--accent-dark: #115e59;
-	--accent-soft: #ccfbf1;
+	/* Surfaces */
+	--bg: #000;
+	--surface: rgba(24, 24, 27, 0.8);
+	--surface-solid: #0a0a0a;
+	--border: #27272a;
 
-	--black: 10, 10, 10;
-	--gray: 82, 82, 82;
-	--gray-light: 231, 229, 228;
-	--gray-dark: 38, 38, 38;
-	--gray-gradient: rgba(231, 229, 228, 0.4), #fafaf9;
+	/* Text */
+	--text: #e4e4e7;
+	--text-bright: #fafafa;
+	--text-muted: #a1a1aa;
+	--text-faint: #71717a;
 
-	--bg: #fafaf9;
-	--surface: #ffffff;
-	--border: #e7e5e4;
+	/* Accent */
+	--accent: #5eead4;
+	--accent-dark: #2dd4bf;
+	--accent-soft: rgba(94, 234, 212, 0.15);
 
-	--box-shadow:
-		0 1px 2px rgba(0, 0, 0, 0.04),
-		0 4px 16px rgba(0, 0, 0, 0.06),
-		0 16px 32px rgba(0, 0, 0, 0.04);
+	/* Code */
+	--code-bg: #18181b;
+	--code-text: #e4e4e7;
 
+	/* Decorative gradient (used for borders, CTAs) */
+	--gradient: linear-gradient(135deg, #f59e0b, #3b82f6);
+
+	/* Typography */
 	--font-sans:
 		-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
 		sans-serif;
 	--font-mono:
 		ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+	/* Legacy light-theme tokens — retained for any unmigrated component */
+	--black: 10, 10, 10;
+	--gray: 82, 82, 82;
+	--gray-light: 231, 229, 228;
+	--gray-dark: 38, 38, 38;
+	--box-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.3),
+		0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -46,9 +61,9 @@ body {
 	background: var(--bg);
 	word-wrap: break-word;
 	overflow-wrap: break-word;
-	color: rgb(var(--gray-dark));
-	font-size: 18px;
-	line-height: 1.65;
+	color: var(--text);
+	font-size: 17px;
+	line-height: 1.7;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
@@ -67,7 +82,7 @@ h4,
 h5,
 h6 {
 	margin: 0 0 0.5rem 0;
-	color: rgb(var(--black));
+	color: var(--text-bright);
 	line-height: 1.15;
 	letter-spacing: -0.02em;
 	font-weight: 700;
@@ -93,17 +108,22 @@ h5 {
 strong,
 b {
 	font-weight: 600;
+	color: var(--text-bright);
 }
 
 a {
 	color: var(--accent);
 	text-decoration: underline;
 	text-decoration-thickness: 1px;
-	text-underline-offset: 2px;
-	transition: color 0.15s ease;
+	text-underline-offset: 3px;
+	text-decoration-color: rgba(94, 234, 212, 0.4);
+	transition:
+		color 0.15s ease,
+		text-decoration-color 0.15s ease;
 }
 a:hover {
-	color: var(--accent-dark);
+	color: var(--text-bright);
+	text-decoration-color: var(--text-bright);
 }
 
 p {
@@ -117,6 +137,9 @@ textarea,
 input {
 	font-size: 16px;
 	font-family: inherit;
+	background: var(--surface);
+	color: var(--text);
+	border: 1px solid var(--border);
 }
 
 table {
@@ -131,21 +154,24 @@ img {
 
 code {
 	padding: 2px 6px;
-	background-color: rgb(var(--gray-light));
+	background-color: var(--code-bg);
+	color: var(--code-text);
 	border-radius: 4px;
 	font-family: var(--font-mono);
 	font-size: 0.9em;
+	border: 1px solid var(--border);
 }
 
 pre {
 	padding: 1.25em 1.5em;
 	border-radius: 10px;
-	background: #1c1917;
-	color: #fafaf9;
+	background: var(--code-bg);
+	color: var(--text-bright);
 	overflow-x: auto;
 	font-family: var(--font-mono);
 	font-size: 0.9em;
 	line-height: 1.55;
+	border: 1px solid var(--border);
 }
 pre > code {
 	all: unset;
@@ -155,7 +181,7 @@ blockquote {
 	border-left: 3px solid var(--accent);
 	padding: 0.2em 0 0.2em 1.2em;
 	margin: 1.5em 0;
-	color: rgb(var(--gray));
+	color: var(--text-muted);
 	font-style: italic;
 }
 
@@ -166,13 +192,13 @@ hr {
 }
 
 ::selection {
-	background: var(--accent-soft);
-	color: rgb(var(--black));
+	background: rgba(245, 158, 11, 0.3);
+	color: var(--text-bright);
 }
 
 @media (max-width: 720px) {
 	body {
-		font-size: 17px;
+		font-size: 16px;
 	}
 	main {
 		padding: 1.5em 1em;
@@ -200,26 +226,21 @@ hr {
 }
 
 /* ============================================================
-   Cinematic mode — opt-in via body[data-theme="cinematic"]
-   Applied to the homepage only. All other pages stay light.
+   CINEMATIC mode — opt-in via body[data-theme='cinematic']
+   Used on homepage + /services. Adds bigger type, no underlines,
+   pure-white emphasis. Sits on top of the dark base.
    ============================================================ */
 
 body[data-theme='cinematic'] {
-	background: #000;
-	color: #fff;
 	font-size: 16px;
-}
-body[data-theme='cinematic'] html,
-html:has(body[data-theme='cinematic']) {
-	background: #000;
-}
-body[data-theme='cinematic'] ::selection {
-	background: rgba(245, 158, 11, 0.3);
-	color: #fff;
 }
 body[data-theme='cinematic'] a {
 	color: inherit;
 	text-decoration: none;
+}
+body[data-theme='cinematic'] strong,
+body[data-theme='cinematic'] b {
+	color: #fff;
 }
 body[data-theme='cinematic'] h1,
 body[data-theme='cinematic'] h2,
@@ -228,7 +249,9 @@ body[data-theme='cinematic'] h4 {
 	color: #fff;
 }
 
-/* Float-up stagger animations */
+/* ============================================================
+   Float-up stagger animations
+   ============================================================ */
 @keyframes float-up {
 	from {
 		opacity: 0;
@@ -270,9 +293,7 @@ body[data-theme='cinematic'] h4 {
 	transform-origin: center;
 }
 
-/* Gradient border pill button (amber → blue).
-   Uses ::before with mask-composite to create a transparent
-   interior with a perfect gradient outline. */
+/* Gradient border pill button (amber → blue) */
 .gradient-border-btn {
 	position: relative;
 	z-index: 0;
@@ -297,7 +318,7 @@ body[data-theme='cinematic'] h4 {
 	inset: 0;
 	padding: 1.5px;
 	border-radius: 9999px;
-	background: linear-gradient(135deg, #f59e0b, #3b82f6);
+	background: var(--gradient);
 	-webkit-mask:
 		linear-gradient(#fff 0 0) content-box,
 		linear-gradient(#fff 0 0);
@@ -312,7 +333,7 @@ body[data-theme='cinematic'] h4 {
 	opacity: 0.85;
 }
 
-/* Fade-in on scroll (used by bento icons via IntersectionObserver hook) */
+/* Fade-in on scroll (used by bento icons via IntersectionObserver) */
 .fade-in-on-view {
 	opacity: 0;
 	transform: translateY(20px);
@@ -325,7 +346,7 @@ body[data-theme='cinematic'] h4 {
 	transform: translateY(0);
 }
 
-/* Utility helpers for the cinematic sections */
+/* Cinema container utility */
 .cinema-container {
 	max-width: 1280px;
 	margin: 0 auto;
@@ -337,4 +358,3 @@ body[data-theme='cinematic'] h4 {
 		font-size: 15px;
 	}
 }
-
