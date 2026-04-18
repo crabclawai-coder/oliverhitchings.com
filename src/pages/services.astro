@@ -250,6 +250,124 @@ const description =
 		</section>
 
 		<!-- ============================================================
+		     5b. WHO THIS IS FOR
+		     ============================================================ -->
+		<section class="fit">
+			<div class="fit-inner cinema-container">
+				<h2 class="fit-header">Who this is <span class="muted">for</span></h2>
+				<div class="fit-grid">
+					<div class="fit-col yes">
+						<h3>Good fit</h3>
+						<ul>
+							<li>You&rsquo;re a 10&ndash;100 person business doing real operational work.</li>
+							<li>Your team is drowning in admin, scheduling, support, or reporting.</li>
+							<li>You want to own what you build, not rent it forever.</li>
+							<li>You&rsquo;re comfortable being early &mdash; this is genuinely new territory.</li>
+						</ul>
+					</div>
+					<div class="fit-col no">
+						<h3>Not a fit</h3>
+						<ul>
+							<li>You want a chatbot for your website (cheaper tools exist for that).</li>
+							<li>You need enterprise compliance, SOC 2, dedicated TAMs.</li>
+							<li>You want someone to white-label OpenAI and call it AI strategy.</li>
+							<li>You&rsquo;re not ready to give an AI access to real systems.</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- ============================================================
+		     5c. WHY ME
+		     ============================================================ -->
+		<section class="why">
+			<div class="why-inner cinema-container">
+				<h2 class="why-header">Why <span class="muted">me</span></h2>
+				<div class="why-grid">
+					<div class="why-card">
+						<div class="why-num">10+</div>
+						<div class="why-label">Years in IT engineering</div>
+						<p>I&rsquo;ve worked inside business systems before AI was the answer to anything. I know what an integration actually costs to maintain.</p>
+					</div>
+					<div class="why-card">
+						<div class="why-num">5</div>
+						<div class="why-label">Autonomous agents I run daily</div>
+						<p>OpenClaw runs five specialised agents on a Mac Mini and Mac Studio in my home office &mdash; coding, orchestration, reasoning, workflows, auditing.</p>
+					</div>
+					<div class="why-card">
+						<div class="why-num">40+</div>
+						<div class="why-label">Cron jobs running 24/7</div>
+						<p>Morning briefs, market watchlists, security audits, vault gardening. Real automation I trust enough to wake up to. <a href="/blog">See how they work &rarr;</a></p>
+					</div>
+					<div class="why-card">
+						<div class="why-num">$0</div>
+						<div class="why-label">Monthly cloud spend</div>
+						<p>Local-first by default. Qwen3.6 for the routine, Codex/Claude for the heavy lifting. You get the same architecture for your business.</p>
+					</div>
+				</div>
+				<p class="why-coda">
+					Based in the UK, available remote globally or on-site across the UK.
+				</p>
+			</div>
+		</section>
+
+		<!-- ============================================================
+		     5d. FAQ
+		     ============================================================ -->
+		<section class="faq">
+			<div class="faq-inner cinema-container">
+				<h2 class="faq-header">Frequently <span class="muted">asked</span></h2>
+				<div class="faq-list">
+					<details class="faq-item" open>
+						<summary>What does this typically cost?</summary>
+						<p>
+							Audits are free. Builds are fixed-scope, fixed-price &mdash; we agree the deliverable
+							and the number before we start. Most projects land between &pound;3k and &pound;15k
+							depending on scope and integration complexity. No retainers required, no hourly
+							meters running.
+						</p>
+					</details>
+					<details class="faq-item">
+						<summary>Where do my agents actually run?</summary>
+						<p>
+							Default is on a machine you own &mdash; usually a small Mac Mini or a
+							dedicated VM &mdash; with local models doing the routine work. When something
+							needs more horsepower, the agent calls out to Codex or Claude through your own
+							OpenAI / Anthropic account. You see every API call. You can pull the plug
+							whenever you want.
+						</p>
+					</details>
+					<details class="faq-item">
+						<summary>What happens if you disappear / move on?</summary>
+						<p>
+							You own the code, the prompts, the docs, the deployment. I train one of your
+							team during handover so the system isn&rsquo;t a black box. Optional retainer
+							for ongoing tuning at a flat monthly rate, but you&rsquo;re never forced into
+							it.
+						</p>
+					</details>
+					<details class="faq-item">
+						<summary>How long does a build take?</summary>
+						<p>
+							Most projects ship in 2&ndash;6 weeks from kickoff. Audit is half a day. Build
+							is the bulk. Handover plus a week of supervised running is the tail.
+						</p>
+					</details>
+					<details class="faq-item">
+						<summary>Can you work with my existing tools?</summary>
+						<p>
+							Yes &mdash; that&rsquo;s usually the brief. Slack, email, Google Workspace,
+							Microsoft 365, your CRM, your spreadsheets, your bespoke internal apps. If it
+							has an API or a script-able interface, an agent can use it. If it doesn&rsquo;t,
+							we figure out a workaround in the audit.
+						</p>
+					</details>
+				</div>
+			</div>
+		</section>
+
+		<!-- ============================================================
 		     6. COMBINED CTA + FOOTER
 		     ============================================================ -->
 		<section class="combined" id="combined-section">
@@ -832,6 +950,246 @@ const description =
 				}
 				.bento-card-content h3 {
 					font-size: 1.75rem;
+				}
+			}
+
+			/* ===== WHO IT'S FOR ===== */
+			.fit {
+				position: relative;
+				z-index: 20;
+				padding: 8rem 0 6rem;
+				background: #000;
+			}
+			.fit-header,
+			.why-header,
+			.faq-header {
+				text-align: center;
+				font-size: 60px;
+				line-height: 1.05;
+				letter-spacing: -0.04em;
+				font-weight: 600;
+				margin: 0 0 4rem;
+				color: #fff;
+			}
+			.fit-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 2rem;
+				max-width: 960px;
+				margin: 0 auto;
+			}
+			.fit-col {
+				background: rgba(24, 24, 27, 0.6);
+				border: 1px solid #27272a;
+				border-radius: 24px;
+				padding: 2.5rem;
+			}
+			.fit-col h3 {
+				font-family: var(--font-mono);
+				font-size: 0.85rem;
+				font-weight: 500;
+				text-transform: uppercase;
+				letter-spacing: 0.12em;
+				margin: 0 0 1.5rem;
+				color: var(--text-muted);
+			}
+			.fit-col.yes h3 {
+				color: var(--accent);
+			}
+			.fit-col ul {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			.fit-col li {
+				position: relative;
+				padding-left: 1.8rem;
+				margin-bottom: 1rem;
+				color: #d4d4d8;
+				line-height: 1.55;
+				font-size: 1rem;
+			}
+			.fit-col.yes li::before {
+				content: '\2713';
+				position: absolute;
+				left: 0;
+				top: 0;
+				color: var(--accent);
+				font-weight: 700;
+				font-size: 1.1em;
+			}
+			.fit-col.no li::before {
+				content: '\d7';
+				position: absolute;
+				left: 0;
+				top: -2px;
+				color: #71717a;
+				font-weight: 700;
+				font-size: 1.4em;
+				line-height: 1;
+			}
+			@media (max-width: 720px) {
+				.fit {
+					padding: 5rem 0;
+				}
+				.fit-header,
+				.why-header,
+				.faq-header {
+					font-size: 36px;
+					margin-bottom: 2.5rem;
+				}
+				.fit-grid {
+					grid-template-columns: 1fr;
+					gap: 1.5rem;
+				}
+				.fit-col {
+					padding: 1.8rem;
+					border-radius: 20px;
+				}
+			}
+
+			/* ===== WHY ME ===== */
+			.why {
+				position: relative;
+				z-index: 20;
+				padding: 6rem 0 8rem;
+				background: #000;
+			}
+			.why-grid {
+				display: grid;
+				grid-template-columns: repeat(2, 1fr);
+				gap: 1.5rem;
+				max-width: 960px;
+				margin: 0 auto;
+			}
+			.why-card {
+				background: rgba(24, 24, 27, 0.6);
+				border: 1px solid #27272a;
+				border-radius: 24px;
+				padding: 2rem;
+				transition: border-color 0.3s ease, transform 0.3s ease;
+			}
+			.why-card:hover {
+				border-color: #52525b;
+				transform: translateY(-2px);
+			}
+			.why-num {
+				font-size: 2.5rem;
+				font-weight: 600;
+				color: #fff;
+				letter-spacing: -0.02em;
+				line-height: 1;
+				margin-bottom: 0.4rem;
+				background: linear-gradient(135deg, #f59e0b, #3b82f6);
+				-webkit-background-clip: text;
+				background-clip: text;
+				-webkit-text-fill-color: transparent;
+				color: transparent;
+			}
+			.why-label {
+				font-family: var(--font-mono);
+				font-size: 0.78rem;
+				color: var(--text-faint);
+				text-transform: uppercase;
+				letter-spacing: 0.12em;
+				margin-bottom: 1.2rem;
+			}
+			.why-card p {
+				margin: 0;
+				color: #a1a1aa;
+				font-size: 0.95rem;
+				line-height: 1.6;
+			}
+			.why-card a {
+				color: var(--accent);
+				text-decoration: underline;
+				text-underline-offset: 3px;
+			}
+			.why-coda {
+				text-align: center;
+				color: var(--text-faint);
+				font-family: var(--font-mono);
+				font-size: 0.85rem;
+				margin: 3rem 0 0;
+				letter-spacing: 0.02em;
+			}
+			@media (max-width: 720px) {
+				.why-grid {
+					grid-template-columns: 1fr;
+				}
+				.why-num {
+					font-size: 2rem;
+				}
+			}
+
+			/* ===== FAQ ===== */
+			.faq {
+				position: relative;
+				z-index: 20;
+				padding: 4rem 0 8rem;
+				background: #000;
+			}
+			.faq-list {
+				max-width: 760px;
+				margin: 0 auto;
+				display: flex;
+				flex-direction: column;
+				gap: 1rem;
+			}
+			.faq-item {
+				background: rgba(24, 24, 27, 0.6);
+				border: 1px solid #27272a;
+				border-radius: 16px;
+				padding: 1.4rem 1.8rem;
+				transition: border-color 0.2s ease;
+			}
+			.faq-item:hover {
+				border-color: #3f3f46;
+			}
+			.faq-item[open] {
+				border-color: var(--accent);
+			}
+			.faq-item summary {
+				cursor: pointer;
+				color: #fafafa;
+				font-weight: 600;
+				font-size: 1.05rem;
+				list-style: none;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				gap: 1rem;
+			}
+			.faq-item summary::-webkit-details-marker {
+				display: none;
+			}
+			.faq-item summary::after {
+				content: '+';
+				font-size: 1.5rem;
+				color: var(--text-faint);
+				font-weight: 300;
+				line-height: 1;
+				transition: transform 0.2s ease;
+			}
+			.faq-item[open] summary::after {
+				content: '\2212';
+				color: var(--accent);
+			}
+			.faq-item p {
+				margin: 1rem 0 0;
+				color: #a1a1aa;
+				line-height: 1.65;
+				font-size: 0.95rem;
+			}
+			@media (max-width: 720px) {
+				.faq {
+					padding: 3rem 0 5rem;
+				}
+				.faq-item {
+					padding: 1.2rem 1.4rem;
+				}
+				.faq-item summary {
+					font-size: 0.95rem;
 				}
 			}
 

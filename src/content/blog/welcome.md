@@ -4,7 +4,7 @@ description: 'Why I started writing publicly about AI agents, OpenClaw, Claude C
 pubDate: '2026-04-16'
 ---
 
-For the past year I&rsquo;ve been quietly building a personal AI platform called **OpenClaw** &mdash; a stack of autonomous agents, cron jobs, local models, and channels into Telegram and Discord, all running natively on a Mac Mini in my flat. No cloud bills. No subscriptions. Just an M-series Apple Silicon box, 64 gigs of RAM, and a lot of evenings.
+For the past year I&rsquo;ve been quietly building a personal AI platform called **OpenClaw** &mdash; a stack of autonomous agents, cron jobs, local models, and channels into Telegram and Discord, all running natively on a **Mac Mini and Mac Studio** in my home office. No cloud bills. No subscriptions. Five specialised agents (coding, orchestration, reasoning, workflows, auditing), Apple Silicon, and a lot of evenings.
 
 It started as curiosity. It turned into something I rely on every day. Roger, my main agent, sends me a morning brief at 7am, an evening recap at 6pm, watches my stock and crypto positions at 9pm, and runs about forty other cron jobs in the background. Hermes, his sibling, writes code with me through the day.
 
