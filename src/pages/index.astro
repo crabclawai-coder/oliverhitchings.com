@@ -33,7 +33,11 @@ const description =
 			<div class="hero-fade"></div>
 
 			<div class="hero-content">
-				<h1 class="animate-float-up hero-headline">
+				<a href="/services" class="animate-float-up scarcity-pill" aria-label="Currently accepting one client">
+					<span class="scarcity-dot"></span>
+					Accepting 1 client &middot; April 2026
+				</a>
+				<h1 class="animate-float-up-delay hero-headline">
 					<span class="muted">A new way</span><br />
 					to automate the work<br />
 					your team hates
@@ -326,7 +330,10 @@ const description =
 					</div>
 
 					<div class="footer-bottom">
-						<span class="copyright">&copy; 2026 Oliver Hitchings. All rights reserved.</span>
+						<div class="bottom-left">
+							<span class="copyright">&copy; 2026 Oliver Hitchings &middot; CanYouLikeNot</span>
+							<span class="built-on">Built on a Mac Mini + Mac Studio in the UK.</span>
+						</div>
 						<div class="socials">
 							<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GITHUB</a>
 							<a href="mailto:oliverhit2008@gmail.com">EMAIL</a>
@@ -426,6 +433,39 @@ const description =
 				display: flex;
 				flex-direction: column;
 				align-items: center;
+			}
+			.scarcity-pill {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.6rem;
+				padding: 0.45rem 1rem 0.45rem 0.85rem;
+				background: rgba(24, 24, 27, 0.7);
+				backdrop-filter: blur(20px);
+				-webkit-backdrop-filter: blur(20px);
+				border: 1px solid rgba(245, 158, 11, 0.35);
+				border-radius: 9999px;
+				font-family: var(--font-mono);
+				font-size: 0.78rem;
+				color: #fafafa;
+				letter-spacing: 0.02em;
+				text-decoration: none;
+				margin-bottom: 2rem;
+				transition: border-color 0.2s ease;
+			}
+			.scarcity-pill:hover {
+				border-color: rgba(245, 158, 11, 0.7);
+			}
+			.scarcity-dot {
+				width: 8px;
+				height: 8px;
+				border-radius: 50%;
+				background: #f59e0b;
+				box-shadow: 0 0 8px #f59e0b;
+				animation: pulse 2s ease-in-out infinite;
+			}
+			@keyframes pulse {
+				0%, 100% { opacity: 1; transform: scale(1); }
+				50%      { opacity: 0.6; transform: scale(0.85); }
 			}
 			.hero-headline {
 				font-size: 60px;
@@ -1070,9 +1110,20 @@ const description =
 				gap: 1.5rem;
 				padding-top: 3rem;
 			}
+			.bottom-left {
+				display: flex;
+				flex-direction: column;
+				gap: 0.4rem;
+			}
 			.copyright {
 				font-size: 0.875rem;
 				color: #52525b;
+			}
+			.built-on {
+				font-family: var(--font-mono);
+				font-size: 0.78rem;
+				color: #52525b;
+				opacity: 0.8;
 			}
 			.socials {
 				display: flex;

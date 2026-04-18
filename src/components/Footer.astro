@@ -39,7 +39,10 @@ const year = new Date().getFullYear();
 		</div>
 
 		<div class="footer-bottom">
-			<span class="copyright">&copy; {year} Oliver Hitchings. All rights reserved.</span>
+			<div class="bottom-left">
+				<span class="copyright">&copy; {year} Oliver Hitchings &middot; CanYouLikeNot</span>
+				<span class="built-on">Built on a Mac Mini + Mac Studio in the UK.</span>
+			</div>
 			<div class="socials">
 				<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GITHUB</a>
 				<a href="mailto:oliverhit2008@gmail.com">EMAIL</a>
@@ -109,9 +112,20 @@ const year = new Date().getFullYear();
 		gap: 1.5rem;
 		padding-top: 3rem;
 	}
+	.bottom-left {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
 	.copyright {
 		font-size: 0.875rem;
 		color: var(--text-faint);
+	}
+	.built-on {
+		font-family: var(--font-mono);
+		font-size: 0.78rem;
+		color: var(--text-faint);
+		opacity: 0.7;
 	}
 	.socials {
 		display: flex;

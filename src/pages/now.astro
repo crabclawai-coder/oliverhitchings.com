@@ -4,9 +4,59 @@ import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 
-const lastUpdated = new Date('2026-04-16');
+const lastUpdated = new Date('2026-04-18');
 const title = 'Now';
-const description = 'What Oliver Hitchings is working on right now — updated monthly.';
+const description = 'What Oliver Hitchings is doing right now — updated when priorities change.';
+
+type StreamItem = { tag: string; title: string; body: string };
+
+const items: StreamItem[] = [
+	{
+		tag: 'Building',
+		title: 'OpenClaw v2026.4 — agent-fleet coordinator',
+		body: 'A second-order agent that watches the other 5 and tells me when one has drifted. Running in test mode this week. Migrating the memory layer off SQLite onto something faster.',
+	},
+	{
+		tag: 'Shipping',
+		title: 'oliverhitchings.com — full cinematic redesign',
+		body: 'You\u2019re looking at it. Black-everywhere, video backgrounds, scroll-scrubbed sections. Took two days end-to-end with Claude Code as the daily driver.',
+	},
+	{
+		tag: 'Selling',
+		title: 'First AI-agent contracting clients',
+		body: 'Helping small UK businesses replace repetitive operational work with custom agents. Three pricing tiers live on /services. Accepting one client this April.',
+	},
+	{
+		tag: 'Reading',
+		title: 'Anthropic\u2019s Claude Agent SDK docs',
+		body: 'The sub-agent patterns are converging on what OpenClaw does locally. Expect the managed version wins for teams that don\u2019t want to run a box.',
+	},
+	{
+		tag: 'Watching',
+		title: 'The Hugging Face new-model feed',
+		body: 'Daily watcher cron pulls every release from the 6 creators I follow. Small open models keep getting good fast \u2014 Qwen3.6 still earns its keep.',
+	},
+	{
+		tag: 'Listening',
+		title: 'The Innermost Loop on Substack',
+		body: 'Long-form AI engineering takes that aren\u2019t Twitter slop. Daily synthesis cron sends me the digest at 17:30.',
+	},
+	{
+		tag: 'Not doing',
+		title: 'Twitter / X',
+		body: 'OpenClaw reads it for me now. Trending crons fire at 11:00 and 19:00 with what actually broke. I haven\u2019t opened the app in weeks.',
+	},
+];
+
+const dotColor: Record<string, string> = {
+	Building: '#F59E0B',
+	Shipping: '#5eead4',
+	Selling: '#3B82F6',
+	Reading: '#a855f7',
+	Watching: '#ec4899',
+	Listening: '#22c55e',
+	'Not doing': '#52525b',
+};
 ---
 
 <!doctype html>
@@ -16,177 +66,273 @@ const description = 'What Oliver Hitchings is working on right now — updated m
 	</head>
 	<body>
 		<Header />
-		<main>
-			<section class="hero">
+
+		<section class="hero">
+			<div class="hero-inner">
 				<span class="eyebrow">/ now</span>
-				<h1>What I&rsquo;m doing right now</h1>
-				<p class="lede">
-					A snapshot of what has my attention this month &mdash; the projects, the reading, the
-					experiments. Updated roughly monthly. Inspired by <a
-						href="https://nownownow.com/about"
-						target="_blank"
-						rel="noopener">Derek Sivers&rsquo; /now movement</a
-					>.
+				<h1>
+					What I&rsquo;m doing<br />
+					<span class="muted">right now.</span>
+				</h1>
+				<div class="stamp">
+					Last updated &middot; <FormattedDate date={lastUpdated} /> &middot; UK
+				</div>
+			</div>
+		</section>
+
+		<section class="intro">
+			<div class="inner">
+				<p>
+					A <a href="https://nownownow.com" target="_blank" rel="noopener" class="inline">/now page</a>. Updated when priorities shift &mdash; usually every two weeks. If
+					the date above is older than a month, I&rsquo;ve been distracted.
 				</p>
-				<span class="updated">Last updated <FormattedDate date={lastUpdated} /></span>
-			</section>
-
-			<div class="section">
-				<h2>Building</h2>
-				<ul>
-					<li>
-						<strong>OpenClaw</strong> &mdash; my autonomous AI platform on a Mac Mini + Mac Studio,
-						running 5 specialised agents (coding, orchestration, reasoning, workflows, auditing).
-						Currently tightening the agent-drift detection cron and migrating the memory layer off
-						SQLite.
-					</li>
-					<li>
-						<strong>This site</strong> &mdash; just shipped it. Writing about AI agents, Claude Code,
-						Codex, OpenClaw, and the future of working.
-					</li>
-					<li>
-						<strong>Taking on first AI-agent contracting clients</strong> &mdash; helping small UK
-						businesses replace repetitive operational work with custom agents. <a href="/services"
-							>Details on the services page</a
-						>.
-					</li>
-				</ul>
 			</div>
+		</section>
 
-			<div class="section">
-				<h2>Reading and watching</h2>
-				<ul>
-					<li>
-						Anthropic&rsquo;s Claude Agent SDK docs &mdash; thinking about what shifts in agent design.
-					</li>
-					<li>
-						Following the Hugging Face new-model feed daily &mdash; small open models keep getting
-						good fast.
-					</li>
-					<li>
-						Reading <em>The Innermost Loop</em> on Substack for the longer-form AI engineering takes.
-					</li>
-				</ul>
+		<section class="stream">
+			<div class="inner">
+				{
+					items.map((it, i) => (
+						<div class="row" style={i === 0 ? 'border-top: 1px solid var(--border);' : ''}>
+							<div class="tag-col">
+								<span class="tag-pill">
+									<span class="dot" style={`background: ${dotColor[it.tag] || '#a1a1aa'}`} />
+									{it.tag}
+								</span>
+							</div>
+							<div class="body-col">
+								<h3>{it.title}</h3>
+								<p>{it.body}</p>
+							</div>
+						</div>
+					))
+				}
 			</div>
+		</section>
 
-			<div class="section">
-				<h2>Where</h2>
-				<p>UK, Europe/London. Available remote globally, on-site in the UK.</p>
+		<section class="rightnow">
+			<div class="inner">
+				<span class="eyebrow">Right this second</span>
+				<div class="rightnow-card">
+					<span class="rightnow-pill">
+						<span class="rightnow-dot"></span>
+						Live
+					</span>
+					<div class="rightnow-body">
+						Drafting a post on why <span class="emph">&ldquo;prompt tuning&rdquo;</span> is the
+						wrong unit of work. Out next week.
+					</div>
+				</div>
 			</div>
+		</section>
 
-			<div class="section">
-				<h2>What I&rsquo;m saying no to</h2>
-				<ul>
-					<li>Anything that requires me to use a model I can&rsquo;t reason about.</li>
-					<li>
-						SaaS-only architectures when a local-first version would do the job at 1/10 the cost.
-					</li>
-					<li>Speaking gigs, for now.</li>
-				</ul>
-			</div>
+		<section class="credit">
+			<p>
+				This page is inspired by <a href="https://sive.rs/now" target="_blank" rel="noopener" class="inline">Derek Sivers&rsquo; /now</a>. If you have one too,
+				<a href="mailto:oliverhit2008@gmail.com" class="inline">send it to me</a>.
+			</p>
+		</section>
 
-			<div class="note">
-				This page is intentionally short. If you want the longer story, the <a href="/about"
-					>about page</a
-				> is the place. If you want to work together, see <a href="/services">services</a>.
-			</div>
-		</main>
 		<Footer />
 
 		<style>
-			main {
-				width: 720px;
-				max-width: calc(100% - 2em);
-				margin: 0 auto;
-				padding: 7rem 1em 4rem;
-			}
 			.hero {
-				padding: 0 0 2.5em;
-				border-bottom: 1px solid var(--border);
-				margin-bottom: 3em;
+				padding: 8rem 1.5rem 4rem;
+				text-align: center;
+			}
+			.hero-inner {
+				max-width: 900px;
+				margin: 0 auto;
 			}
 			.eyebrow {
 				display: inline-block;
-				font-family: var(--font-mono);
-				font-size: 0.78rem;
-				color: var(--accent);
-				background: var(--accent-soft);
-				padding: 0.3em 0.7em;
-				border-radius: 999px;
-				margin-bottom: 1.2em;
-				letter-spacing: 0.02em;
-			}
-			.hero h1 {
-				font-size: 2.4em;
-				margin: 0 0 0.5em;
-				line-height: 1.1;
-				letter-spacing: -0.03em;
-				color: var(--text-bright);
-			}
-			.hero .lede {
-				font-size: 1.05rem;
-				color: var(--text-muted);
-				margin: 0 0 1em;
-				max-width: 36em;
-				line-height: 1.6;
-			}
-			.updated {
-				display: inline-block;
-				font-family: var(--font-mono);
-				font-size: 0.82rem;
-				color: var(--text-faint);
-			}
-			.section {
-				margin: 2.5em 0;
-			}
-			.section h2 {
-				font-size: 0.78rem;
-				font-family: var(--font-mono);
+				font-size: 0.75rem;
+				text-transform: uppercase;
+				letter-spacing: 0.22em;
 				color: var(--text-faint);
 				font-weight: 500;
-				text-transform: uppercase;
-				letter-spacing: 0.12em;
-				margin: 0 0 1em;
 			}
-			.section ul {
-				margin: 0;
-				padding-left: 1.2em;
-				list-style: none;
-			}
-			.section ul li {
-				position: relative;
-				margin-bottom: 0.8em;
-				color: var(--text);
-				line-height: 1.6;
-			}
-			.section ul li::before {
-				content: '—';
-				position: absolute;
-				left: -1.2em;
+			.muted {
 				color: var(--text-faint);
 			}
-			.section p {
-				margin: 0 0 1em;
-				color: var(--text);
-			}
-			.section strong {
+			.hero h1 {
 				color: var(--text-bright);
+				font-size: clamp(44px, 7vw, 80px);
+				font-weight: 600;
+				letter-spacing: -0.04em;
+				line-height: 1;
+				margin: 1.2rem auto 1.4rem;
+				max-width: 900px;
+				text-wrap: balance;
 			}
-			.note {
-				margin-top: 4em;
-				padding: 1.4em 1.6em;
+			.stamp {
+				font-family: var(--font-mono);
+				color: var(--text-faint);
+				font-size: 0.82rem;
+				letter-spacing: 0.02em;
+			}
+
+			.intro {
+				padding: 3rem 1.5rem 0;
+			}
+			.intro .inner {
+				max-width: 780px;
+				margin: 0 auto;
+			}
+			.intro p {
+				color: var(--text-muted);
+				font-size: 1.1rem;
+				line-height: 1.6;
+				margin: 0;
+			}
+			.inline {
+				color: var(--text-bright);
+				text-decoration: underline;
+				text-decoration-color: var(--text-faint);
+				text-underline-offset: 3px;
+			}
+			.inline:hover {
+				color: var(--accent);
+				text-decoration-color: var(--accent);
+			}
+
+			.stream {
+				padding: 3rem 1.5rem 4rem;
+			}
+			.stream .inner {
+				max-width: 780px;
+				margin: 0 auto;
+			}
+			.row {
+				display: grid;
+				grid-template-columns: 140px 1fr;
+				gap: 2rem;
+				padding: 1.8rem 0;
+				border-bottom: 1px solid var(--border);
+			}
+			.tag-col {
+				padding-top: 0.3rem;
+			}
+			.tag-pill {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.5rem;
+				padding: 0.35rem 0.75rem;
+				border-radius: 9999px;
 				background: var(--surface);
 				border: 1px solid var(--border);
-				border-radius: 12px;
-				font-size: 0.95rem;
-				color: var(--text-muted);
+				color: var(--text);
+				font-size: 0.7rem;
+				font-weight: 600;
+				text-transform: uppercase;
+				letter-spacing: 0.12em;
 			}
+			.dot {
+				width: 6px;
+				height: 6px;
+				border-radius: 9999px;
+				flex-shrink: 0;
+			}
+			.row h3 {
+				color: var(--text-bright);
+				font-size: 1.4rem;
+				font-weight: 600;
+				letter-spacing: -0.02em;
+				line-height: 1.25;
+				margin: 0;
+			}
+			.row p {
+				color: var(--text-muted);
+				font-size: 1rem;
+				line-height: 1.6;
+				margin: 0.5rem 0 0;
+			}
+
+			.rightnow {
+				padding: 3rem 1.5rem 1rem;
+			}
+			.rightnow .inner {
+				max-width: 780px;
+				margin: 0 auto;
+			}
+			.rightnow-card {
+				margin-top: 1.2rem;
+				padding: 1.5rem 1.7rem;
+				border-radius: 24px;
+				background: var(--surface);
+				border: 1px solid var(--border);
+				backdrop-filter: blur(24px);
+				-webkit-backdrop-filter: blur(24px);
+				display: flex;
+				align-items: center;
+				gap: 1rem;
+			}
+			.rightnow-pill {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.5rem;
+				padding: 0.35rem 0.85rem;
+				border-radius: 9999px;
+				background: rgba(245, 158, 11, 0.12);
+				border: 1px solid rgba(245, 158, 11, 0.4);
+				font-family: var(--font-mono);
+				font-size: 0.7rem;
+				font-weight: 600;
+				color: #fafafa;
+				text-transform: uppercase;
+				letter-spacing: 0.15em;
+				flex-shrink: 0;
+			}
+			.rightnow-dot {
+				width: 6px;
+				height: 6px;
+				border-radius: 50%;
+				background: #f59e0b;
+				box-shadow: 0 0 8px #f59e0b;
+				animation: rn-pulse 2s ease-in-out infinite;
+			}
+			@keyframes rn-pulse {
+				0%, 100% { opacity: 1; transform: scale(1); }
+				50%      { opacity: 0.6; transform: scale(0.85); }
+			}
+			.rightnow-body {
+				color: var(--text-muted);
+				font-size: 0.95rem;
+				line-height: 1.55;
+			}
+			.emph {
+				color: var(--text-bright);
+			}
+
+			.credit {
+				padding: 3rem 1.5rem 5rem;
+				text-align: center;
+			}
+			.credit p {
+				color: var(--text-faint);
+				font-size: 0.85rem;
+				line-height: 1.7;
+				margin: 0;
+			}
+
 			@media (max-width: 720px) {
-				main {
-					padding: 6rem 1em 2rem;
+				.hero {
+					padding: 6rem 1.5rem 3rem;
 				}
 				.hero h1 {
-					font-size: 1.8em;
+					font-size: 36px;
+				}
+				.row {
+					grid-template-columns: 1fr;
+					gap: 0.6rem;
+				}
+				.tag-col {
+					padding-top: 0;
+				}
+				.rightnow-card {
+					flex-direction: column;
+					align-items: flex-start;
+					gap: 0.75rem;
 				}
 			}
 		</style>
