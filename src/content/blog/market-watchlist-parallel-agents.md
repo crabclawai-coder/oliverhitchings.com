@@ -45,7 +45,7 @@ spawn 7 sub-agents [pull price] in parallel
 send message to Telegram + Discord #finance
 ```
 
-It runs on the local Qwen3.6 model. Each ticker pull is one HTTP request. The research sub-agents do a web search and a summarisation. End-to-end: about 90 seconds on a noisy day, 15 seconds on a quiet one.
+It runs on the local model. Each ticker pull is one HTTP request. The research sub-agents do a web search and a summarisation. End-to-end: about 90 seconds on a noisy day, 15 seconds on a quiet one.
 
 ## The pattern for businesses
 

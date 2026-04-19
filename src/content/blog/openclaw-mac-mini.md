@@ -14,11 +14,11 @@ Three native LaunchAgents do the heavy lifting:
 
 - `ai.openclaw.gateway` &mdash; the brain. WebSocket API on port 18789. Manages every agent session.
 - `ai.openclaw.node` &mdash; the runtime that hosts the agents themselves.
-- `ai.openclaw.mlx-server` &mdash; a llama-server process serving Qwen3.6-35B-A3B (Q4_K_XL) on `127.0.0.1:8080`. This is the local brain.
+- `ai.openclaw.mlx-server` &mdash; a llama-server process serving a local model on `127.0.0.1:8080`. This is the local brain.
 
 Two agents run on top: **Roger**, my primary assistant, who talks to me through Telegram and Discord. And **Hermes**, a coding-focused agent I pair with for development.
 
-Forty cron jobs run on a schedule. The morning brief at 7am. Markets at 9pm. GitHub trending at 8:30am. A weekly security audit Saturday morning. An obsidian vault gardener Sunday at 2am. All of it routed through Qwen3.6 locally &mdash; no API calls, no cloud bills.
+Forty cron jobs run on a schedule. The morning brief at 7am. Markets at 9pm. GitHub trending at 8:30am. A weekly security audit Saturday morning. An obsidian vault gardener Sunday at 2am. All of it routed through the local model &mdash; no API calls, no cloud bills.
 
 ## Why local-first
 

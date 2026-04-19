@@ -6,7 +6,7 @@ pubDate: '2026-04-10'
 
 People ask what an autonomous AI platform actually *does* day to day. The honest answer is: a lot of small, dull things, very reliably. Here&rsquo;s a walk through every cron job currently running on OpenClaw &mdash; the autonomous AI platform on my Mac Mini.
 
-40 jobs. All running on a local Qwen3.6 model. Total monthly cost: roughly the electricity to keep the Mac Mini on.
+40 jobs. All running on a local model. Total monthly cost: roughly the electricity to keep the Mac Mini on.
 
 ## Daily
 

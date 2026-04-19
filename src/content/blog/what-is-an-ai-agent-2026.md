@@ -23,7 +23,7 @@ If a system fails any of those, call it what it is. A chatbot. A copilot. A func
 
 The shift in 2025-26 wasn&rsquo;t the models &mdash; though Claude 4.x and GPT-5 are obviously stronger. The shift was that the loop got cheap and reliable enough to leave running.
 
-A year ago, leaving an agent running overnight meant waking up to a $40 API bill, a corrupted state file, and three half-finished tasks. Today my OpenClaw cron jobs run forty times a day on a local Qwen3.6 model. Cost: zero. Failures: rare enough that I notice them.
+A year ago, leaving an agent running overnight meant waking up to a $40 API bill, a corrupted state file, and three half-finished tasks. Today my OpenClaw automations run forty times a day on a local model. Cost: zero. Failures: rare enough that I notice them.
 
 That&rsquo;s the unlock. Not intelligence. Reliability.
 

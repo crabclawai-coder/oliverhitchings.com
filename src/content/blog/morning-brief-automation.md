@@ -24,7 +24,7 @@ The message goes to Telegram. I read it before I&rsquo;m even out of bed.
 
 ## What&rsquo;s under the hood
 
-The whole thing is a `.json` cron entry pointing at a local Qwen3.6 model running on my Mac Mini. Total moving parts:
+The whole thing is a `.json` cron entry pointing at a local model running on my Mac Mini. Total moving parts:
 
 ```
 cron job → agent prompt → 5 parallel tool calls → model summarises → Telegram delivery
