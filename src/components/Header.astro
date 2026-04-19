@@ -14,10 +14,11 @@ function isActive(href: string) {
 			<Logo size={28} fill="white" />
 		</a>
 		<div class="links">
-			<a href="/blog" class:list={[{ active: isActive('/blog') }]} aria-current={isActive('/blog') ? 'page' : undefined}>Blog</a>
-			<a href="/services" class:list={[{ active: isActive('/services') }]} aria-current={isActive('/services') ? 'page' : undefined}>Work with me</a>
+			<a href="/" class:list={[{ active: isActive('/') }]} aria-current={isActive('/') ? 'page' : undefined}>Home</a>
+			<a href="/services" class:list={[{ active: isActive('/services') }]} aria-current={isActive('/services') ? 'page' : undefined}>Services</a>
 			<a href="/about" class:list={[{ active: isActive('/about') }]} aria-current={isActive('/about') ? 'page' : undefined}>About</a>
 			<a href="/now" class:list={[{ active: isActive('/now') }]} aria-current={isActive('/now') ? 'page' : undefined}>Now</a>
+			<a href="/blog" class:list={[{ active: isActive('/blog') }]} aria-current={isActive('/blog') ? 'page' : undefined}>Blog</a>
 		</div>
 		<a href="/services" class="gradient-border-btn cta">Get started</a>
 	</div>

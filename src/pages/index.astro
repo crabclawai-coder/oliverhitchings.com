@@ -108,6 +108,24 @@ const description =
 		</section>
 
 		<!-- ============================================================
+		     2b. BOX YOU OWN
+		     ============================================================ -->
+		<section class="own-box">
+			<div class="own-box-inner cinema-container">
+				<h2 class="own-box-headline">
+					It runs on a box<br />
+					<span class="muted">you own.</span>
+				</h2>
+				<p class="own-box-copy">
+					Your agents live on a Mac Mini on a shelf. Qwen3.6 does the thinking locally. No API
+					bills. No cloud. When a job needs the big guns, we route to Codex or Claude Opus over
+					OAuth.
+				</p>
+				<p class="own-box-pull">Small, dull things. Done reliably. Every day.</p>
+			</div>
+		</section>
+
+		<!-- ============================================================
 		     3. FEATURE BLOCK
 		     ============================================================ -->
 		<section class="feature">
@@ -577,6 +595,59 @@ const description =
 				}
 				.stat-num {
 					font-size: 2.5rem;
+				}
+			}
+
+			/* ===== 2b. OWN-BOX ===== */
+			.own-box {
+				position: relative;
+				z-index: 20;
+				padding: 7rem 0;
+				background: #000;
+			}
+			.own-box-inner {
+				max-width: 900px;
+				text-align: center;
+			}
+			.own-box-headline {
+				font-family: var(--font-sans);
+				font-size: clamp(40px, 6vw, 64px);
+				font-weight: 600;
+				line-height: 1.05;
+				letter-spacing: -0.03em;
+				color: #fafafa;
+				text-wrap: balance;
+				margin: 0 0 2rem;
+			}
+			.own-box-headline .muted {
+				color: #71717a;
+			}
+			.own-box-copy {
+				font-size: 1.125rem;
+				line-height: 1.7;
+				color: #a1a1aa;
+				max-width: 640px;
+				margin: 0 auto 3rem;
+				text-wrap: pretty;
+			}
+			.own-box-pull {
+				font-family: var(--font-sans);
+				font-size: clamp(20px, 2.4vw, 28px);
+				font-weight: 500;
+				line-height: 1.4;
+				color: #fafafa;
+				letter-spacing: -0.015em;
+				margin: 0;
+				padding-top: 2rem;
+				border-top: 1px solid #27272a;
+				display: inline-block;
+			}
+			@media (max-width: 720px) {
+				.own-box {
+					padding: 5rem 0;
+				}
+				.own-box-copy {
+					font-size: 1rem;
 				}
 			}
 
