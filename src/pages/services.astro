@@ -312,7 +312,7 @@ const description =
 						<div class="tier-inner">
 							<span class="tier-name">The Rollout</span>
 							<div class="tier-price">
-								<span class="big">&pound;8k</span>
+								<span class="big">&pound;4k</span>
 								<span class="sub">12 automations</span>
 							</div>
 							<ul class="tier-points">
@@ -426,7 +426,7 @@ const description =
 						<summary>What does this typically cost?</summary>
 						<p>
 							Audits are free. Builds are fixed-scope, fixed-price &mdash; we agree the deliverable
-							and the number before we start. Most projects land between &pound;3k and &pound;15k
+							and the number before we start. Most projects land between &pound;2k and &pound;4k
 							depending on scope and integration complexity. No retainers required, no hourly
 							meters running.
 						</p>
@@ -609,15 +609,14 @@ const description =
 				pointer-events: none;
 				z-index: 0;
 				transform: scale(1.5) translateY(25%) rotate(-36deg);
-				opacity: 1;
+				opacity: 0.5;
 			}
 			.hero-fade {
 				position: absolute;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				height: 33%;
-				background: linear-gradient(to top, #000, transparent);
+				inset: 0;
+				background:
+					radial-gradient(ellipse 70% 55% at 50% 42%, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.45) 55%, transparent 100%),
+					linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, transparent 30%, transparent 65%, #000 100%);
 				z-index: 10;
 				pointer-events: none;
 			}
