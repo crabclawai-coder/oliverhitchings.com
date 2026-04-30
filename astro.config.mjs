@@ -7,6 +7,7 @@ import { defineConfig, fontProviders } from 'astro/config';
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://oliverhitchings.com',
+	devToolbar: { enabled: false },
 	integrations: [mdx(), sitemap()],
 	fonts: [
 		{
