@@ -16,15 +16,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
+          cache: "npm"
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+      - run: npm ci
 
-      - run: bun install --frozen-lockfile
-
-      - run: bun run build
+      - run: npm run build
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v3

@@ -1,0 +1,27 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { posts } from "../../data/site.js";
+
+export function getStaticPaths() {
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+---
+
+<BaseLayout title={`${post.title} | Oliver Hitchings`} description={post.summary}>
+  <main class="subpage">
+    <article class="container article-page">
+      <p class="eyebrow">{post.category} · {post.date}</p>
+      <h1>{post.title}</h1>
+      <p class="article-summary">{post.summary}</p>
+      <div class="article-body">
+        {post.body.map((paragraph) => <p>{paragraph}</p>)}
+      </div>
+      <a class="text-link" href="/blog">Back to blog</a>
+    </article>
+  </main>
+</BaseLayout>

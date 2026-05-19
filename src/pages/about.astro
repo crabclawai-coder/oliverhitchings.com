@@ -1,46 +1,74 @@
 ---
-import Layout from '../layouts/BlogPost.astro';
+import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<Layout
-	title="About"
-	description="Oliver Hitchings — IT engineer, AI tinkerer, builder of OpenClaw."
-	pubDate={new Date('2026-04-16')}
+<BaseLayout
+  title="About | Oliver Hitchings"
+  description="About Oliver Hitchings and the practical engineering approach behind inspectable automation systems."
 >
-	<p>
-		I&rsquo;m Oliver Hitchings &mdash; an IT engineer based in the UK. Online I go by
-		<strong>CanYouLikeNot</strong>. I spend most of my free time building with AI: writing autonomous
-		agents, wiring up local models, and figuring out where the limits actually are.
-	</p>
+  <main class="subpage">
+    <section class="container subpage-hero-grid">
+      <div class="subpage-hero">
+        <p class="eyebrow">About</p>
+        <h1>I build practical automation for real business operations.</h1>
+        <p>
+          My bias is toward systems people can inspect: readable code, visible prompts, useful logs,
+          and review points that keep a human responsible for the important calls.
+        </p>
+      </div>
+      <div class="visual-panel portrait">
+        <video src="/videos/bento.mp4" autoplay muted loop playsinline preload="metadata"></video>
+        <div>
+          <span>Working style</span>
+          <strong>Small systems with clear ownership.</strong>
+        </div>
+      </div>
+    </section>
 
-	<p>
-		The main project is <strong>OpenClaw</strong>: a local-first autonomous AI platform that runs
-		natively on a <strong>Mac Mini and Mac Studio</strong> in my home office. It runs five
-		specialised agents &mdash; coding, orchestration, reasoning, workflows, and auditing &mdash;
-		alongside its own gateway, automations, memory store, and channels into Telegram and Discord.
-		A local model handles the routine work, with Codex (via free ChatGPT OAuth) and Claude Opus
-		on tap for the heavy lifting. Total cloud cost: $0.
-	</p>
+    <section class="container detail-section">
+      <div>
+        <p class="eyebrow">Operating stance</p>
+        <h2>Useful automation is operations work first.</h2>
+      </div>
+      <div class="copy-stack">
+        <p>
+          The model call is rarely the hard part. The hard part is deciding what should happen
+          before the model runs, what evidence it should use, where it should stop, how it should
+          explain itself, and what a human should do when it is uncertain.
+        </p>
+        <p>
+          That is why I start with operational mapping before implementation. Once the task is
+          clear, the build can stay small, observable, and easier to maintain.
+        </p>
+      </div>
+    </section>
 
-	<p>
-		Day to day I drive <strong>Claude Code</strong> and the <strong>Codex CLI</strong> for almost
-		every coding task. This site is where I write about what works, what doesn&rsquo;t, and what
-		feels like it&rsquo;s about to change everything about how engineers actually work.
-	</p>
+    <section class="container service-list">
+      <article>
+        <span>Principle 1</span>
+        <h2>Show the work</h2>
+        <p>Prompts, assumptions, logs, and runbooks should be visible enough to debug a bad run.</p>
+      </article>
+      <article>
+        <span>Principle 2</span>
+        <h2>Keep ownership local</h2>
+        <p>The important parts should live somewhere the business can inspect, back up, and change.</p>
+      </article>
+      <article>
+        <span>Principle 3</span>
+        <h2>Escalate deliberately</h2>
+        <p>Use larger cloud models when they are worth it, but record why and keep the system legible.</p>
+      </article>
+    </section>
 
-	<h2>What you&rsquo;ll find here</h2>
-	<ul>
-		<li>Practical write-ups on building with AI agents</li>
-		<li>Deep-dives into OpenClaw&rsquo;s architecture as it evolves</li>
-		<li>Workflows, hooks, and tricks for Claude Code and Codex</li>
-		<li>Honest takes on where the future of working is heading</li>
-	</ul>
-
-	<h2>Find me elsewhere</h2>
-	<ul>
-		<li>GitHub: <a href="https://github.com/CanYouLikeNot">@CanYouLikeNot</a></li>
-		<li>Email: <a href="mailto:oliverhit2008@gmail.com">oliverhit2008@gmail.com</a></li>
-		<li>What I&rsquo;m doing this month: <a href="/now">/now</a></li>
-		<li>Hire me: <a href="/services">work with me</a></li>
-	</ul>
-</Layout>
+    <section class="container visual-split">
+      <div class="visual-panel wide">
+        <video src="/videos/process.mp4" autoplay muted loop playsinline preload="metadata"></video>
+        <div>
+          <span>Operating stance</span>
+          <strong>The work is mapped before anything gets automated.</strong>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

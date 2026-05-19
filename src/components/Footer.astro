@@ -1,166 +1,39 @@
 ---
-import Logo from './Logo.astro';
-const year = new Date().getFullYear();
+import Logo from "./Logo.astro";
+import { contactHref } from "../data/site.js";
 ---
 
-<footer class="cinema-footer">
-	<div class="cinema-footer-inner cinema-container">
-		<div class="footer-top">
-			<div class="footer-brand">
-				<div class="brand-row">
-					<Logo size={28} fill="white" />
-					<span class="brand-text">OLIVER HITCHINGS</span>
-				</div>
-				<p class="brand-tagline">
-					AI agents for real businesses. Built locally. Owned by you.
-				</p>
-			</div>
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <div class="footer-logo-row">
+        <Logo />
+        <span>Oliver Hitchings</span>
+      </div>
+      <p>Practical automation for repeatable business tasks. Built to be inspected, operated, and changed.</p>
+    </div>
 
-			<div class="footer-columns">
-				<div>
-					<h4>Site</h4>
-					<a href="/">Home</a>
-					<a href="/services">Services</a>
-					<a href="/about">About</a>
-					<a href="/now">Now</a>
-				</div>
-				<div>
-					<h4>Writing</h4>
-					<a href="/blog">Blog</a>
-					<a href="/rss.xml">RSS</a>
-					<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GitHub</a>
-				</div>
-				<div>
-					<h4>Contact</h4>
-					<a href="mailto:oliverhit2008@gmail.com">Email</a>
-					<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GitHub</a>
-				</div>
-			</div>
-		</div>
-
-		<div class="footer-bottom">
-			<div class="bottom-left">
-				<span class="copyright">&copy; {year} Oliver Hitchings &middot; CanYouLikeNot</span>
-				<span class="built-on">Built on a Mac Mini + Mac Studio in the UK.</span>
-			</div>
-			<div class="socials">
-				<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GITHUB</a>
-				<a href="mailto:oliverhit2008@gmail.com">EMAIL</a>
-			</div>
-		</div>
-	</div>
+    <div class="footer-links">
+      <div>
+        <h2>Site</h2>
+        <a href="/">Home</a>
+        <a href="/services">Services</a>
+        <a href="/about">About</a>
+        <a href="/blog">Blog</a>
+      </div>
+      <div>
+        <h2>Updates</h2>
+        <a href="/rss.xml">RSS</a>
+      </div>
+      <div>
+        <h2>Contact</h2>
+        <a href="/services#packages">View packages</a>
+        <a href={contactHref}>Email Oliver</a>
+      </div>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <span>&copy; 2026 Oliver Hitchings</span>
+    <span>Built for teams that want practical automation they can inspect.</span>
+  </div>
 </footer>
-
-<style>
-	.cinema-footer {
-		position: relative;
-		padding: 6rem 0 4rem;
-		background: var(--bg);
-	}
-	.footer-top {
-		display: grid;
-		grid-template-columns: 1fr 2fr;
-		gap: 4rem;
-		margin-bottom: 6rem;
-	}
-	.brand-row {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		margin-bottom: 1rem;
-	}
-	.brand-text {
-		font-size: 1.25rem;
-		font-weight: 600;
-		letter-spacing: -0.02em;
-		color: var(--text-bright);
-	}
-	.brand-tagline {
-		color: var(--text-faint);
-		max-width: 20em;
-		line-height: 1.6;
-		margin: 0;
-	}
-	.footer-columns {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 3rem;
-	}
-	.footer-columns h4 {
-		font-size: 0.75rem;
-		font-weight: 700;
-		color: var(--text-muted);
-		text-transform: uppercase;
-		letter-spacing: 0.15em;
-		margin: 0 0 1rem;
-	}
-	.footer-columns a {
-		display: block;
-		font-size: 0.9rem;
-		color: var(--text-faint);
-		margin-bottom: 0.75rem;
-		text-decoration: none;
-		transition: color 0.15s ease;
-	}
-	.footer-columns a:hover {
-		color: var(--text-bright);
-	}
-	.footer-bottom {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 1.5rem;
-		padding-top: 3rem;
-	}
-	.bottom-left {
-		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
-	}
-	.copyright {
-		font-size: 0.875rem;
-		color: var(--text-faint);
-	}
-	.built-on {
-		font-family: var(--font-mono);
-		font-size: 0.78rem;
-		color: var(--text-faint);
-		opacity: 0.7;
-	}
-	.socials {
-		display: flex;
-		gap: 2rem;
-		font-size: 0.75rem;
-		color: var(--text-faint);
-		text-transform: uppercase;
-		letter-spacing: 0.15em;
-		font-weight: 700;
-	}
-	.socials a {
-		text-decoration: none;
-		color: var(--text-faint);
-		transition: color 0.15s ease;
-	}
-	.socials a:hover {
-		color: var(--text-bright);
-	}
-	@media (max-width: 900px) {
-		.footer-top {
-			grid-template-columns: 1fr;
-			gap: 3rem;
-			margin-bottom: 3rem;
-		}
-		.footer-columns {
-			gap: 1.5rem;
-		}
-		.footer-bottom {
-			flex-direction: column;
-			align-items: flex-start;
-		}
-	}
-	@media (max-width: 600px) {
-		.footer-columns {
-			grid-template-columns: 1fr 1fr;
-		}
-	}
-</style>

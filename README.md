@@ -1,63 +1,45 @@
-# Astro Starter Kit: Blog
+# oliverhitchings.com
 
-```sh
-bun create astro@latest -- --template blog
+Editable Astro site for `oliverhitchings.com`, prepared for local development and Railway deployment.
+
+## Local development
+
+```bash
+npm install
+npm run dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+The local server runs on `http://localhost:4321` by default.
 
-Features:
+## Production build
 
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and Open Graph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-├── public/
-├── src/
-│   ├── assets/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
-├── astro.config.mjs
-├── README.md
-├── package.json
-└── tsconfig.json
+```bash
+npm run build
+npm run start
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+Railway can build this project with `npm run build` and serve it with `npm run start`.
+Those commands are also pinned in `railway.json`.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+## Railway and Cloudflare DNS
 
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
+Railway project:
 
-Any static assets, like images, can be placed in the `public/` directory.
+- Project: `oliverhitchings-com`
+- Service: `oliverhitchings-com`
+- Environment: `production`
+- Temporary URL: `https://oliverhitchings-com-production.up.railway.app`
+- Project URL: `https://railway.com/project/db6b1a44-d862-4f0e-9325-15d085df9096/service/ab9df495-5c88-4083-ad6d-0fccb354b4ad`
 
-## 🧞 Commands
+The custom domain `oliverhitchings.com` has been added in Railway and is waiting for DNS.
 
-All commands are run from the root of the project, from a terminal:
+In Cloudflare DNS:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `bun install`             | Installs dependencies                            |
-| `bun dev`             | Starts local dev server at `localhost:4321`      |
-| `bun build`           | Build your production site to `./dist/`          |
-| `bun preview`         | Preview your build locally, before deploying     |
-| `bun astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `bun astro -- --help` | Get help using the Astro CLI                     |
+- Add a `CNAME` record:
+  - Name: `@`
+  - Value: `k0z64rgj.up.railway.app`
+- Add a `TXT` record:
+  - Name: `_railway-verify`
+  - Value: `railway-verify=708a965092f969a2d12533a5716295eb6f384b4ca76575d14882a1f25f691edf`
 
-## 👀 Want to learn more?
-
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
-
-## Credit
-
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+Keep the existing live DNS records unchanged until you are ready for `oliverhitchings.com` to resolve to Railway. The current Railway plan only allows one custom domain, so `www.oliverhitchings.com` was not added.

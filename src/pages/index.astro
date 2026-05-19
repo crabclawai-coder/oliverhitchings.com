@@ -1,1236 +1,189 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
-import Logo from '../components/Logo.astro';
-import { SITE_TITLE } from '../consts';
-
-const title = SITE_TITLE;
-const description =
-	'I build custom AI agents that take repetitive operational work off your team\u2019s plate. Local-first, honest engineering, owned by you.';
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Logo from "../components/Logo.astro";
+import { site } from "../data/site.js";
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={title} description={description} />
-	</head>
-	<body data-theme="cinematic">
-		<Header />
+<BaseLayout>
+  <main>
+    <section class="hero">
+      <video class="hero-video" src="/videos/hero.mp4" autoplay muted loop playsinline preload="auto"></video>
+      <div class="hero-shade"></div>
+      <div class="hero-content">
+        <a class="availability" href="/services#packages">
+          <span></span>
+          {site.availability}
+        </a>
+        <h1>AI automation your team can <span>actually own</span></h1>
+        <p>
+          I turn regular back-office jobs into small, inspectable systems: clear inputs, review
+          points, logs, and a handover your team can use.
+        </p>
+        <div class="hero-actions">
+          <a class="button" href="/services#packages">{site.cta.primary}</a>
+          <a class="button ghost" href="#home-pricing">See prices</a>
+          <div class="ops-badge">
+            <Logo />
+            <span>Useful systems, clear ownership, human review</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
-		<!-- ============================================================
-		     1. HERO
-		     ============================================================ -->
-		<main class="hero">
-			<video
-				class="hero-bg"
-				src="/videos/hero.mp4"
-				autoplay
-				muted
-				loop
-				playsinline
-				preload="auto"
-			></video>
-			<div class="hero-fade"></div>
+    <section class="split-section home-intro-section">
+      <div class="container split-grid">
+        <div>
+          <p class="eyebrow">Built to be understood</p>
+          <h2>It runs where you can see it.</h2>
+        </div>
+        <div class="copy-stack">
+          <p>
+            The work is set up with readable prompts, simple run commands, useful logs, and clear
+            review points. When a step needs stronger reasoning, that decision is deliberate and
+            recorded.
+          </p>
+          <p class="pull-line">Small, dull things. Done reliably.</p>
+        </div>
+      </div>
+    </section>
 
-			<div class="hero-content">
-				<a href="/services" class="animate-float-up scarcity-pill" aria-label="Currently accepting one client">
-					<span class="scarcity-dot"></span>
-					Accepting 1 client &middot; April 2026
-				</a>
-				<h1 class="animate-float-up-delay hero-headline">
-					<span class="muted">A new way</span><br />
-					to automate the work<br />
-					your team hates
-				</h1>
+    <section class="feature-section">
+      <div class="container feature-grid">
+        <div class="feature-copy">
+          <p class="eyebrow">Service design</p>
+          <h2>Replace repeat admin with <span>working tools</span></h2>
+          <p>
+            I sit with your team, map the task, define the failure points, and build a narrow system
+            that is readable enough for a human to own after handover.
+          </p>
+          <a class="button" href="/services">See services</a>
+        </div>
+        <div class="media-card">
+          <video src="/videos/feature-card.mp4" autoplay muted loop playsinline preload="metadata"></video>
+        </div>
+      </div>
+    </section>
 
-				<p class="animate-float-up-delay hero-lede">
-					Custom AI agents that take repetitive operational work off your team&rsquo;s plate. Built
-					locally, owned by you.
-				</p>
+    <section id="home-pricing" class="container package-section home-packages">
+      <div class="section-heading">
+        <p class="eyebrow">Prices and packages</p>
+        <h2>Start small, then build what proves itself.</h2>
+      </div>
+      <div class="package-grid compact">
+        <article class="package-card">
+          <p class="eyebrow">Fixed scope</p>
+          <h3>Task Map</h3>
+          <p class="price">£250</p>
+          <p>
+            A short mapping sprint for one repeat task: current steps, inputs, owners, failure
+            points, tools involved, and a clear build recommendation.
+          </p>
+          <a class="button ghost" href="/services#contact">Enquire</a>
+        </article>
+        <article class="package-card featured">
+          <p class="eyebrow">Most common</p>
+          <h3>First Build</h3>
+          <p class="price">£500</p>
+          <p>
+            A narrow working version for one use case, built with real inputs, review points, logs,
+            prompts, and a handover guide your team can follow.
+          </p>
+          <a class="button" href="/services#contact">Start enquiry</a>
+        </article>
+        <article class="package-card">
+          <p class="eyebrow">Larger build</p>
+          <h3>Operator System</h3>
+          <p class="price">£1,000</p>
+          <p>
+            A more complete setup for connected steps, with stronger controls, reporting, exception
+            handling, documentation, and owner training.
+          </p>
+          <a class="button ghost" href="/services#contact">Discuss scope</a>
+        </article>
+      </div>
+      <div class="retainer-strip">
+        <div>
+          <p class="eyebrow">Optional retainer</p>
+          <h3>Ongoing support from £100/month</h3>
+          <p>Monthly monitoring, small improvements, fixes, and one review call after the build is live.</p>
+        </div>
+        <a class="button ghost" href="/services#contact">Ask about support</a>
+      </div>
+    </section>
 
-				<div class="animate-float-up-delay-3 hero-badge">
-					<div class="badge-pill">
-						<Logo size={28} fill="white" />
-						<span class="badge-text">Your team&rsquo;s new operational layer</span>
-						<svg
-							class="badge-svg"
-							viewBox="0 0 28 28"
-							xmlns="http://www.w3.org/2000/svg"
-							aria-hidden="true"
-						>
-							<defs>
-								<linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
-									<stop offset="0%" stop-color="#F59E0B" />
-									<stop offset="100%" stop-color="#3B82F6" />
-								</linearGradient>
-							</defs>
-							<circle cx="14" cy="14" r="11" stroke="#3f3f46" stroke-width="3" fill="none" />
-							<circle
-								class="spin-ring"
-								cx="14"
-								cy="14"
-								r="11"
-								stroke="url(#ring-grad)"
-								stroke-width="3"
-								fill="none"
-								stroke-dasharray="18 100"
-								stroke-linecap="round"
-							/>
-						</svg>
-					</div>
-				</div>
-			</div>
-		</main>
+    <section class="stats-section">
+      <div class="container stats-grid">
+        <div>
+          <strong>40+</strong>
+          <span>Internal automations already running</span>
+        </div>
+        <div>
+          <strong>1</strong>
+          <span>Workflow selected before anything is built</span>
+        </div>
+        <div>
+          <strong>3</strong>
+          <span>Handover assets: prompts, logs, and runbook</span>
+        </div>
+        <div>
+          <strong>£100/mo</strong>
+          <span>Optional support after launch</span>
+        </div>
+      </div>
+      <p class="proof-strip">Designed for the people who have to run it</p>
+    </section>
 
-		<!-- ============================================================
-		     2. STATS GRID
-		     ============================================================ -->
-		<section class="stats">
-			<div class="stats-inner cinema-container">
-				<div class="stat">
-					<div class="stat-num">40+</div>
-					<div class="stat-label">Daily automations running</div>
-				</div>
-				<div class="stat">
-					<div class="stat-num">2</div>
-					<div class="stat-label">Autonomous agents</div>
-				</div>
-				<div class="stat">
-					<div class="stat-num">$0</div>
-					<div class="stat-label">/mo infrastructure</div>
-				</div>
-				<div class="stat last">
-					<div class="stat-num">100%</div>
-					<div class="stat-label">Local-first</div>
-				</div>
-			</div>
-			<div class="stats-banner">Built and battle-tested on my own platform</div>
-		</section>
+    <section class="process-section">
+      <video class="process-video" src="/videos/process.mp4" autoplay muted loop playsinline preload="metadata"></video>
+      <div class="process-overlay"></div>
+      <div class="container process-content">
+        <h2>One painful task becomes a working loop</h2>
+        <p>
+          The first build is intentionally narrow: real inputs, real outputs, review points, logs,
+          and enough failure handling to decide whether it belongs in the business.
+        </p>
+        <a class="button" href="/services#packages">See packages</a>
+      </div>
+    </section>
 
-		<!-- ============================================================
-		     2b. BOX YOU OWN
-		     ============================================================ -->
-		<section class="own-box">
-			<div class="own-box-inner cinema-container">
-				<h2 class="own-box-headline">
-					It runs on a box<br />
-					<span class="muted">you own.</span>
-				</h2>
-				<p class="own-box-copy">
-					Your agents live on a Mac Mini on a shelf. A local model does the thinking. No API
-					bills. No cloud. When a job needs the big guns, we route to Codex or Claude Opus over
-					OAuth.
-				</p>
-				<p class="own-box-pull">Small, dull things. Done reliably. Every day.</p>
-			</div>
-		</section>
+    <section class="operator-section">
+      <div class="container">
+        <p class="eyebrow">Operating layer</p>
+        <h2>Built for <span>repeat use</span></h2>
+        <div class="operator-grid">
+          <article>
+            <video src="/videos/bento.mp4" autoplay muted loop playsinline preload="metadata"></video>
+            <div>
+              <h3>Inspect everything</h3>
+              <p>The important pieces stay visible: prompts, schedules, logs, scripts, and runbooks.</p>
+            </div>
+          </article>
+          <article>
+            <video src="/videos/process.mp4" autoplay muted loop playsinline preload="metadata"></video>
+            <div>
+              <h3>Honest engineering</h3>
+              <p>Every assumption is visible. No mystery costs, no vague claims, no fragile handover.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
 
-		<!-- ============================================================
-		     3. FEATURE BLOCK
-		     ============================================================ -->
-		<section class="feature">
-			<div class="feature-inner cinema-container">
-				<div class="feature-text">
-					<h2 class="feature-headline">
-						Master your<br />
-						<span class="muted">team&rsquo;s workflows</span>
-					</h2>
-					<p class="feature-copy">
-						I sit with your team, find the workflows eating their day, and replace them with
-						agents you actually understand and own.
-					</p>
-					<a class="gradient-border-btn feature-btn" href="/services">How it works</a>
-				</div>
-
-				<div class="feature-card">
-					<div class="feature-card-glow"></div>
-					<div class="feature-card-inner">
-						<video
-							src="/videos/feature-card.mp4"
-							autoplay
-							muted
-							loop
-							playsinline
-							preload="metadata"
-						></video>
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<!-- ============================================================
-		     4. SCROLL-SCRUBBED SECTION
-		     ============================================================ -->
-		<section class="process" id="process-section">
-			<div class="process-bg">
-				<video
-					id="process-video"
-					src="/videos/process.mp4"
-					muted
-					playsinline
-					preload="auto"
-				></video>
-				<div class="process-fade-top"></div>
-				<div class="process-fade-bottom"></div>
-			</div>
-
-			<div class="process-content cinema-container">
-				<h2 class="animate-float-up process-headline">
-					Where workflows<br />
-					take shape
-				</h2>
-				<p class="animate-float-up-delay process-sub">
-					Real agents running real operational work. Every automation you see on this site exists
-					on my own platform today.
-				</p>
-				<a href="/services" class="animate-float-up-delay-3 process-btn">Get in touch</a>
-			</div>
-		</section>
-
-		<!-- ============================================================
-		     5. BENTO GRID
-		     ============================================================ -->
-		<section class="bento">
-			<div class="bento-inner cinema-container">
-				<div class="bento-icons">
-					<div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="2" x2="9" y2="4"></line><line x1="15" y1="2" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="22"></line><line x1="15" y1="20" x2="15" y2="22"></line><line x1="20" y1="9" x2="22" y2="9"></line><line x1="20" y1="14" x2="22" y2="14"></line><line x1="2" y1="9" x2="4" y2="9"></line><line x1="2" y1="14" x2="4" y2="14"></line></svg></div>
-					<div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></div>
-					<div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></div>
-					<div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></div>
-					<div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
-				</div>
-
-				<h2 class="bento-header">Built for <span class="muted">operators</span></h2>
-
-				<div class="bento-grid">
-					<!-- Card 1 -->
-					<div class="bento-card">
-						<div class="bento-card-bg">
-							<video
-								src="/videos/bento.mp4"
-								autoplay
-								muted
-								loop
-								playsinline
-								preload="metadata"
-								style="object-position: top;"
-							></video>
-							<div class="bento-fade"></div>
-						</div>
-						<div class="bento-card-content">
-							<h3>Local-first</h3>
-							<p>Your agents run on your hardware. No SaaS lock-in, no monthly bills, no surprises.</p>
-						</div>
-					</div>
-
-					<!-- Card 2 -->
-					<div class="bento-card">
-						<div class="bento-card-bg">
-							<video
-								src="/videos/bento.mp4"
-								autoplay
-								muted
-								loop
-								playsinline
-								preload="metadata"
-								style="object-position: center;"
-							></video>
-							<div class="bento-fade"></div>
-						</div>
-						<div class="bento-card-content">
-							<h3>Honest engineering</h3>
-							<p>
-								I show you the code, the prompts, the cost. No black boxes. No &ldquo;AI
-								magic.&rdquo;
-							</p>
-						</div>
-					</div>
-
-					<!-- Card 3 (spans 2 cols) -->
-					<div class="bento-card bento-card-wide">
-						<div class="bento-card-bg">
-							<video
-								src="/videos/bento.mp4"
-								autoplay
-								muted
-								loop
-								playsinline
-								preload="metadata"
-								style="object-position: bottom;"
-							></video>
-							<div class="bento-fade"></div>
-						</div>
-						<div class="bento-card-content">
-							<h3>Real evidence</h3>
-							<p>
-								I built and run an autonomous AI platform myself. Every workflow on this site
-								exists today. <a href="/blog" style="text-decoration: underline; color: inherit;">Read the case studies &rarr;</a>
-							</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<!-- ============================================================
-		     6. COMBINED CTA + FOOTER (shared video background)
-		     ============================================================ -->
-		<section class="combined" id="combined-section">
-			<div class="combined-bg">
-				<video
-					id="combined-video"
-					src="/videos/cta-footer.mp4"
-					muted
-					playsinline
-					preload="auto"
-				></video>
-				<div class="combined-fade"></div>
-			</div>
-
-			<!-- CTA block -->
-			<div class="cta-block">
-				<div class="cta-inner cinema-container">
-					<div class="cta-logo-box animate-float-up">
-						<Logo size={40} fill="white" />
-					</div>
-
-					<h2 class="animate-float-up cta-headline">
-						Ready to automate<br />
-						your operations?
-					</h2>
-
-					<p class="animate-float-up-delay cta-copy">
-						If your team has 5+ recurring workflows that eat meaningful time, there&rsquo;s an
-						agent for that. Let&rsquo;s talk.
-					</p>
-
-					<div class="animate-float-up-delay-3 cta-buttons">
-						<a class="cta-primary" href="/services">Work with me</a>
-						<a class="cta-secondary" href="/blog">Read the blog</a>
-					</div>
-				</div>
-			</div>
-
-			<!-- Footer block -->
-			<footer class="cinema-footer">
-				<div class="cinema-footer-inner cinema-container">
-					<div class="footer-top">
-						<div class="footer-brand">
-							<div class="brand-row">
-								<Logo size={28} fill="white" />
-								<span class="brand-text">OLIVER HITCHINGS</span>
-							</div>
-							<p class="brand-tagline">
-								AI agents for real businesses. Built locally. Owned by you.
-							</p>
-						</div>
-
-						<div class="footer-columns">
-							<div>
-								<h4>Site</h4>
-								<a href="/">Home</a>
-								<a href="/services">Services</a>
-								<a href="/about">About</a>
-								<a href="/now">Now</a>
-							</div>
-							<div>
-								<h4>Writing</h4>
-								<a href="/blog">Blog</a>
-								<a href="/rss.xml">RSS</a>
-								<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GitHub</a>
-							</div>
-							<div>
-								<h4>Contact</h4>
-								<a href="mailto:oliverhit2008@gmail.com">Email</a>
-								<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GitHub</a>
-							</div>
-						</div>
-					</div>
-
-					<div class="footer-bottom">
-						<div class="bottom-left">
-							<span class="copyright">&copy; 2026 Oliver Hitchings &middot; CanYouLikeNot</span>
-							<span class="built-on">Built on a Mac Mini + Mac Studio in the UK.</span>
-						</div>
-						<div class="socials">
-							<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GITHUB</a>
-							<a href="mailto:oliverhit2008@gmail.com">EMAIL</a>
-						</div>
-					</div>
-				</div>
-			</footer>
-		</section>
-
-		<script>
-			import { initScrollScrubbedVideos, scrubFallback } from '../scripts/scroll-video';
-
-			// Scroll-scrubbed video pairs
-			const pairs: { video: HTMLVideoElement; container: HTMLElement }[] = [];
-
-			const processVideo = document.getElementById('process-video') as HTMLVideoElement | null;
-			const processSection = document.getElementById('process-section') as HTMLElement | null;
-			if (processVideo && processSection) {
-				pairs.push({ video: processVideo, container: processSection });
-			}
-
-			const combinedVideo = document.getElementById('combined-video') as HTMLVideoElement | null;
-			const combinedSection = document.getElementById('combined-section') as HTMLElement | null;
-			if (combinedVideo && combinedSection) {
-				pairs.push({ video: combinedVideo, container: combinedSection });
-			}
-
-			if (pairs.length > 0) {
-				initScrollScrubbedVideos(pairs);
-				scrubFallback(pairs.map((p) => p.video));
-			}
-
-			// IntersectionObserver for bento icon stagger
-			const iconTiles = document.querySelectorAll('.bento-icons .icon-tile');
-			if (iconTiles.length > 0 && 'IntersectionObserver' in window) {
-				const io = new IntersectionObserver(
-					(entries) => {
-						entries.forEach((entry) => {
-							if (entry.isIntersecting) {
-								const el = entry.target as HTMLElement;
-								const idx = Array.from(iconTiles).indexOf(el);
-								el.style.transitionDelay = `${idx * 0.1}s`;
-								el.classList.add('is-visible');
-								io.unobserve(el);
-							}
-						});
-					},
-					{ threshold: 0.2 }
-				);
-				iconTiles.forEach((t) => io.observe(t));
-			}
-		</script>
-
-		<style>
-			/* Theme-specific body handles background, color globally via global.css */
-
-			.muted {
-				color: #71717a;
-			}
-
-			/* ===== 1. HERO ===== */
-			.hero {
-				position: relative;
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-				justify-content: flex-start;
-				padding: 140px 1.5rem 6rem;
-				text-align: center;
-				min-height: 100vh;
-				overflow: hidden;
-			}
-			.hero-bg {
-				position: absolute;
-				inset: 0;
-				width: 100%;
-				height: 100%;
-				object-fit: cover;
-				pointer-events: none;
-				z-index: 0;
-				transform: scale(1.5) translateY(25%) rotate(36deg);
-				opacity: 1;
-			}
-			.hero-fade {
-				position: absolute;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				height: 33%;
-				background: linear-gradient(to top, #000, transparent);
-				z-index: 10;
-				pointer-events: none;
-			}
-			.hero-content {
-				position: relative;
-				z-index: 20;
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-			}
-			.scarcity-pill {
-				display: inline-flex;
-				align-items: center;
-				gap: 0.6rem;
-				padding: 0.45rem 1rem 0.45rem 0.85rem;
-				background: rgba(24, 24, 27, 0.7);
-				backdrop-filter: blur(20px);
-				-webkit-backdrop-filter: blur(20px);
-				border: 1px solid rgba(245, 158, 11, 0.35);
-				border-radius: 9999px;
-				font-family: var(--font-mono);
-				font-size: 0.78rem;
-				color: #fafafa;
-				letter-spacing: 0.02em;
-				text-decoration: none;
-				margin-bottom: 2rem;
-				transition: border-color 0.2s ease;
-			}
-			.scarcity-pill:hover {
-				border-color: rgba(245, 158, 11, 0.7);
-			}
-			.scarcity-dot {
-				width: 8px;
-				height: 8px;
-				border-radius: 50%;
-				background: #f59e0b;
-				box-shadow: 0 0 8px #f59e0b;
-				animation: pulse 2s ease-in-out infinite;
-			}
-			@keyframes pulse {
-				0%, 100% { opacity: 1; transform: scale(1); }
-				50%      { opacity: 0.6; transform: scale(0.85); }
-			}
-			.hero-headline {
-				font-size: 60px;
-				line-height: 1.05;
-				letter-spacing: -0.04em;
-				font-weight: 600;
-				color: #fff;
-				max-width: 700px;
-				margin: 0;
-			}
-			.hero-lede {
-				margin-top: 2rem;
-				font-size: 1.125rem;
-				color: #a1a1aa;
-				max-width: 420px;
-				line-height: 1.6;
-			}
-			.hero-badge {
-				margin-top: 4rem;
-			}
-			.badge-pill {
-				background: rgba(24, 24, 27, 0.8);
-				backdrop-filter: blur(24px);
-				border-radius: 20px;
-				box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-				border: 1px solid #27272a;
-				padding: 1rem 1.5rem;
-				display: flex;
-				align-items: center;
-				gap: 1rem;
-			}
-			.badge-logo {
-				width: 1.75rem;
-				height: 1.75rem;
-			}
-			.badge-text {
-				font-size: 0.875rem;
-				font-weight: 500;
-				color: #e4e4e7;
-				white-space: nowrap;
-			}
-			.badge-svg {
-				width: 1.75rem;
-				height: 1.75rem;
-			}
-			@media (max-width: 720px) {
-				.hero-headline {
-					font-size: 40px;
-				}
-				.badge-text {
-					font-size: 0.75rem;
-				}
-			}
-
-			/* ===== 2. STATS ===== */
-			.stats {
-				position: relative;
-				z-index: 20;
-				background: #000;
-				border-top: 1px solid #27272a;
-				border-bottom: 1px solid #27272a;
-			}
-			.stats-inner {
-				display: grid;
-				grid-template-columns: repeat(4, 1fr);
-			}
-			.stat {
-				padding: 3rem;
-				border-right: 1px solid #27272a;
-				display: flex;
-				flex-direction: column;
-				gap: 1rem;
-			}
-			.stat.last {
-				border-right: none;
-			}
-			.stat-num {
-				font-size: 3rem;
-				font-weight: 600;
-				letter-spacing: -0.02em;
-			}
-			.stat-label {
-				font-size: 0.75rem;
-				color: #71717a;
-				text-transform: uppercase;
-				letter-spacing: 0.15em;
-			}
-			.stats-banner {
-				text-align: center;
-				padding: 1.5rem 1rem;
-				border-top: 1px solid #27272a;
-				font-size: 0.75rem;
-				color: #52525b;
-				text-transform: uppercase;
-				letter-spacing: 0.3em;
-			}
-			@media (max-width: 900px) {
-				.stats-inner {
-					grid-template-columns: repeat(2, 1fr);
-				}
-				.stat {
-					border-right: 1px solid #27272a;
-					border-bottom: 1px solid #27272a;
-					padding: 2rem 1.5rem;
-				}
-				.stat:nth-child(2),
-				.stat:nth-child(4) {
-					border-right: none;
-				}
-				.stat-num {
-					font-size: 2.5rem;
-				}
-			}
-
-			/* ===== 2b. OWN-BOX ===== */
-			.own-box {
-				position: relative;
-				z-index: 20;
-				padding: 7rem 0;
-				background: #000;
-			}
-			.own-box-inner {
-				max-width: 900px;
-				text-align: center;
-			}
-			.own-box-headline {
-				font-family: var(--font-sans);
-				font-size: clamp(40px, 6vw, 64px);
-				font-weight: 600;
-				line-height: 1.05;
-				letter-spacing: -0.03em;
-				color: #fafafa;
-				text-wrap: balance;
-				margin: 0 0 2rem;
-			}
-			.own-box-headline .muted {
-				color: #71717a;
-			}
-			.own-box-copy {
-				font-size: 1.125rem;
-				line-height: 1.7;
-				color: #a1a1aa;
-				max-width: 640px;
-				margin: 0 auto 3rem;
-				text-wrap: pretty;
-			}
-			.own-box-pull {
-				font-family: var(--font-sans);
-				font-size: clamp(20px, 2.4vw, 28px);
-				font-weight: 500;
-				line-height: 1.4;
-				color: #fafafa;
-				letter-spacing: -0.015em;
-				margin: 0;
-				padding-top: 2rem;
-				border-top: 1px solid #27272a;
-				display: inline-block;
-			}
-			@media (max-width: 720px) {
-				.own-box {
-					padding: 5rem 0;
-				}
-				.own-box-copy {
-					font-size: 1rem;
-				}
-			}
-
-			/* ===== 3. FEATURE ===== */
-			.feature {
-				position: relative;
-				z-index: 20;
-				padding: 8rem 0;
-				background: #000;
-			}
-			.feature-inner {
-				display: grid;
-				grid-template-columns: 1fr 1fr;
-				gap: 5rem;
-				align-items: center;
-			}
-			.feature-headline {
-				font-size: 60px;
-				line-height: 1.05;
-				letter-spacing: -0.04em;
-				font-weight: 600;
-				margin: 0 0 2rem;
-			}
-			.feature-copy {
-				font-size: 1.125rem;
-				color: #a1a1aa;
-				max-width: 28em;
-				line-height: 1.6;
-				margin-bottom: 2.5rem;
-			}
-			.feature-btn {
-				padding: 0.8rem 2rem;
-			}
-			.feature-card {
-				position: relative;
-			}
-			.feature-card-glow {
-				position: absolute;
-				inset: -1rem;
-				background: linear-gradient(to right, rgba(245, 158, 11, 0.2), rgba(59, 130, 246, 0.2));
-				border-radius: 32px;
-				filter: blur(40px);
-				opacity: 0.5;
-				transition: opacity 0.5s ease;
-				pointer-events: none;
-			}
-			.feature-card:hover .feature-card-glow {
-				opacity: 1;
-			}
-			.feature-card-inner {
-				position: relative;
-				background: rgba(24, 24, 27, 0.8);
-				backdrop-filter: blur(24px);
-				border: 1px solid #27272a;
-				border-radius: 32px;
-				overflow: hidden;
-				box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-				aspect-ratio: 3 / 4;
-			}
-			.feature-card-inner video {
-				width: 100%;
-				height: 100%;
-				object-fit: cover;
-				opacity: 0.9;
-				transition: opacity 0.5s ease;
-			}
-			.feature-card:hover .feature-card-inner video {
-				opacity: 1;
-			}
-			@media (max-width: 900px) {
-				.feature-inner {
-					grid-template-columns: 1fr;
-					gap: 3rem;
-				}
-				.feature-headline {
-					font-size: 42px;
-				}
-			}
-
-			/* ===== 4. PROCESS (scroll-scrubbed) ===== */
-			.process {
-				position: relative;
-				display: flex;
-				flex-direction: column;
-				align-items: flex-start;
-				justify-content: flex-end;
-				padding: 10rem 1.5rem;
-				text-align: left;
-				background: #000;
-				border-top: 1px solid #18181b;
-				margin-top: -200px;
-				overflow: hidden;
-				min-height: 900px;
-			}
-			.process-bg {
-				position: absolute;
-				inset: 0;
-				z-index: 0;
-			}
-			.process-bg video {
-				width: 100%;
-				height: 100%;
-				object-fit: cover;
-				object-position: top;
-				opacity: 0.6;
-			}
-			.process-fade-top {
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				height: 40%;
-				background: linear-gradient(to bottom, #000, rgba(0, 0, 0, 0.4), transparent);
-				z-index: 10;
-			}
-			.process-fade-bottom {
-				position: absolute;
-				bottom: 0;
-				left: 0;
-				right: 0;
-				height: 65%;
-				background: linear-gradient(
-					to top,
-					#000 0%,
-					rgba(0, 0, 0, 0.95) 30%,
-					rgba(0, 0, 0, 0.6) 60%,
-					transparent 100%
-				);
-				z-index: 10;
-			}
-			.process-content {
-				position: relative;
-				z-index: 20;
-				display: flex;
-				flex-direction: column;
-				align-items: flex-start;
-				margin-bottom: 5rem;
-				width: 100%;
-			}
-			.process-headline {
-				font-size: 80px;
-				line-height: 1;
-				letter-spacing: -0.05em;
-				font-weight: 600;
-				color: #fff;
-				max-width: 900px;
-				margin: 0;
-			}
-			.process-sub {
-				margin-top: 2.5rem;
-				font-size: 1.125rem;
-				color: #a1a1aa;
-				max-width: 40em;
-				line-height: 1.6;
-			}
-			.process-btn {
-				display: inline-block;
-				margin-top: 3.5rem;
-				background: #fff;
-				color: #000;
-				padding: 1.1rem 3rem;
-				border-radius: 9999px;
-				font-weight: 700;
-				font-size: 1.125rem;
-				transition:
-					transform 0.2s ease,
-					background 0.2s ease;
-				box-shadow: 0 20px 40px rgba(255, 255, 255, 0.1);
-				text-decoration: none;
-			}
-			.process-btn:hover {
-				background: #e4e4e7;
-				transform: scale(1.05);
-			}
-			@media (max-width: 720px) {
-				.process {
-					padding: 6rem 1.5rem;
-					min-height: 700px;
-				}
-				.process-headline {
-					font-size: 46px;
-				}
-				.process-btn {
-					font-size: 1rem;
-					padding: 0.9rem 2rem;
-				}
-			}
-
-			/* ===== 5. BENTO ===== */
-			.bento {
-				position: relative;
-				z-index: 20;
-				padding: 10rem 0;
-				background: #000;
-			}
-			.bento-icons {
-				display: flex;
-				justify-content: center;
-				gap: 2rem;
-				margin-bottom: 3rem;
-			}
-			.icon-tile {
-				width: 3.5rem;
-				height: 3.5rem;
-				background: rgba(24, 24, 27, 0.5);
-				backdrop-filter: blur(24px);
-				border: 1px solid #27272a;
-				border-radius: 1rem;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				color: #a1a1aa;
-				opacity: 0;
-				transform: translateY(20px);
-				transition:
-					opacity 0.5s ease,
-					transform 0.5s ease,
-					color 0.2s ease,
-					border-color 0.2s ease;
-			}
-			.icon-tile.is-visible {
-				opacity: 1;
-				transform: translateY(0);
-			}
-			.icon-tile:hover {
-				color: #fff;
-				border-color: #52525b;
-				transform: scale(1.2) rotate(5deg);
-			}
-			.icon-tile svg {
-				width: 1.5rem;
-				height: 1.5rem;
-			}
-			.bento-header {
-				text-align: center;
-				font-size: 60px;
-				line-height: 1.05;
-				letter-spacing: -0.04em;
-				font-weight: 600;
-				margin: 0 0 6rem;
-			}
-			.bento-grid {
-				display: grid;
-				grid-template-columns: 1fr 1fr;
-				gap: 2rem;
-			}
-			.bento-card {
-				position: relative;
-				background: rgba(24, 24, 27, 0.8);
-				backdrop-filter: blur(24px);
-				border: 1px solid #27272a;
-				border-radius: 40px;
-				padding: 3rem;
-				display: flex;
-				flex-direction: column;
-				justify-content: space-between;
-				transition:
-					border-color 0.5s ease;
-				box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-				overflow: hidden;
-				min-height: 400px;
-			}
-			.bento-card:hover {
-				border-color: #52525b;
-			}
-			.bento-card-wide {
-				grid-column: 1 / -1;
-				flex-direction: row;
-				gap: 3rem;
-				align-items: center;
-			}
-			.bento-card-bg {
-				position: absolute;
-				inset: 0;
-				z-index: 0;
-			}
-			.bento-card-bg video {
-				width: 100%;
-				height: 100%;
-				object-fit: cover;
-				opacity: 1;
-				transition: opacity 0.5s ease;
-			}
-			.bento-fade {
-				position: absolute;
-				inset: 0;
-				background: linear-gradient(
-					to right,
-					rgba(0, 0, 0, 0.92) 0%,
-					rgba(0, 0, 0, 0.85) 30%,
-					rgba(0, 0, 0, 0.5) 65%,
-					rgba(0, 0, 0, 0.2) 100%
-				);
-				z-index: 10;
-			}
-			.bento-card-content {
-				position: relative;
-				z-index: 20;
-			}
-			.bento-card-content h3 {
-				font-size: 2.25rem;
-				font-weight: 600;
-				margin: 0 0 1rem;
-				letter-spacing: -0.02em;
-				color: #fff;
-			}
-			.bento-card-content p {
-				font-size: 1.1rem;
-				color: #a1a1aa;
-				line-height: 1.6;
-				margin: 0;
-			}
-			@media (max-width: 900px) {
-				.bento {
-					padding: 6rem 0;
-				}
-				.bento-header {
-					font-size: 42px;
-					margin-bottom: 3rem;
-				}
-				.bento-grid {
-					grid-template-columns: 1fr;
-					gap: 1.5rem;
-				}
-				.bento-card {
-					border-radius: 28px;
-					padding: 2rem;
-					min-height: 320px;
-				}
-				.bento-card-wide {
-					grid-column: 1;
-					flex-direction: column;
-					gap: 1rem;
-					align-items: flex-start;
-				}
-				.bento-card-content h3 {
-					font-size: 1.75rem;
-				}
-				.bento-icons {
-					gap: 0.8rem;
-				}
-			}
-
-			/* ===== 6. COMBINED CTA + FOOTER ===== */
-			.combined {
-				position: relative;
-				z-index: 20;
-				background: #000;
-				overflow: hidden;
-			}
-			.combined-bg {
-				position: absolute;
-				inset: 0;
-				z-index: 0;
-			}
-			.combined-bg video {
-				width: 100%;
-				height: 100%;
-				object-fit: cover;
-				opacity: 0.3;
-			}
-			.combined-fade {
-				position: absolute;
-				inset: 0;
-				background: linear-gradient(to bottom, #000, transparent, #000);
-				z-index: 10;
-			}
-			.cta-block {
-				position: relative;
-				z-index: 20;
-				padding: 12rem 0;
-				text-align: center;
-			}
-			.cta-inner {
-				max-width: 1024px;
-			}
-			.cta-logo-box {
-				display: inline-flex;
-				align-items: center;
-				justify-content: center;
-				width: 5rem;
-				height: 5rem;
-				background: rgba(24, 24, 27, 0.8);
-				backdrop-filter: blur(24px);
-				border: 1px solid #27272a;
-				border-radius: 24px;
-				box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-				margin-bottom: 4rem;
-			}
-			.cta-logo {
-				width: 2.5rem;
-				height: 2.5rem;
-			}
-			.cta-headline {
-				font-size: 80px;
-				line-height: 1;
-				letter-spacing: -0.05em;
-				font-weight: 600;
-				color: #fff;
-				margin: 0 0 2.5rem;
-			}
-			.cta-copy {
-				font-size: 1.25rem;
-				color: #a1a1aa;
-				margin: 0 auto 4rem;
-				max-width: 38em;
-				line-height: 1.6;
-			}
-			.cta-buttons {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				gap: 2rem;
-				flex-wrap: wrap;
-			}
-			.cta-primary {
-				background: #fff;
-				color: #000;
-				padding: 1.1rem 3rem;
-				border-radius: 9999px;
-				font-weight: 700;
-				font-size: 1.125rem;
-				transition:
-					background 0.2s ease,
-					transform 0.2s ease;
-				box-shadow: 0 20px 40px rgba(255, 255, 255, 0.1);
-				text-decoration: none;
-			}
-			.cta-primary:hover {
-				background: #e4e4e7;
-				transform: scale(1.05);
-			}
-			.cta-secondary {
-				background: transparent;
-				color: #fff;
-				border: 1px solid #27272a;
-				padding: 1.1rem 3rem;
-				border-radius: 9999px;
-				font-weight: 700;
-				font-size: 1.125rem;
-				text-decoration: none;
-				transition: background 0.2s ease;
-			}
-			.cta-secondary:hover {
-				background: rgba(255, 255, 255, 0.05);
-			}
-			@media (max-width: 720px) {
-				.cta-block {
-					padding: 6rem 0;
-				}
-				.cta-headline {
-					font-size: 44px;
-				}
-				.cta-copy {
-					font-size: 1.05rem;
-				}
-				.cta-primary,
-				.cta-secondary {
-					font-size: 1rem;
-					padding: 0.9rem 2rem;
-					width: 100%;
-					text-align: center;
-				}
-				.cta-buttons {
-					flex-direction: column;
-					gap: 1rem;
-				}
-			}
-
-			/* Footer inside combined */
-			.cinema-footer {
-				position: relative;
-				z-index: 20;
-				padding: 6rem 0;
-			}
-			.footer-top {
-				display: grid;
-				grid-template-columns: 1fr 2fr;
-				gap: 4rem;
-				margin-bottom: 6rem;
-			}
-			.brand-row {
-				display: flex;
-				align-items: center;
-				gap: 0.75rem;
-				margin-bottom: 1rem;
-			}
-			.footer-logo {
-				width: 1.75rem;
-				height: 1.75rem;
-			}
-			.brand-text {
-				font-size: 1.25rem;
-				font-weight: 600;
-				letter-spacing: -0.02em;
-			}
-			.brand-tagline {
-				color: #71717a;
-				max-width: 20em;
-				line-height: 1.6;
-				margin: 0;
-			}
-			.footer-columns {
-				display: grid;
-				grid-template-columns: repeat(3, 1fr);
-				gap: 3rem;
-			}
-			.footer-columns h4 {
-				font-size: 0.75rem;
-				font-weight: 700;
-				color: #a1a1aa;
-				text-transform: uppercase;
-				letter-spacing: 0.15em;
-				margin: 0 0 1rem;
-			}
-			.footer-columns a {
-				display: block;
-				font-size: 0.9rem;
-				color: #71717a;
-				margin-bottom: 0.75rem;
-				text-decoration: none;
-				transition: color 0.15s ease;
-			}
-			.footer-columns a:hover {
-				color: #fff;
-			}
-			.footer-bottom {
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-				gap: 1.5rem;
-				padding-top: 3rem;
-			}
-			.bottom-left {
-				display: flex;
-				flex-direction: column;
-				gap: 0.4rem;
-			}
-			.copyright {
-				font-size: 0.875rem;
-				color: #52525b;
-			}
-			.built-on {
-				font-family: var(--font-mono);
-				font-size: 0.78rem;
-				color: #52525b;
-				opacity: 0.8;
-			}
-			.socials {
-				display: flex;
-				gap: 2rem;
-				font-size: 0.75rem;
-				color: #71717a;
-				text-transform: uppercase;
-				letter-spacing: 0.15em;
-				font-weight: 700;
-			}
-			.socials a {
-				text-decoration: none;
-				transition: color 0.15s ease;
-			}
-			.socials a:hover {
-				color: #fff;
-			}
-			@media (max-width: 900px) {
-				.footer-top {
-					grid-template-columns: 1fr;
-					gap: 3rem;
-				}
-				.footer-columns {
-					grid-template-columns: repeat(3, 1fr);
-					gap: 1.5rem;
-				}
-				.footer-bottom {
-					flex-direction: column;
-					align-items: flex-start;
-				}
-			}
-			@media (max-width: 600px) {
-				.footer-columns {
-					grid-template-columns: 1fr 1fr;
-				}
-			}
-		</style>
-	</body>
-</html>
+    <section class="final-cta">
+      <video src="/videos/cta-footer.mp4" autoplay muted loop playsinline preload="metadata"></video>
+      <div class="final-cta-overlay"></div>
+      <div class="container final-cta-content">
+        <Logo size={42} />
+        <h2>Start with one task that already hurts.</h2>
+        <p>
+          If your team has repeat work that follows a pattern, I can help you test whether a small
+          owned system should take it on.
+        </p>
+        <div class="cta-row">
+          <a class="button" href="/services#packages">{site.cta.primary}</a>
+          <a class="button ghost" href="/services">{site.cta.secondary}</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
