@@ -1,6 +1,6 @@
 # oliverhitchings.com
 
-Editable Astro site for `oliverhitchings.com`, prepared for local development and Railway deployment.
+Editable Astro site for `oliverhitchings.com`, prepared for local development and Cloudflare Pages deployment.
 
 ## Local development
 
@@ -18,28 +18,18 @@ npm run build
 npm run start
 ```
 
-Railway can build this project with `npm run build` and serve it with `npm run start`.
-Those commands are also pinned in `railway.json`.
+`npm run start` rebuilds before serving `dist/`, so local production checks do not use stale output.
 
-## Railway and Cloudflare DNS
+## Live Deployment
 
-Railway project:
+The live site is deployed through GitHub Actions to Cloudflare Pages.
 
-- Project: `oliverhitchings-com`
-- Service: `oliverhitchings-com`
-- Environment: `production`
-- Temporary URL: `https://oliverhitchings-com-production.up.railway.app`
-- Project URL: `https://railway.com/project/db6b1a44-d862-4f0e-9325-15d085df9096/service/ab9df495-5c88-4083-ad6d-0fccb354b4ad`
+- Workflow: `.github/workflows/deploy.yml`
+- Cloudflare Pages project: `oliverhitchings`
+- Production domain: `https://oliverhitchings.com`
 
-The custom domain `oliverhitchings.com` has been added in Railway and is waiting for DNS.
+Pushes to `main` build the Astro site and deploy `dist/` to Cloudflare Pages.
 
-In Cloudflare DNS:
+## Contact Form
 
-- Add a `CNAME` record:
-  - Name: `@`
-  - Value: `k0z64rgj.up.railway.app`
-- Add a `TXT` record:
-  - Name: `_railway-verify`
-  - Value: `railway-verify=708a965092f969a2d12533a5716295eb6f384b4ca76575d14882a1f25f691edf`
-
-Keep the existing live DNS records unchanged until you are ready for `oliverhitchings.com` to resolve to Railway. The current Railway plan only allows one custom domain, so `www.oliverhitchings.com` was not added.
+The services enquiry form posts to `/api/contact`. A dedicated Cloudflare Worker at `contact-worker/` owns that route and sends the enquiry using Cloudflare's email binding.

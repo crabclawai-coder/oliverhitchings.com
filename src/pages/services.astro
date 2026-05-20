@@ -1,8 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { site } from "../data/site.js";
-
-const formAction = `https://formsubmit.co/${site.email}`;
 ---
 
 <BaseLayout
@@ -129,10 +127,7 @@ const formAction = `https://formsubmit.co/${site.email}`;
         Useful detail: what happens now, which tools are involved, who checks the output, and what a
         good result would look like.
       </p>
-      <form class="contact-form" action={formAction} method="POST">
-        <input type="hidden" name="_subject" value="New automation enquiry from oliverhitchings.com" />
-        <input type="hidden" name="_template" value="table" />
-        <input type="hidden" name="_captcha" value="false" />
+      <form class="contact-form" action="/api/contact" method="POST" data-contact-form>
         <input type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true" />
 
         <div class="form-grid">
@@ -181,6 +176,9 @@ const formAction = `https://formsubmit.co/${site.email}`;
         </label>
 
         <button class="button" type="submit">Send enquiry</button>
+        <p class="form-status" data-contact-status>
+          This sends the enquiry directly from the website to {site.email}.
+        </p>
       </form>
     </section>
 
@@ -230,4 +228,70 @@ const formAction = `https://formsubmit.co/${site.email}`;
     </section>
 
   </main>
+
+  <script>
+    const contactForm = document.querySelector("[data-contact-form]");
+    const contactStatus = document.querySelector("[data-contact-status]");
+
+    contactForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      if (!contactForm.checkValidity()) {
+        contactForm.reportValidity();
+        return;
+      }
+
+      const formData = new FormData(contactForm);
+
+      if (formData.get("_honey")) {
+        return;
+      }
+
+      if (contactStatus) {
+        contactStatus.textContent = "Sending enquiry...";
+      }
+
+      const submitButton = contactForm.querySelector("button[type='submit']");
+
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = "Sending...";
+      }
+
+      try {
+        const response = await fetch("/api/contact", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(Object.fromEntries(formData.entries())),
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(result.message || "The enquiry could not be sent. Please try again.");
+        }
+
+        contactForm.reset();
+
+        if (contactStatus) {
+          contactStatus.textContent = "Sent. I will reply to your enquiry as soon as I can.";
+        }
+      } catch (error) {
+        if (contactStatus) {
+          contactStatus.textContent =
+            error instanceof Error
+              ? error.message
+              : "The enquiry could not be sent. Please try again.";
+        }
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = "Send enquiry";
+        }
+      }
+    });
+  </script>
 </BaseLayout>

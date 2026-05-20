@@ -1,0 +1,16 @@
+name = "oliverhitchings-contact"
+main = "src/index.js"
+compatibility_date = "2026-05-20"
+workers_dev = false
+
+[[routes]]
+pattern = "oliverhitchings.com/api/contact"
+zone_name = "oliverhitchings.com"
+
+[[routes]]
+pattern = "www.oliverhitchings.com/api/contact"
+zone_name = "oliverhitchings.com"
+
+[[send_email]]
+name = "CONTACT_EMAIL"
+remote = true
