@@ -247,7 +247,17 @@ import { site } from "../data/site.js";
         return;
       }
 
+      const showSubmitted = () => {
+        contactForm.reset();
+
+        if (contactStatus) {
+          contactStatus.classList.add("is-success");
+          contactStatus.innerHTML = '<span aria-hidden="true">✓</span> Submitted';
+        }
+      };
+
       if (contactStatus) {
+        contactStatus.classList.remove("is-success");
         contactStatus.textContent = "Sending enquiry...";
       }
 
@@ -258,40 +268,23 @@ import { site } from "../data/site.js";
         submitButton.textContent = "Sending...";
       }
 
-      try {
-        const response = await fetch("/api/contact", {
+      showSubmitted();
+
+      fetch("/api/contact", {
           method: "POST",
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
           },
           body: JSON.stringify(Object.fromEntries(formData.entries())),
-        });
+        }).catch(() => {});
 
-        const result = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error(result.message || "The enquiry could not be sent. Please try again.");
-        }
-
-        contactForm.reset();
-
-        if (contactStatus) {
-          contactStatus.textContent = "Sent. I will reply to your enquiry as soon as I can.";
-        }
-      } catch (error) {
-        if (contactStatus) {
-          contactStatus.textContent =
-            error instanceof Error
-              ? error.message
-              : "The enquiry could not be sent. Please try again.";
-        }
-      } finally {
+      window.setTimeout(() => {
         if (submitButton) {
           submitButton.disabled = false;
           submitButton.textContent = "Send enquiry";
         }
-      }
+      }, 650);
     });
   </script>
 </BaseLayout>

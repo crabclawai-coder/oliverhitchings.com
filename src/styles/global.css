@@ -1010,10 +1010,29 @@ h3 {
 }
 
 .form-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin: -4px 0 0;
   color: rgba(255, 255, 255, 0.62);
   font-size: 14px;
+  font-weight: 750;
   line-height: 1.5;
+}
+
+.form-status.is-success {
+  color: #7ee0ad;
+}
+
+.form-status.is-success span {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(126, 224, 173, 0.16);
+  color: #7ee0ad;
+  box-shadow: 0 0 18px rgba(126, 224, 173, 0.28);
 }
 
 .detail-grid {
