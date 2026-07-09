@@ -21,9 +21,9 @@
     "sirv-cli": "^3.0.1"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.1.10",
-    "jsdom": "^29.1.1",
-    "vitest": "^4.1.10",
-    "wrangler": "^4.110.0"
+    "@vitest/coverage-v8": "4.1.10",
+    "jsdom": "29.1.1",
+    "vitest": "4.1.10",
+    "wrangler": "4.110.0"
   }
 }
