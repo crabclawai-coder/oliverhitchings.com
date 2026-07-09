@@ -14,8 +14,28 @@ let buildDirectory;
 let temporaryDirectory;
 let home;
 let services;
+let servicesModuleSources;
+let servicesStylesheetSource;
 
 const clean = (value) => value?.replace(/\s+/g, " ").trim() ?? "";
+
+function textFragments(root) {
+  const fragments = [];
+  const walker = root.ownerDocument.createTreeWalker(
+    root,
+    root.ownerDocument.defaultView.NodeFilter.SHOW_TEXT,
+  );
+
+  while (walker.nextNode()) {
+    const value = clean(walker.currentNode.textContent);
+
+    if (value) {
+      fragments.push(value);
+    }
+  }
+
+  return fragments;
+}
 
 async function readPage(filePath) {
   const html = await readFile(join(buildDirectory, filePath), "utf8");
@@ -109,6 +129,21 @@ beforeAll(async () => {
 
   home = await readPage("index.html");
   services = await readPage("services/index.html");
+  servicesModuleSources = await Promise.all(
+    Array.from(services.querySelectorAll("script[type='module'][src]"), (script) =>
+      readFile(
+        join(buildDirectory, script.getAttribute("src").replace(/^\//, "")),
+        "utf8",
+      ),
+    ),
+  );
+  const stylesheetPath = services
+    .querySelector("link[rel='stylesheet']")
+    ?.getAttribute("href");
+  servicesStylesheetSource = await readFile(
+    join(buildDirectory, stylesheetPath.replace(/^\//, "")),
+    "utf8",
+  );
 }, 60_000);
 
 afterAll(async () => {
@@ -207,6 +242,7 @@ describe("generated homepage content", () => {
   it("retains the four prices, neutral note, principles, and focused final action", () => {
     const packages = home.getElementById("packages");
     const packageText = clean(packages?.textContent);
+    const packageRows = Array.from(packages?.querySelectorAll(".package-row") ?? []);
     const principles = home.querySelector("[data-operating-principles]");
     const finalCta = home.querySelector(".home-final-cta");
 
@@ -216,8 +252,28 @@ describe("generated homepage content", () => {
     expect(packageText).toContain("Fixed scope Task Map £250");
     expect(packageText).toContain("Focused implementation First Build £500");
     expect(packageText).toContain("Connected workflow Operator System £1,000");
-    expect(packageText).toContain("Optional retainer from £100/month");
+    expect(packageText).toContain("Optional retainer Ongoing support from £100/month");
     expect(packageText).toContain(guidePriceNote);
+    expect(
+      packageRows.map((row) => ({
+        headings: row.querySelectorAll("h3").length,
+        label: clean(row.querySelector("h3")?.textContent),
+        action: clean(row.querySelector("a")?.textContent),
+      })),
+    ).toEqual([
+      { headings: 1, label: "Task Map", action: "Enquire about Task Map" },
+      { headings: 1, label: "First Build", action: "Enquire about First Build" },
+      {
+        headings: 1,
+        label: "Operator System",
+        action: "Enquire about Operator System",
+      },
+      {
+        headings: 1,
+        label: "Ongoing support",
+        action: "Enquire about ongoing support",
+      },
+    ]);
     expect(
       packages?.querySelectorAll("a:not([href='/services#contact'])"),
     ).toHaveLength(0);
@@ -280,14 +336,45 @@ describe("generated Services content", () => {
   it("retains package prices and explicit deliverables", () => {
     const packages = services.getElementById("packages");
     const text = clean(packages?.textContent);
+    const packageRows = Array.from(
+      packages?.querySelectorAll(".services-package-row") ?? [],
+    );
 
     expect(text).toContain("Fixed scope Task Map £250");
     expect(text).toContain("Focused implementation First Build £500");
     expect(text).toContain("Connected workflow Operator System £1,000");
     expect(text).toContain("Run guide plus two review sessions after first use");
     expect(text).toContain("30-day improvement period after launch");
-    expect(text).toContain("Optional retainer from £100/month");
+    expect(text).toContain("Optional retainer Ongoing support from £100/month");
     expect(text).toContain(guidePriceNote);
+    expect(
+      packageRows.map((row) => ({
+        headings: row.querySelectorAll("h3").length,
+        label: clean(row.querySelector("h3")?.textContent),
+        action: clean(row.querySelector("a")?.textContent),
+      })),
+    ).toEqual([
+      { headings: 1, label: "Task Map", action: "Enquire about Task Map" },
+      { headings: 1, label: "First Build", action: "Enquire about First Build" },
+      {
+        headings: 1,
+        label: "Operator System",
+        action: "Enquire about Operator System",
+      },
+      {
+        headings: 1,
+        label: "Ongoing support",
+        action: "Enquire about ongoing support",
+      },
+    ]);
+  });
+
+  it("ships only styling that the text-only method trace uses", () => {
+    expect(services.querySelector(".method-trace span")).toBeNull();
+    expect(servicesStylesheetSource).not.toContain(".method-trace span");
+    expect(servicesStylesheetSource).not.toMatch(
+      /\.method-trace\{[^}]*\b(?:gap|flex-wrap):/,
+    );
   });
 
   it("explains good-fit criteria and what stays with the owner", () => {
@@ -328,7 +415,11 @@ describe("generated Services content", () => {
     expect(form?.getAttribute("action")).toBe("/api/contact");
     expect(form?.getAttribute("method")).toBe("POST");
     expect(form?.getAttribute("aria-describedby")).toBe("contact-form-status");
-    expect(form?.querySelector("input[name='_honey']")).not.toBeNull();
+    expect(
+      form?.querySelector(
+        "input[name='_honey'][type='text'][tabindex='-1'][autocomplete='off'][aria-hidden='true']",
+      ),
+    ).not.toBeNull();
     expect(
       form?.querySelector("input[name='name'][type='text'][required]"),
     ).not.toBeNull();
@@ -361,23 +452,64 @@ describe("generated Services content", () => {
         "#contact-form-status[role='status'][aria-live='polite'][aria-atomic='true'][data-contact-status]",
       ),
     ).not.toBeNull();
+    expect(
+      form?.querySelector("button.button[type='submit']")?.textContent.trim(),
+    ).toBe("Send enquiry");
+    expect(
+      servicesModuleSources.some(
+        (source) =>
+          source.includes("[data-contact-form]") &&
+          source.includes('addEventListener("submit"') &&
+          /[A-Za-z_$][\w$]*\(\);?\s*$/.test(source),
+      ),
+    ).toBe(true);
   });
 });
 
 describe("generated page truthfulness and media", () => {
   it("removes stale or unverified framing from both pages", () => {
+    const approvedClientMentions = [
+      "Accepting 1 client",
+      "These are example system patterns, not client case studies.",
+    ];
+    const approvedNarrativeClaims = [
+      "Accepting 1 client",
+      "30-day improvement period after launch",
+    ];
+    const claimSignal =
+      /(?:\b\d+\+(?!\w)|\b\d+(?:\.\d+)?%(?!\w)|\b\d+\s+(?:clients?|customers?|projects?|automations?|workflows?|hours?|days?|weeks?|years?)\b|\b\d+-(?:day|week|year)\b|\b(?:certified|accredited|award-winning|credentials?)\b)/i;
+
     for (const document of [home, services]) {
       const text = clean(document.body.textContent);
-      const headingText = clean(
-        Array.from(document.querySelectorAll("h1, h2, h3, h4, h5, h6"))
-          .map((heading) => heading.textContent)
-          .join(" "),
+      const clientMentions = textFragments(document.querySelector("main")).filter(
+        (value) => /\bclients?\b/i.test(value),
+      );
+      const narrative = document.querySelector("main")?.cloneNode(true);
+
+      narrative?.querySelector(".pattern-disclosure")?.remove();
+      const narrativeText = clean(narrative?.textContent);
+      const claimBearingFragments = textFragments(narrative).filter((value) =>
+        claimSignal.test(value),
       );
 
       expect(text).not.toContain("40+");
       expect(text).not.toContain("Most common");
       expect(text).not.toContain("May 2026");
-      expect(headingText).not.toMatch(/testimonial|client results?|case stud(?:y|ies)/i);
+      expect(narrativeText).not.toMatch(
+        /\b(?:testimonial|client results?|client outcomes?|client case stud(?:y|ies)|customer results?|customer outcomes?|case stud(?:y|ies)|certified|accredited|award-winning|credentials?)\b/i,
+      );
+      expect(narrativeText).not.toMatch(
+        /\b(?:saved?|cut|reduced?|increased?|boosted?|grew)\b.{0,60}\b(?:hours?|days?|weeks?|percent|revenue|costs?|time)\b/i,
+      );
+      expect(narrativeText).not.toMatch(
+        /(?:\b\d+(?:\.\d+)?%(?!\w)|\b\d+\+(?!\w))/,
+      );
+      expect(clientMentions).toEqual(
+        approvedClientMentions.filter((mention) => text.includes(mention)),
+      );
+      expect(claimBearingFragments).toEqual(
+        approvedNarrativeClaims.filter((claim) => narrativeText.includes(claim)),
+      );
       expect(document.querySelector("blockquote")).toBeNull();
       expect(
         document.querySelector(
