@@ -675,7 +675,7 @@ describe("generated Field Notes landing", () => {
         titleHref: `/blog/${post.slug}`,
         readHref: `/blog/${post.slug}`,
         readLabel: "Read note",
-        readAccessibleLabel: `Read ${post.title}`,
+        readAccessibleLabel: `Read note: ${post.title}`,
         hasSummary: true,
       })),
     );
@@ -694,8 +694,14 @@ describe("generated Field Note articles", () => {
       expect(clean(breadcrumb?.querySelector("a[href='/blog']")?.textContent)).toBe(
         "Field notes",
       );
+      expect(
+        Array.from(breadcrumb?.querySelectorAll("li") ?? [], (item) =>
+          clean(item.textContent),
+        ),
+      ).toEqual(["Field notes", post.category, post.title]);
+      expect(breadcrumb?.querySelectorAll("[aria-current='page']")).toHaveLength(1);
       expect(clean(breadcrumb?.querySelector("[aria-current='page']")?.textContent)).toBe(
-        post.category,
+        post.title,
       );
     }
   });

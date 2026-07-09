@@ -24,7 +24,8 @@ const formattedDate = new Intl.DateTimeFormat("en-GB", {
       <nav class="article-breadcrumb" aria-label="Breadcrumb">
         <ol>
           <li><a href="/blog">Field notes</a></li>
-          <li><span aria-current="page">{post.category}</span></li>
+          <li><span>{post.category}</span></li>
+          <li><span aria-current="page">{post.title}</span></li>
         </ol>
       </nav>
 
