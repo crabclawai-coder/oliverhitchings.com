@@ -7,7 +7,10 @@
     "dev": "astro dev --host 0.0.0.0",
     "build": "astro build",
     "preview": "astro preview --host 0.0.0.0",
-    "start": "npm run build && sirv dist --host 0.0.0.0 --port ${PORT:-3000}"
+    "start": "npm run build && sirv dist --host 0.0.0.0 --port ${PORT:-3000}",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -16,5 +19,11 @@
     "@astrojs/sitemap": "^3.6.0",
     "astro": "^6.1.7",
     "sirv-cli": "^3.0.1"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.10",
+    "jsdom": "^29.1.1",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.110.0"
   }
 }
