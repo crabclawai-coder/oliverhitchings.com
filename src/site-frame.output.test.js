@@ -71,6 +71,38 @@ describe("generated site frame", () => {
     expect(brand.getAttribute("aria-label")).toMatch(/Oliver Hitchings.*home/i);
   });
 
+  it("lays out the header brand as a horizontal 44px lockup", async () => {
+    const document = await readPage("index.html");
+    const brand = document.querySelector(
+      ".site-header .brand-mark.brand-lockup[href='/']",
+    );
+    const bundledCss = (
+      await Promise.all(
+        outputFiles
+          .filter((filePath) => filePath.endsWith(".css"))
+          .map(readOutput),
+      )
+    ).join("\n");
+    const lockupRule = bundledCss.match(
+      /\.brand-lockup(?:\[[^\]]+\])?\{([^}]*)\}/,
+    )?.[1];
+
+    expect(brand).not.toBeNull();
+    expect(brand.querySelector("svg")).not.toBeNull();
+    expect(brand.querySelector(".brand-name")?.textContent.trim()).toBe(
+      "Oliver Hitchings",
+    );
+    expect(lockupRule).toContain("display:inline-flex");
+    expect(lockupRule).toContain("flex-direction:row");
+    expect(lockupRule).toContain("align-items:center");
+    expect(lockupRule).toContain("gap:10px");
+    expect(lockupRule).toContain("width:auto");
+    expect(lockupRule).toContain("min-height:44px");
+    expect(lockupRule).toContain("height:auto");
+    expect(lockupRule).toContain("padding:0 10px");
+    expect(lockupRule).toContain("white-space:nowrap");
+  });
+
   it("places a keyboard-focusable skip target around the page content", async () => {
     const document = await readPage("index.html");
     const skipLink = document.querySelector("body > a[href='#main-content']");
