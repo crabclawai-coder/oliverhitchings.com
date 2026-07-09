@@ -30,6 +30,14 @@ const ERRORS = {
     code: "method_not_allowed",
     message: "Only POST requests are accepted.",
   },
+  invalidOrigin: {
+    code: "invalid_origin",
+    message: "The enquiry must be submitted from this website.",
+  },
+  invalidContentType: {
+    code: "invalid_content_type",
+    message: "The enquiry must be sent as JSON.",
+  },
   payloadTooLarge: {
     code: "payload_too_large",
     message: "The enquiry is too large. Please shorten it and try again.",
@@ -74,7 +82,7 @@ const errorJson = (error, status, requestId, extraHeaders) =>
 const normalizeSingleLine = (value) =>
   value.replace(/[\r\n]+/g, " ").trim();
 
-const normalizeMultiline = (value) => value.replace(/\r/g, "").trim();
+const normalizeMultiline = (value) => value.replace(/\r/g, "");
 
 const characterCount = (value) => [...value].length;
 
@@ -113,7 +121,7 @@ const isValidEnquiry = (enquiry) =>
   Boolean(enquiry.name) &&
   isEmail(enquiry.email) &&
   ALLOWED_PACKAGES.has(enquiry.packageInterest) &&
-  Boolean(enquiry.automationRequest) &&
+  Boolean(enquiry.automationRequest.trim()) &&
   Object.entries(FIELD_LIMITS).every(
     ([field, limit]) => characterCount(enquiry[field]) <= limit,
   );
@@ -125,6 +133,16 @@ export async function handleContactRequest(request, env, context) {
     return errorJson(ERRORS.methodNotAllowed, 405, requestId, {
       Allow: "POST",
     });
+  }
+
+  if (request.headers.get("Origin") !== new URL(request.url).origin) {
+    return errorJson(ERRORS.invalidOrigin, 400, requestId);
+  }
+
+  const contentType = request.headers.get("Content-Type");
+  const mediaType = contentType?.split(";", 1)[0].trim().toLowerCase();
+  if (mediaType !== "application/json") {
+    return errorJson(ERRORS.invalidContentType, 400, requestId);
   }
 
   const declaredLength = request.headers.get("Content-Length");
@@ -202,11 +220,7 @@ export async function handleContactRequest(request, env, context) {
       subject,
       text,
     });
-  } catch (error) {
-    console.error(
-      "Contact email send failed",
-      error instanceof Error ? error.message : error,
-    );
+  } catch {
     return errorJson(ERRORS.emailSendFailed, 502, requestId);
   }
 

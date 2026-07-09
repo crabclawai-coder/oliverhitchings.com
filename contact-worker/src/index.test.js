@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import worker, { handleContactRequest } from "./index.js";
 
 const ENDPOINT = "https://oliverhitchings.com/api/contact";
@@ -34,13 +34,24 @@ function createEmailFake(error) {
 
 function createPostRequest(payload = VALID_PAYLOAD, options = {}) {
   const body = options.body ?? JSON.stringify(payload);
+  const url = options.url ?? ENDPOINT;
+  const headers = new Headers({
+    "Content-Type": "application/json",
+    Origin: new URL(url).origin,
+    ...options.headers,
+  });
 
-  return new Request(ENDPOINT, {
+  if (options.omitOrigin) {
+    headers.delete("Origin");
+  }
+
+  if (options.omitContentType) {
+    headers.delete("Content-Type");
+  }
+
+  return new Request(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    headers,
     body,
   });
 }
@@ -80,6 +91,10 @@ async function submit(payload = VALID_PAYLOAD, options = {}) {
   };
 }
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("handleContactRequest method contract", () => {
   it.each(["GET", "PUT", "PATCH", "DELETE", "OPTIONS"])(
     "rejects %s with 405 and an Allow header",
@@ -118,6 +133,105 @@ describe("handleContactRequest method contract", () => {
 
     expect(firstBody.requestId).not.toBe(secondBody.requestId);
   });
+});
+
+describe("handleContactRequest request metadata", () => {
+  it("rejects a cross-origin text/plain JSON POST before reading it", async () => {
+    const { env, send } = createEmailFake();
+    const request = createPostRequest(VALID_PAYLOAD, {
+      headers: {
+        Origin: "https://attacker.example",
+        "Content-Type": "text/plain",
+      },
+    });
+
+    const response = await handleContactRequest(request, env, {});
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(request.bodyUsed).toBe(false);
+    expectStableError(body, "invalid_origin");
+    expectJsonResponseHeaders(response);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("rejects a POST with no Origin before reading it", async () => {
+    const { env, send } = createEmailFake();
+    const request = createPostRequest(VALID_PAYLOAD, { omitOrigin: true });
+
+    const response = await handleContactRequest(request, env, {});
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(request.bodyUsed).toBe(false);
+    expectStableError(body, "invalid_origin");
+    expectJsonResponseHeaders(response);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("rejects an apex request carrying the www Origin", async () => {
+    const { env, send } = createEmailFake();
+    const request = createPostRequest(VALID_PAYLOAD, {
+      headers: { Origin: "https://www.oliverhitchings.com" },
+    });
+
+    const response = await handleContactRequest(request, env, {});
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(request.bodyUsed).toBe(false);
+    expectStableError(body, "invalid_origin");
+    expectJsonResponseHeaders(response);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["a missing Content-Type", { omitContentType: true }],
+    ["text/plain", { headers: { "Content-Type": "text/plain" } }],
+    [
+      "application/x-www-form-urlencoded",
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
+    ],
+  ])("rejects %s before reading the body", async (_label, options) => {
+    const { env, send } = createEmailFake();
+    const request = createPostRequest(VALID_PAYLOAD, options);
+
+    const response = await handleContactRequest(request, env, {});
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(request.bodyUsed).toBe(false);
+    expectStableError(body, "invalid_content_type");
+    expectJsonResponseHeaders(response);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["apex", ENDPOINT, "application/json"],
+    [
+      "www",
+      "https://www.oliverhitchings.com/api/contact",
+      "application/json; charset=utf-8",
+    ],
+  ])(
+    "accepts a same-origin JSON POST on the %s host",
+    async (_label, url, contentType) => {
+      const { env, send } = createEmailFake();
+      const request = createPostRequest(VALID_PAYLOAD, {
+        url,
+        headers: { "Content-Type": contentType },
+      });
+
+      const response = await handleContactRequest(request, env, {});
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({
+        ok: true,
+        requestId: expect.any(String),
+      });
+      expect(send).toHaveBeenCalledOnce();
+    },
+  );
 });
 
 describe("handleContactRequest body parsing", () => {
@@ -219,7 +333,10 @@ describe("handleContactRequest body parsing", () => {
     });
     const request = new Request(ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Origin: new URL(ENDPOINT).origin,
+      },
       body: stream,
       duplex: "half",
     });
@@ -274,7 +391,7 @@ describe("handleContactRequest field validation", () => {
     ["name", { name: " \r\n " }],
     ["email", { email: "" }],
     ["package", { package_interest: "" }],
-    ["automation request", { automation_request: "\r\n" }],
+    ["automation request", { automation_request: "\r\n \r\n\t\r\n" }],
   ])("requires %s", async (_label, change) => {
     const result = await submit({ ...VALID_PAYLOAD, ...change });
 
@@ -367,6 +484,30 @@ describe("handleContactRequest field validation", () => {
   );
 
   it.each([
+    ["automation request", "automation_request", 4_000],
+    ["tools involved", "tools_involved", 2_000],
+  ])(
+    "counts preserved leading and trailing LF in the %s limit",
+    async (_label, field, limit) => {
+      const atLimit = `\n${"x".repeat(limit - 2)}\n`;
+      const overLimit = `\n${"x".repeat(limit - 1)}\n`;
+      const accepted = await submit({ ...VALID_PAYLOAD, [field]: atLimit });
+
+      expect(accepted.response.status).toBe(200);
+      expect(accepted.send).toHaveBeenCalledOnce();
+
+      const rejected = await submit({
+        ...VALID_PAYLOAD,
+        [field]: overLimit,
+      });
+
+      expect(rejected.response.status).toBe(400);
+      expectStableError(rejected.body, "invalid_submission");
+      expect(rejected.send).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
     ["name", { first: "Oliver" }],
     ["email", ["oliver@example.com"]],
     ["contact_number", 12345],
@@ -388,8 +529,8 @@ describe("handleContactRequest field validation", () => {
       email: "\r\noliver@example.com\r\n",
       contact_number: "123\r\n456",
       package_interest: "Task\r\nMap",
-      automation_request: "  Line one\r\nLine two\rLine three  ",
-      tools_involved: "  Notion\r\nSheets\rAirtable  ",
+      automation_request: "\r\n  Line one\r\nLine two\rLine three  \r\n",
+      tools_involved: "\r\n  Notion\r\nSheets\rAirtable  \r\n",
     });
 
     expect(result.response.status).toBe(200);
@@ -400,8 +541,21 @@ describe("handleContactRequest field validation", () => {
     expect(message.text).toContain("Email: oliver@example.com");
     expect(message.text).toContain("Contact number: 123 456");
     expect(message.text).toContain("Package interest: Task Map");
-    expect(message.text).toContain("Line one\nLine twoLine three");
-    expect(message.text).toContain("Notion\nSheetsAirtable");
+
+    const automationPrefix = "What they want automated:\n";
+    const toolsMarker = "\n\nTools or systems involved:\n";
+    const automationStart =
+      message.text.indexOf(automationPrefix) + automationPrefix.length;
+    const automationEnd = message.text.indexOf(toolsMarker, automationStart);
+    expect(message.text.slice(automationStart, automationEnd)).toBe(
+      "\n  Line one\nLine twoLine three  \n",
+    );
+
+    const toolsStart = automationEnd + toolsMarker.length;
+    const toolsEnd = message.text.indexOf("\n\nSubmitted at:", toolsStart);
+    expect(message.text.slice(toolsStart, toolsEnd)).toBe(
+      "\n  Notion\nSheetsAirtable  \n",
+    );
   });
 
   it("rejects an email containing normalized header-injection text", async () => {
@@ -429,7 +583,7 @@ describe("handleContactRequest email boundary and response schema", () => {
     expect(result.send).toHaveBeenCalledOnce();
   });
 
-  it("returns stable 502 JSON when the email binding throws", async () => {
+  it("returns stable 502 JSON without logging arbitrary provider errors", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     const result = await submit(VALID_PAYLOAD, {
       emailError: new Error("provider unavailable"),
@@ -439,8 +593,7 @@ describe("handleContactRequest email boundary and response schema", () => {
     expectStableError(result.body, "email_send_failed");
     expectJsonResponseHeaders(result.response);
     expect(result.send).toHaveBeenCalledOnce();
-
-    consoleError.mockRestore();
+    expect(consoleError).not.toHaveBeenCalled();
   });
 
   it("delegates the default Worker fetch handler to the request handler", async () => {
