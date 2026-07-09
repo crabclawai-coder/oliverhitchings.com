@@ -38,76 +38,9 @@ const canonical = new URL(Astro.url.pathname, site.url);
     </div>
     <Footer />
     <script>
-      const revealTargets = document.querySelectorAll(
-        [
-          ".stats-grid > div",
-          ".proof-strip",
-          ".retainer-strip > *",
-          ".home-intro-section .eyebrow",
-          ".home-intro-section h2",
-          ".home-intro-section .copy-stack > *",
-          ".feature-copy > *",
-          ".media-card",
-          ".process-content > *",
-          ".operator-section > .container > .eyebrow",
-          ".operator-section > .container > h2",
-          ".operator-grid article",
-          ".final-cta-content > *",
-          ".subpage-hero-grid > *",
-          ".service-list article",
-          ".package-section .section-heading > *",
-          ".package-card",
-          ".detail-section > *",
-          ".detail-grid article",
-          ".proof-panel",
-          ".feature-copy .button",
-          ".process-content .button",
-          ".final-cta-content .button",
-          ".retainer-strip .button",
-          ".blog-card",
-          ".visual-panel",
-        ].join(","),
-      );
+      import { initializeSiteBehaviour } from "../scripts/site-behaviour.js";
 
-      revealTargets.forEach((target, index) => {
-        target.classList.add("reveal");
-
-        if (
-          target.matches(".media-card, .visual-panel, .subpage-hero-grid > .visual-panel")
-        ) {
-          target.classList.add("reveal-from-right");
-        } else if (
-          target.matches(
-            ".package-card, .stats-grid > div, .operator-grid article, .service-list article, .detail-grid article, .blog-card, .button",
-          )
-        ) {
-          target.classList.add("reveal-pop");
-        } else if (target.matches("h1, h2, .eyebrow")) {
-          target.classList.add("reveal-from-left");
-        } else {
-          target.classList.add("reveal-up");
-        }
-
-        target.style.setProperty("--reveal-delay", `${Math.min(index % 6, 5) * 95}ms`);
-      });
-
-      if (!("IntersectionObserver" in window)) {
-        revealTargets.forEach((target) => target.classList.add("is-visible"));
-      } else {
-        const revealObserver = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (entry.isIntersecting) {
-                entry.target.classList.add("is-visible");
-                revealObserver.unobserve(entry.target);
-              }
-            });
-          },
-          { rootMargin: "0px 0px -12% 0px", threshold: 0.12 },
-        );
-
-        revealTargets.forEach((target) => revealObserver.observe(target));
-      }
+      initializeSiteBehaviour();
     </script>
   </body>
 </html>
