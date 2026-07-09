@@ -10,18 +10,45 @@ export function getStaticPaths() {
 }
 
 const { post } = Astro.props;
+const formattedDate = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "long",
+  timeZone: "UTC",
+  year: "numeric",
+}).format(new Date(`${post.date}T00:00:00Z`));
 ---
 
 <BaseLayout title={`${post.title} | Oliver Hitchings`} description={post.summary}>
-  <main class="subpage">
+  <main class="subpage article-template">
     <article class="container article-page">
-      <p class="eyebrow">{post.category} · {post.date}</p>
-      <h1>{post.title}</h1>
-      <p class="article-summary">{post.summary}</p>
+      <nav class="article-breadcrumb" aria-label="Breadcrumb">
+        <ol>
+          <li><a href="/blog">Field notes</a></li>
+          <li><span aria-current="page">{post.category}</span></li>
+        </ol>
+      </nav>
+
+      <header class="article-header">
+        <div class="article-meta">
+          <p>{post.category}</p>
+          <time datetime={post.date}>{formattedDate}</time>
+        </div>
+        <h1>{post.title}</h1>
+        <p class="article-summary">{post.summary}</p>
+      </header>
+
       <div class="article-body">
         {post.body.map((paragraph) => <p>{paragraph}</p>)}
       </div>
-      <a class="text-link" href="/blog">Back to blog</a>
+
+      <section class="article-closing" data-article-cta>
+        <h2>Working on a repeat task?</h2>
+        <p>See the packages or send the task through the on-site enquiry form.</p>
+        <div class="cta-row left">
+          <a class="button ghost" href="/services#packages">View packages</a>
+          <a class="button" href="/services#contact">Start an enquiry</a>
+        </div>
+      </section>
     </article>
   </main>
 </BaseLayout>

@@ -2,44 +2,53 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { posts } from "../data/site.js";
 
-const postVideos = ["/videos/feature-card.mp4", "/videos/process.mp4", "/videos/bento.mp4"];
+const dateFormatter = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+  year: "numeric",
+});
+
+const formatDate = (date) => dateFormatter.format(new Date(`${date}T00:00:00Z`));
 ---
 
 <BaseLayout
-  title="Blog | Oliver Hitchings"
-  description="Field notes and practical writing about automation, operations, and handover."
+  title="Field notes | Oliver Hitchings"
+  description="Field notes on task design, human review, logs, failure handling, and automation handover."
 >
-  <main class="subpage">
-    <section class="container subpage-hero-grid">
-      <div class="subpage-hero">
-        <p class="eyebrow">Blog</p>
-        <h1>Field notes from building useful automation.</h1>
-        <p>
-          Short notes on task design, owned infrastructure, first builds, and the operational details
-          that make automation useful after the demo.
+  <main class="subpage blog-page">
+    <section class="blog-hero" data-blog-hero>
+      <div class="container blog-hero__copy">
+        <p class="eyebrow">Field notes</p>
+        <h1>Automation that has to operate, not just demo.</h1>
+        <p class="blog-hero__intro">
+          Short writing on task design, human review, logs, failure handling and handover.
         </p>
-      </div>
-      <div class="visual-panel">
-        <video src="/videos/cta-footer.mp4" autoplay muted loop playsinline preload="metadata"></video>
-        <div>
-          <span>Notes</span>
-          <strong>Practical writing from the build process.</strong>
-        </div>
       </div>
     </section>
 
-    <section class="container blog-grid">
+    <div class="container note-ledger" aria-label="Published field notes">
       {
-        posts.map((post, index) => (
-          <article class="blog-card">
-            <video src={postVideos[index % postVideos.length]} autoplay muted loop playsinline preload="metadata"></video>
-            <p class="eyebrow">{post.category}</p>
-            <h2><a href={`/blog/${post.slug}`}>{post.title}</a></h2>
-            <p>{post.summary}</p>
-            <a class="text-link" href={`/blog/${post.slug}`}>Read note</a>
+        posts.map((post) => (
+          <article class="note-row" data-note-row>
+            <div class="note-row__meta">
+              <p data-note-category>{post.category}</p>
+              <time datetime={post.date}>{formatDate(post.date)}</time>
+            </div>
+            <div class="note-row__copy">
+              <h2><a href={`/blog/${post.slug}`}>{post.title}</a></h2>
+              <p data-note-summary>{post.summary}</p>
+            </div>
+            <a
+              class="text-link note-row__action"
+              href={`/blog/${post.slug}`}
+              aria-label={`Read ${post.title}`}
+            >
+              Read note
+            </a>
           </article>
         ))
       }
-    </section>
+    </div>
   </main>
 </BaseLayout>

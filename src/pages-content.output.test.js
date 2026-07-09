@@ -14,8 +14,32 @@ let buildDirectory;
 let temporaryDirectory;
 let home;
 let services;
+let about;
+let blog;
+let articlePages;
 let servicesModuleSources;
 let servicesStylesheetSource;
+
+const expectedPosts = [
+  {
+    slug: "what-a-good-first-build-proves",
+    title: "What a first automation project should prove",
+    date: "2026-05-19",
+    category: "Project design",
+  },
+  {
+    slug: "local-first-is-an-operating-choice",
+    title: "Local-first is an operating choice",
+    date: "2026-05-18",
+    category: "Infrastructure",
+  },
+  {
+    slug: "automation-is-an-operations-project",
+    title: "Automation is an operations project",
+    date: "2026-05-17",
+    category: "Field note",
+  },
+];
 
 const clean = (value) => value?.replace(/\s+/g, " ").trim() ?? "";
 
@@ -129,6 +153,14 @@ beforeAll(async () => {
 
   home = await readPage("index.html");
   services = await readPage("services/index.html");
+  about = await readPage("about/index.html");
+  blog = await readPage("blog/index.html");
+  articlePages = await Promise.all(
+    expectedPosts.map(async (post) => ({
+      ...post,
+      document: await readPage(`blog/${post.slug}/index.html`),
+    })),
+  );
   servicesModuleSources = await Promise.all(
     Array.from(services.querySelectorAll("script[type='module'][src]"), (script) =>
       readFile(
@@ -527,5 +559,200 @@ describe("generated page truthfulness and media", () => {
 
     expect(homeVideos).toEqual(["/videos/hero.mp4"]);
     expect(services.querySelectorAll("video")).toHaveLength(0);
+  });
+});
+
+describe("generated About content", () => {
+  it("presents Oliver's working focus and operating sequence without a portrait video", () => {
+    const hero = about.querySelector("[data-about-hero]");
+    const identity = hero?.querySelector("[data-about-identity]");
+
+    expect(about.querySelectorAll("h1")).toHaveLength(1);
+    expect(clean(hero?.querySelector(".eyebrow")?.textContent)).toBe(
+      "About Oliver Hitchings",
+    );
+    expect(clean(hero?.querySelector("h1")?.textContent)).toBe(
+      "I design small automation systems around the work people already do.",
+    );
+    expect(clean(hero?.querySelector(".about-hero__intro")?.textContent)).toBe(
+      "My approach starts with the task: what triggers it, which evidence it uses, where judgement is needed and who owns the result.",
+    );
+    expect(clean(identity?.textContent)).toBe(
+      "Oliver Hitchings Automation systems Map → Build → Hand over",
+    );
+    expect(about.querySelector("video")).toBeNull();
+  });
+
+  it("uses the approved operating stance and four editorial principles", () => {
+    const stance = about.querySelector("[data-operating-stance]");
+    const principles = Array.from(
+      about.querySelectorAll("[data-about-principles] article"),
+      (row) => ({
+        title: clean(row.querySelector("h3")?.textContent),
+        copy: clean(row.querySelector("p")?.textContent),
+      }),
+    );
+
+    expect(clean(stance?.querySelector("h2")?.textContent)).toBe(
+      "The model call is only one step.",
+    );
+    expect(clean(stance?.querySelector(".about-stance__copy")?.textContent)).toBe(
+      "The operational questions come first: which source of truth wins, when the system should stop, what gets logged and what a person should do when confidence is low. Once those boundaries are clear, the build can stay narrow, observable and easier to hand over.",
+    );
+    expect(principles).toEqual([
+      {
+        title: "Show the work",
+        copy: "Prompts, rules, assumptions and logs visible enough to review a bad run.",
+      },
+      {
+        title: "Keep a person responsible",
+        copy: "Stop for review when a step is uncertain or consequential.",
+      },
+      {
+        title: "Design the failure path",
+        copy: "Make retries, stop conditions and escalation explicit.",
+      },
+      {
+        title: "Hand over ownership",
+        copy: "Leave run instructions, logs and change notes with the owner.",
+      },
+    ]);
+  });
+
+  it("ends with the approved package and on-site enquiry actions", () => {
+    const cta = about.querySelector("[data-about-cta]");
+
+    expect(clean(cta?.querySelector("h2")?.textContent)).toBe(
+      "Bring one task that already repeats.",
+    );
+    expect(clean(cta?.querySelector(".about-cta__copy")?.textContent)).toBe(
+      "Describe the trigger, inputs, output, tools and reviewer. That is enough to decide whether a Task Map, First Build or Operator System is the sensible starting point.",
+    );
+    expect(clean(cta?.querySelector("a[href='/services#packages']")?.textContent)).toBe(
+      "View packages",
+    );
+    expect(clean(cta?.querySelector("a[href='/services#contact']")?.textContent)).toBe(
+      "Start an enquiry",
+    );
+  });
+});
+
+describe("generated Field Notes landing", () => {
+  it("introduces the field notes with the approved editorial framing", () => {
+    const hero = blog.querySelector("[data-blog-hero]");
+
+    expect(blog.querySelectorAll("h1")).toHaveLength(1);
+    expect(clean(hero?.querySelector(".eyebrow")?.textContent)).toBe("Field notes");
+    expect(clean(hero?.querySelector("h1")?.textContent)).toBe(
+      "Automation that has to operate, not just demo.",
+    );
+    expect(clean(hero?.querySelector(".blog-hero__intro")?.textContent)).toBe(
+      "Short writing on task design, human review, logs, failure handling and handover.",
+    );
+    expect(blog.querySelector("video")).toBeNull();
+  });
+
+  it("keeps every existing note as a ruled row with category, date and two links", () => {
+    const rows = Array.from(blog.querySelectorAll("[data-note-row]"));
+
+    expect(rows).toHaveLength(expectedPosts.length);
+    expect(
+      rows.map((row) => ({
+        category: clean(row.querySelector("[data-note-category]")?.textContent),
+        date: row.querySelector("time")?.getAttribute("datetime"),
+        title: clean(row.querySelector("h2")?.textContent),
+        titleHref: row.querySelector("h2 a")?.getAttribute("href"),
+        readHref: row.querySelector(".text-link")?.getAttribute("href"),
+        readLabel: clean(row.querySelector(".text-link")?.textContent),
+        readAccessibleLabel: row.querySelector(".text-link")?.getAttribute("aria-label"),
+        hasSummary: Boolean(clean(row.querySelector("[data-note-summary]")?.textContent)),
+      })),
+    ).toEqual(
+      expectedPosts.map((post) => ({
+        category: post.category,
+        date: post.date,
+        title: post.title,
+        titleHref: `/blog/${post.slug}`,
+        readHref: `/blog/${post.slug}`,
+        readLabel: "Read note",
+        readAccessibleLabel: `Read ${post.title}`,
+        hasSummary: true,
+      })),
+    );
+  });
+});
+
+describe("generated Field Note articles", () => {
+  it("keeps one H1, each existing title and date, and useful breadcrumb semantics", () => {
+    for (const post of articlePages) {
+      const breadcrumb = post.document.querySelector("nav[aria-label='Breadcrumb']");
+      const time = post.document.querySelector("article time");
+
+      expect(post.document.querySelectorAll("h1")).toHaveLength(1);
+      expect(clean(post.document.querySelector("h1")?.textContent)).toBe(post.title);
+      expect(time?.getAttribute("datetime")).toBe(post.date);
+      expect(clean(breadcrumb?.querySelector("a[href='/blog']")?.textContent)).toBe(
+        "Field notes",
+      );
+      expect(clean(breadcrumb?.querySelector("[aria-current='page']")?.textContent)).toBe(
+        post.category,
+      );
+    }
+  });
+
+  it("ends every note with package and on-site enquiry actions", () => {
+    for (const post of articlePages) {
+      const cta = post.document.querySelector("[data-article-cta]");
+
+      expect(clean(cta?.querySelector("h2")?.textContent)).toBe(
+        "Working on a repeat task?",
+      );
+      expect(clean(cta?.querySelector("p")?.textContent)).toBe(
+        "See the packages or send the task through the on-site enquiry form.",
+      );
+      expect(clean(cta?.querySelector("a[href='/services#packages']")?.textContent)).toBe(
+        "View packages",
+      );
+      expect(clean(cta?.querySelector("a[href='/services#contact']")?.textContent)).toBe(
+        "Start an enquiry",
+      );
+    }
+  });
+
+  it("uses only the two approved factual-safety corrections", () => {
+    const articleText = articlePages
+      .map((post) => clean(post.document.querySelector(".article-body")?.textContent))
+      .join(" ");
+
+    expect(articleText).not.toContain(
+      "The early win is usually not glamour. It is one recurring job that stops taking attention every week.",
+    );
+    expect(articleText).toContain(
+      "The useful test is more modest: can one recurring job have clear inputs, visible review points and a repeatable path?",
+    );
+    expect(articleText).not.toContain(
+      "That approach is slower to sell than a black-box SaaS dashboard, but it is easier to operate.",
+    );
+    expect(articleText).toContain(
+      "The trade-off is explicit ownership: the team needs to know where the system runs and how it is maintained.",
+    );
+  });
+});
+
+describe("supporting-page truthfulness and contact paths", () => {
+  it("introduces no mail action, portrait video or invented proof language", () => {
+    for (const document of [
+      about,
+      blog,
+      ...articlePages.map((post) => post.document),
+    ]) {
+      const mainText = clean(document.querySelector("main")?.textContent);
+
+      expect(Boolean(document.querySelector("main a[href^='mailto:']"))).toBe(false);
+      expect(Boolean(document.querySelector("main video"))).toBe(false);
+      expect(mainText).not.toMatch(
+        /\b(?:testimonial|client results?|client outcomes?|client case stud(?:y|ies)|customer results?|customer outcomes?|award-winning|certified|accredited)\b/i,
+      );
+    }
   });
 });
