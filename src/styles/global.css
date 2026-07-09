@@ -289,7 +289,7 @@ video {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;

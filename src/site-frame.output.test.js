@@ -145,6 +145,68 @@ describe("generated site frame", () => {
     );
   });
 
+  it("keeps the linked availability target at least 44px high", async () => {
+    const document = await readPage("index.html");
+    const availability = document.querySelector(
+      "a.availability[href='/services#packages']",
+    );
+    const bundledCss = (
+      await Promise.all(
+        outputFiles
+          .filter((filePath) => filePath.endsWith(".css"))
+          .map(readOutput),
+      )
+    ).join("\n");
+    const availabilityRule = bundledCss.match(
+      /\.availability\{([^}]*)\}/,
+    )?.[1];
+
+    expect(availability).not.toBeNull();
+    expect(availabilityRule).toContain("min-height:44px");
+  });
+
+  it("loads site behaviour from a same-origin external module", async () => {
+    const siteOrigin = "https://oliverhitchings.com";
+
+    for (const filePath of contentPages) {
+      const document = await readPage(filePath);
+      const moduleScripts = Array.from(
+        document.querySelectorAll("script[type='module']"),
+      );
+      const inlineModuleSource = moduleScripts
+        .filter((script) => !script.hasAttribute("src"))
+        .map((script) => script.textContent)
+        .join("\n");
+      const externalModules = moduleScripts.filter((script) =>
+        script.hasAttribute("src"),
+      );
+      const externalSources = await Promise.all(
+        externalModules.map(async (script) => {
+          const sourceUrl = new URL(script.getAttribute("src"), siteOrigin);
+          const outputPath = decodeURIComponent(sourceUrl.pathname).replace(
+            /^\/+/,
+            "",
+          );
+
+          return {
+            source: await readOutput(outputPath),
+            sourceUrl,
+          };
+        }),
+      );
+      const behaviourModule = externalSources.find(({ source }) =>
+        source.includes("[data-reveal]"),
+      );
+
+      expect(inlineModuleSource, filePath).not.toContain("[data-reveal]");
+      expect(behaviourModule, filePath).toBeDefined();
+      expect(behaviourModule.sourceUrl.origin, filePath).toBe(siteOrigin);
+      expect(behaviourModule.sourceUrl.pathname, filePath).toMatch(
+        /^\/_astro\/[^?#]+\.js$/,
+      );
+    }
+  });
+
   it("renders exactly one page-level h1 on every content page", async () => {
     expect(contentPages.length).toBeGreaterThan(0);
 
