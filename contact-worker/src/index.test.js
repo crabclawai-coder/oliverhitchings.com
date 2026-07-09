@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import worker, { handleContactRequest } from "./index.js";
 
 const ENDPOINT = "https://oliverhitchings.com/api/contact";
+const CONTACT_EMAIL = "oliverhitch2008@gmail.com";
+const FROM_EMAIL = "contact@oliverhitchings.com";
 const MAX_BODY_BYTES = 16 * 1024;
 const ALLOWED_PACKAGES = [
   "Task Map",
@@ -21,14 +23,28 @@ const VALID_PAYLOAD = {
   tools_involved: "Notion and Google Sheets",
 };
 
-function createEmailFake(error) {
+function createEmailFake({
+  error,
+  result = { messageId: "message-test-1" },
+} = {}) {
   const send = error
     ? vi.fn().mockRejectedValue(error)
-    : vi.fn().mockResolvedValue({ messageId: "message-test-1" });
+    : vi.fn().mockResolvedValue(result);
 
   return {
     env: { CONTACT_EMAIL: { send } },
     send,
+  };
+}
+
+function createLoggerFake() {
+  const info = vi.fn();
+  const error = vi.fn();
+
+  return {
+    logger: { info, error },
+    info,
+    error,
   };
 }
 
@@ -77,18 +93,57 @@ function expectStableError(body, code) {
 }
 
 async function submit(payload = VALID_PAYLOAD, options = {}) {
-  const email = createEmailFake(options.emailError);
+  const email = createEmailFake({
+    error: options.emailError,
+    result: options.emailResult,
+  });
+  const logging = options.captureLogs
+    ? createLoggerFake()
+    : { logger: { info() {}, error() {} } };
   const request = createPostRequest(payload, options.request);
   const response = await handleContactRequest(request, email.env, {
     waitUntil: vi.fn(),
+    logger: logging.logger,
   });
 
   return {
     ...email,
+    ...logging,
     request,
     response,
     body: await response.json(),
   };
+}
+
+function expectCapturedLogsToExclude(
+  logging,
+  payload,
+  connectingIp,
+  extraForbiddenValues = [],
+) {
+  const serializedArguments = [logging.info, logging.error].flatMap((log) =>
+    log.mock.calls.flatMap((call) =>
+      call.map((argument) => JSON.stringify(argument) ?? String(argument)),
+    ),
+  );
+  const forbiddenValues = [
+    payload.name,
+    payload.email,
+    payload.contact_number,
+    payload.automation_request,
+    payload.tools_involved,
+    CONTACT_EMAIL,
+    FROM_EMAIL,
+    connectingIp,
+    ...extraForbiddenValues,
+  ].filter(Boolean);
+
+  expect(serializedArguments.length).toBeGreaterThan(0);
+  for (const serializedArgument of serializedArguments) {
+    for (const forbiddenValue of forbiddenValues) {
+      expect(serializedArgument).not.toContain(forbiddenValue);
+    }
+  }
 }
 
 afterEach(() => {
@@ -571,8 +626,17 @@ describe("handleContactRequest field validation", () => {
 });
 
 describe("handleContactRequest email boundary and response schema", () => {
-  it("sends once and returns stable success JSON", async () => {
-    const result = await submit();
+  it("sends the complete privacy-safe message and logs delivery metadata", async () => {
+    const connectingIp = "203.0.113.42";
+    const result = await submit(VALID_PAYLOAD, {
+      captureLogs: true,
+      request: {
+        headers: {
+          "CF-Connecting-IP": connectingIp,
+          "CF-Ray": "ray-test-123",
+        },
+      },
+    });
 
     expect(result.response.status).toBe(200);
     expect(result.body).toEqual({
@@ -581,19 +645,125 @@ describe("handleContactRequest email boundary and response schema", () => {
     });
     expectJsonResponseHeaders(result.response);
     expect(result.send).toHaveBeenCalledOnce();
+    expect(result.send).toHaveBeenCalledWith({
+      to: CONTACT_EMAIL,
+      from: FROM_EMAIL,
+      replyTo: VALID_PAYLOAD.email,
+      subject: `Automation enquiry: ${VALID_PAYLOAD.package_interest}`,
+      text: expect.any(String),
+    });
+
+    const { text } = result.send.mock.calls[0][0];
+    expect(text).toContain(`Name: ${VALID_PAYLOAD.name}`);
+    expect(text).toContain(`Email: ${VALID_PAYLOAD.email}`);
+    expect(text).toContain(`Contact number: ${VALID_PAYLOAD.contact_number}`);
+    expect(text).toContain(`Package interest: ${VALID_PAYLOAD.package_interest}`);
+    expect(text).toContain(VALID_PAYLOAD.automation_request);
+    expect(text).toContain(VALID_PAYLOAD.tools_involved);
+    expect(text).toMatch(
+      /^Submitted at: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/m,
+    );
+    expect(text).toContain(`Request ID: ${result.body.requestId}`);
+    expect(text).not.toContain("Submitted from:");
+    expect(text).not.toContain(connectingIp);
+
+    expect(result.info).toHaveBeenCalledOnce();
+    expect(result.info).toHaveBeenCalledWith({
+      event: "contact_email_delivered",
+      requestId: result.body.requestId,
+      cfRay: "ray-test-123",
+      messageId: "message-test-1",
+    });
+    expect(result.error).not.toHaveBeenCalled();
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, connectingIp);
   });
 
-  it("returns stable 502 JSON without logging arbitrary provider errors", async () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("uses body and delivery-log fallbacks when optional values are unavailable", async () => {
+    const payload = {
+      _honey: "",
+      name: VALID_PAYLOAD.name,
+      email: VALID_PAYLOAD.email,
+      package_interest: VALID_PAYLOAD.package_interest,
+      automation_request: VALID_PAYLOAD.automation_request,
+    };
+    const result = await submit(payload, {
+      captureLogs: true,
+      emailResult: {},
+    });
+
+    expect(result.response.status).toBe(200);
+    expect(result.send).toHaveBeenCalledOnce();
+
+    const { text } = result.send.mock.calls[0][0];
+    expect(text).toContain("Contact number: Not provided");
+    expect(text).toContain("Tools or systems involved:\nNot provided");
+    expect(result.info).toHaveBeenCalledOnce();
+    expect(result.info).toHaveBeenCalledWith({
+      event: "contact_email_delivered",
+      requestId: result.body.requestId,
+      cfRay: "unknown",
+      messageId: "unavailable",
+    });
+    expect(result.error).not.toHaveBeenCalled();
+    expectCapturedLogsToExclude(result, payload);
+  });
+
+  it("returns stable 502 JSON and logs only a provider error code", async () => {
+    const connectingIp = "198.51.100.77";
+    const providerError = new Error(
+      `provider message leaked ${VALID_PAYLOAD.name} ${VALID_PAYLOAD.email}`,
+    );
+    providerError.code = "provider_rejected";
+    providerError.stack = `STACK_TOKEN ${VALID_PAYLOAD.contact_number}`;
     const result = await submit(VALID_PAYLOAD, {
-      emailError: new Error("provider unavailable"),
+      captureLogs: true,
+      emailError: providerError,
+      request: {
+        headers: {
+          "CF-Connecting-IP": connectingIp,
+          "CF-Ray": "ray-failure-456",
+        },
+      },
     });
 
     expect(result.response.status).toBe(502);
     expectStableError(result.body, "email_send_failed");
     expectJsonResponseHeaders(result.response);
     expect(result.send).toHaveBeenCalledOnce();
-    expect(consoleError).not.toHaveBeenCalled();
+    expect(result.info).not.toHaveBeenCalled();
+    expect(result.error).toHaveBeenCalledOnce();
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_email_failed",
+      requestId: result.body.requestId,
+      cfRay: "ray-failure-456",
+      code: "provider_rejected",
+    });
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, connectingIp, [
+      "provider message leaked",
+      "STACK_TOKEN",
+    ]);
+  });
+
+  it("falls back to unknown provider failure metadata", async () => {
+    const providerError = new Error("provider unavailable");
+    const result = await submit(VALID_PAYLOAD, {
+      captureLogs: true,
+      emailError: providerError,
+    });
+
+    expect(result.response.status).toBe(502);
+    expectStableError(result.body, "email_send_failed");
+    expect(result.info).not.toHaveBeenCalled();
+    expect(result.error).toHaveBeenCalledOnce();
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_email_failed",
+      requestId: result.body.requestId,
+      cfRay: "unknown",
+      code: "unknown",
+    });
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, undefined, [
+      providerError.message,
+    ]);
   });
 
   it("delegates the default Worker fetch handler to the request handler", async () => {

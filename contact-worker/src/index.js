@@ -193,8 +193,9 @@ export async function handleContactRequest(request, env, context) {
   }
 
   const subject = `Automation enquiry: ${enquiry.packageInterest}`;
-  const submittedFrom = request.headers.get("CF-Connecting-IP") || "unknown";
   const submittedAt = new Date().toISOString();
+  const cfRay = request.headers.get("CF-Ray") || "unknown";
+  const logger = context.logger ?? console;
   const text = [
     "New automation enquiry from oliverhitchings.com",
     "",
@@ -210,17 +211,33 @@ export async function handleContactRequest(request, env, context) {
     enquiry.toolsInvolved || "Not provided",
     "",
     `Submitted at: ${submittedAt}`,
-    `Submitted from: ${submittedFrom}`,
+    `Request ID: ${requestId}`,
   ].join("\n");
 
   try {
-    await env.CONTACT_EMAIL.send({
+    const result = await env.CONTACT_EMAIL.send({
       to: CONTACT_EMAIL,
       from: FROM_EMAIL,
+      replyTo: enquiry.email,
       subject,
       text,
     });
-  } catch {
+
+    logger.info({
+      event: "contact_email_delivered",
+      requestId,
+      cfRay,
+      messageId: result?.messageId || "unavailable",
+    });
+  } catch (error) {
+    logger.error({
+      event: "contact_email_failed",
+      requestId,
+      cfRay,
+      code:
+        typeof error?.code === "string" && error.code ? error.code : "unknown",
+    });
+
     return errorJson(ERRORS.emailSendFailed, 502, requestId);
   }
 
