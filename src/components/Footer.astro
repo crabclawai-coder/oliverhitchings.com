@@ -1,6 +1,6 @@
 ---
 import Logo from "./Logo.astro";
-import { contactHref } from "../data/site.js";
+import { site } from "../data/site.js";
 ---
 
 <footer class="site-footer">
@@ -27,8 +27,7 @@ import { contactHref } from "../data/site.js";
       </div>
       <div>
         <h2>Contact</h2>
-        <a href="/services#packages">View packages</a>
-        <a href={contactHref}>Email Oliver</a>
+        <a href={site.cta.contact.href}>{site.cta.contact.label}</a>
       </div>
     </div>
   </div>

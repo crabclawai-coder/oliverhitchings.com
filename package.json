@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.6.0",
+    "@fontsource-variable/archivo": "5.2.8",
     "astro": "^6.1.7",
     "sirv-cli": "^3.0.1"
   },

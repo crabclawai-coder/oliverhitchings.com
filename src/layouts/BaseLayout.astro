@@ -2,6 +2,7 @@
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import { site } from "../data/site.js";
+import "@fontsource-variable/archivo";
 import "../styles/global.css";
 
 const {
@@ -30,8 +31,11 @@ const canonical = new URL(Astro.url.pathname, site.url);
     <title>{title}</title>
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <Header />
-    <slot />
+    <div id="main-content" tabindex="-1">
+      <slot />
+    </div>
     <Footer />
     <script>
       const revealTargets = document.querySelectorAll(

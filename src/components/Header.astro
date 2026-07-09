@@ -16,6 +16,7 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
   <nav class="nav-pill" aria-label="Primary navigation">
     <a class="brand-mark" href="/" aria-label="Oliver Hitchings home">
       <Logo />
+      <span>{site.name}</span>
     </a>
     <div class="nav-links">
       {
@@ -30,6 +31,6 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
         })
       }
     </div>
-    <a class="nav-cta" href="/services#packages">{site.cta.primary}</a>
+    <a class="nav-cta" href={site.cta.contact.href}>{site.cta.contact.label}</a>
   </nav>
 </header>

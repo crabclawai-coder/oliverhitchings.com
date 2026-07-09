@@ -2,20 +2,18 @@ export const site = {
   name: "Oliver Hitchings",
   url: "https://oliverhitchings.com",
   email: "oliverhitch2008@gmail.com",
-  availability: "Accepting 1 client · May 2026",
+  availability: "Accepting 1 client",
   description:
     "Practical automation systems for repeatable business tasks, with clear handover, useful logs, and human control.",
   cta: {
     primary: "View packages",
     secondary: "See services",
+    contact: {
+      href: "/services#contact",
+      label: "Start an enquiry",
+    },
   },
 };
-
-export const contactHref = `mailto:${site.email}?subject=${encodeURIComponent(
-  "Automation package enquiry",
-)}&body=${encodeURIComponent(
-  "Hi Oliver,\n\nI would like to talk about automating a repeatable task.\n\nThe task I have in mind is:\n\nThe systems involved are:\n\nThe outcome I want is:\n",
-)}`;
 
 export const posts = [
   {
