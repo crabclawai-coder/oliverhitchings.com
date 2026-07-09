@@ -79,6 +79,12 @@ const errorJson = (error, status, requestId, extraHeaders) =>
     extraHeaders,
   );
 
+const logSafely = (writeLog) => {
+  try {
+    writeLog();
+  } catch {}
+};
+
 const normalizeSingleLine = (value) =>
   value.replace(/[\r\n]+/g, " ").trim();
 
@@ -214,32 +220,40 @@ export async function handleContactRequest(request, env, context) {
     `Request ID: ${requestId}`,
   ].join("\n");
 
+  let result;
+
   try {
-    const result = await env.CONTACT_EMAIL.send({
+    result = await env.CONTACT_EMAIL.send({
       to: CONTACT_EMAIL,
       from: FROM_EMAIL,
       replyTo: enquiry.email,
       subject,
       text,
     });
+  } catch (error) {
+    logSafely(() => {
+      logger.error({
+        event: "contact_email_failed",
+        requestId,
+        cfRay,
+        code:
+          typeof error?.code === "string" && error.code
+            ? error.code
+            : "unknown",
+      });
+    });
 
+    return errorJson(ERRORS.emailSendFailed, 502, requestId);
+  }
+
+  logSafely(() => {
     logger.info({
       event: "contact_email_delivered",
       requestId,
       cfRay,
       messageId: result?.messageId || "unavailable",
     });
-  } catch (error) {
-    logger.error({
-      event: "contact_email_failed",
-      requestId,
-      cfRay,
-      code:
-        typeof error?.code === "string" && error.code ? error.code : "unknown",
-    });
-
-    return errorJson(ERRORS.emailSendFailed, 502, requestId);
-  }
+  });
 
   return json({ ok: true, requestId });
 }

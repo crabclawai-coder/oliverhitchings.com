@@ -37,9 +37,17 @@ function createEmailFake({
   };
 }
 
-function createLoggerFake() {
-  const info = vi.fn();
-  const error = vi.fn();
+function createLoggerFake({ infoError, errorError } = {}) {
+  const info = vi.fn(() => {
+    if (infoError) {
+      throw infoError;
+    }
+  });
+  const error = vi.fn(() => {
+    if (errorError) {
+      throw errorError;
+    }
+  });
 
   return {
     logger: { info, error },
@@ -98,7 +106,7 @@ async function submit(payload = VALID_PAYLOAD, options = {}) {
     result: options.emailResult,
   });
   const logging = options.captureLogs
-    ? createLoggerFake()
+    ? createLoggerFake(options.loggerErrors)
     : { logger: { info() {}, error() {} } };
   const request = createPostRequest(payload, options.request);
   const response = await handleContactRequest(request, email.env, {
@@ -761,6 +769,43 @@ describe("handleContactRequest email boundary and response schema", () => {
       cfRay: "unknown",
       code: "unknown",
     });
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, undefined, [
+      providerError.message,
+    ]);
+  });
+
+  it("keeps a delivered response stable when success logging throws", async () => {
+    const result = await submit(VALID_PAYLOAD, {
+      captureLogs: true,
+      loggerErrors: { infoError: new Error("success logger unavailable") },
+    });
+
+    expect(result.response.status).toBe(200);
+    expect(result.body).toEqual({
+      ok: true,
+      requestId: expect.any(String),
+    });
+    expectJsonResponseHeaders(result.response);
+    expect(result.send).toHaveBeenCalledOnce();
+    expect(result.info).toHaveBeenCalledOnce();
+    expect(result.error).not.toHaveBeenCalled();
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD);
+  });
+
+  it("keeps a provider-failure response stable when failure logging throws", async () => {
+    const providerError = new Error("provider unavailable");
+    const result = await submit(VALID_PAYLOAD, {
+      captureLogs: true,
+      emailError: providerError,
+      loggerErrors: { errorError: new Error("failure logger unavailable") },
+    });
+
+    expect(result.response.status).toBe(502);
+    expectStableError(result.body, "email_send_failed");
+    expectJsonResponseHeaders(result.response);
+    expect(result.send).toHaveBeenCalledOnce();
+    expect(result.info).not.toHaveBeenCalled();
+    expect(result.error).toHaveBeenCalledOnce();
     expectCapturedLogsToExclude(result, VALID_PAYLOAD, undefined, [
       providerError.message,
     ]);
