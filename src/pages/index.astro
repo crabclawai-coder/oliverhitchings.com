@@ -1,187 +1,278 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import Logo from "../components/Logo.astro";
 import { site } from "../data/site.js";
 ---
 
 <BaseLayout>
-  <main>
-    <section class="hero">
-      <video class="hero-video" src="/videos/hero.mp4" autoplay muted loop playsinline preload="auto"></video>
-      <div class="hero-shade"></div>
-      <div class="hero-content">
-        <a class="availability" href="/services#packages">
-          <span></span>
-          {site.availability}
-        </a>
-        <h1>AI automation your team can <span>actually own</span></h1>
-        <p>
-          I turn regular back-office jobs into small, inspectable systems: clear inputs, review
-          points, logs, and a handover your team can use.
-        </p>
-        <div class="hero-actions">
-          <a class="button" href="/services#packages">{site.cta.primary}</a>
-          <a class="button ghost" href="#home-pricing">See prices</a>
-          <div class="ops-badge">
-            <Logo />
-            <span>Useful systems, clear ownership, human review</span>
+  <main class="home-page">
+    <section class="home-hero">
+      <video
+        class="home-hero__video"
+        src="/videos/hero.mp4"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+        aria-hidden="true"
+        tabindex="-1"
+      ></video>
+      <div class="home-hero__scrim"></div>
+
+      <div class="container home-hero__content">
+        <div class="home-hero__copy">
+          <div class="home-hero__kicker">
+            <p class="eyebrow">Oliver Hitchings · Automation systems</p>
+            <a class="availability" href="/services#packages">
+              <span></span>
+              {site.availability}
+            </a>
+          </div>
+          <h1>Small automation systems your team can inspect and own.</h1>
+          <p class="home-hero__intro">
+            I turn repeat business work into controlled loops with clear inputs, human review,
+            visible logs and a practical handover.
+          </p>
+          <div class="hero-actions">
+            <a class="button" href="/services#contact">Start an enquiry</a>
+            <a class="button ghost" href="#packages">View packages</a>
           </div>
         </div>
+
+        <aside class="operator-trace" aria-label="Operator trace">
+          <div class="operator-trace__header">
+            <span>Controlled loop</span>
+            <span>04 states</span>
+          </div>
+          <ol>
+            <li data-trace-state="input">
+              <span class="trace-code">IN.01</span>
+              <div>
+                <strong>Input</strong>
+                <p>repeat task or source material enters the loop</p>
+              </div>
+            </li>
+            <li data-trace-state="review">
+              <span class="trace-code">HUMAN</span>
+              <div>
+                <strong>Review</strong>
+                <p>a person checks uncertain or consequential steps</p>
+              </div>
+            </li>
+            <li data-trace-state="action">
+              <span class="trace-code">RUN.01</span>
+              <div>
+                <strong>Action</strong>
+                <p>the approved next step runs</p>
+              </div>
+            </li>
+            <li data-trace-state="evidence">
+              <span class="trace-code">LOG.01</span>
+              <div>
+                <strong>Evidence</strong>
+                <p>result or failure state logged</p>
+              </div>
+            </li>
+          </ol>
+        </aside>
       </div>
     </section>
 
-    <section class="split-section home-intro-section">
-      <div class="container split-grid">
+    <section class="proof-rail" aria-label="Verified delivery facts">
+      <div class="container proof-rail__grid">
+        <div data-proof-item>
+          <strong>1</strong>
+          <p>One workflow is selected before a build begins.</p>
+        </div>
+        <div data-proof-item>
+          <strong>3</strong>
+          <p>Build handover assets: prompts, logs and a runbook.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="container editorial-section loop-section" data-reveal>
+      <div class="editorial-heading">
         <div>
-          <p class="eyebrow">Built to be understood</p>
-          <h2>It runs where you can see it.</h2>
+          <p class="eyebrow">From repeat task to owned loop</p>
+          <h2>The build follows the work, not the other way round.</h2>
         </div>
-        <div class="copy-stack">
-          <p>
-            The work is set up with readable prompts, simple run commands, useful logs, and clear
-            review points. When a step needs stronger reasoning, that decision is deliberate and
-            recorded.
+        <p class="editorial-intro">
+          The aim is not to automate everything. It is to make one repeatable path clear enough to
+          run, inspect and change.
+        </p>
+      </div>
+
+      <ol class="loop-sequence">
+        <li data-loop-stage>
+          <h3><span>01</span> Intake</h3>
+          <p>trigger, source material, expected output</p>
+        </li>
+        <li data-loop-stage>
+          <h3><span>02</span> Classify</h3>
+          <p>explicit rules before model interpretation</p>
+        </li>
+        <li data-loop-stage>
+          <h3><span>03</span> Human review</h3>
+          <p>pause where confidence is low or consequences matter</p>
+        </li>
+        <li data-loop-stage>
+          <h3><span>04</span> Action</h3>
+          <p>run only the approved next step</p>
+        </li>
+        <li data-loop-stage>
+          <h3><span>05</span> Evidence</h3>
+          <p>record what happened, failed, or needs attention</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="editorial-section pattern-section" data-patterns data-reveal>
+      <div class="container pattern-layout">
+        <div class="pattern-heading">
+          <p class="eyebrow">Example system patterns</p>
+          <h2>Three useful shapes for repeat work.</h2>
+          <p class="pattern-disclosure">
+            These are example system patterns, not client case studies.
           </p>
-          <p class="pull-line">Small, dull things. Done reliably.</p>
+        </div>
+
+        <div class="pattern-rows">
+          <article data-pattern>
+            <span>EX.01</span>
+            <div>
+              <h3>Inbox triage</h3>
+              <p>
+                Classify, route and prepare for review; final sending stays with a person.
+              </p>
+            </div>
+          </article>
+          <article data-pattern>
+            <span>EX.02</span>
+            <div>
+              <h3>Research monitoring</h3>
+              <p>Monitor named sources, remove duplicates and prepare a review queue.</p>
+            </div>
+          </article>
+          <article data-pattern>
+            <span>EX.03</span>
+            <div>
+              <h3>Recurring reporting</h3>
+              <p>
+                Collect scheduled inputs, flag gaps and prepare a consistent report with a source
+                trail.
+              </p>
+            </div>
+          </article>
         </div>
       </div>
     </section>
 
-    <section class="feature-section">
-      <div class="container feature-grid">
-        <div class="feature-copy">
-          <p class="eyebrow">Service design</p>
-          <h2>Replace repeat admin with <span>working tools</span></h2>
-          <p>
-            I sit with your team, map the task, define the failure points, and build a narrow system
-            that is readable enough for a human to own after handover.
-          </p>
-          <a class="button" href="/services">See services</a>
+    <section id="packages" class="container editorial-section package-ledger" data-reveal>
+      <div class="editorial-heading compact-heading">
+        <div>
+          <p class="eyebrow">Packages</p>
+          <h2>Choose the smallest useful first step.</h2>
         </div>
-        <div class="media-card">
-          <video src="/videos/feature-card.mp4" autoplay muted loop playsinline preload="metadata"></video>
-        </div>
+        <p class="editorial-intro">
+          Start with the amount of definition the task needs now. Each package keeps scope and
+          ownership visible.
+        </p>
       </div>
-    </section>
 
-    <section id="home-pricing" class="container package-section home-packages">
-      <div class="section-heading">
-        <p class="eyebrow">Prices and packages</p>
-        <h2>Start small, then build what proves itself.</h2>
-      </div>
-      <div class="package-grid compact">
-        <article class="package-card">
-          <p class="eyebrow">Fixed scope</p>
-          <h3>Task Map</h3>
+      <div class="package-ledger__rows">
+        <article class="package-row">
+          <div class="package-row__title">
+            <p class="eyebrow">Fixed scope</p>
+            <h3>Task Map</h3>
+          </div>
           <p class="price">£250</p>
-          <p>
-            A short mapping sprint for one repeat task: current steps, inputs, owners, failure
-            points, tools involved, and a clear build recommendation.
+          <p class="package-row__description">
+            One repeat task mapped into steps, inputs, owners, failure points and a clear build
+            recommendation.
           </p>
           <a class="button ghost" href="/services#contact">Enquire</a>
         </article>
-        <article class="package-card featured">
-          <p class="eyebrow">Most common</p>
-          <h3>First Build</h3>
+        <article class="package-row">
+          <div class="package-row__title">
+            <p class="eyebrow">Focused implementation</p>
+            <h3>First Build</h3>
+          </div>
           <p class="price">£500</p>
-          <p>
-            A narrow working version for one use case, built with real inputs, review points, logs,
-            prompts, and a handover guide your team can follow.
+          <p class="package-row__description">
+            A narrow working loop using real inputs, review points, prompts, logs and a practical
+            handover.
           </p>
-          <a class="button" href="/services#contact">Start enquiry</a>
+          <a class="button ghost" href="/services#contact">Start an enquiry</a>
         </article>
-        <article class="package-card">
-          <p class="eyebrow">Larger build</p>
-          <h3>Operator System</h3>
+        <article class="package-row">
+          <div class="package-row__title">
+            <p class="eyebrow">Connected workflow</p>
+            <h3>Operator System</h3>
+          </div>
           <p class="price">£1,000</p>
-          <p>
-            A more complete setup for connected steps, with stronger controls, reporting, exception
-            handling, documentation, and owner training.
+          <p class="package-row__description">
+            A wider operating setup for connected steps, monitoring, exceptions, documentation and
+            owner training.
           </p>
           <a class="button ghost" href="/services#contact">Discuss scope</a>
         </article>
+        <article class="package-row package-row--support">
+          <div class="package-row__title">
+            <p class="eyebrow">Optional retainer</p>
+          </div>
+          <p class="price">from £100/month</p>
+          <p class="package-row__description">
+            A light monthly layer for monitoring, small improvements, fixes, usage checks and one
+            review call.
+          </p>
+          <a class="button ghost" href="/services#contact">Ask about support</a>
+        </article>
       </div>
-      <div class="retainer-strip">
+
+      <p class="package-note">
+        Guide prices. VAT, third-party software, model usage and hosting are separate where they
+        apply.
+      </p>
+    </section>
+
+    <section
+      class="container editorial-section principles-section"
+      data-operating-principles
+    >
+      <div class="editorial-heading compact-heading">
         <div>
-          <p class="eyebrow">Optional retainer</p>
-          <h3>Ongoing support from £100/month</h3>
-          <p>Monthly monitoring, small improvements, fixes, and one review call after the build is live.</p>
+          <p class="eyebrow">Operating principles</p>
+          <h2>A system should make sense on a bad day.</h2>
         </div>
-        <a class="button ghost" href="/services#contact">Ask about support</a>
+      </div>
+
+      <div class="principle-rows">
+        <article>
+          <h3>Inspectability</h3>
+          <p>Visible prompts, rules, assumptions and logs.</p>
+        </article>
+        <article>
+          <h3>Failure handling</h3>
+          <p>Retries, stop conditions and escalation.</p>
+        </article>
+        <article>
+          <h3>Handover</h3>
+          <p>Material needed to operate, review and change the system.</p>
+        </article>
       </div>
     </section>
 
-    <section class="stats-section">
-      <div class="container stats-grid">
+    <section class="home-final-cta">
+      <div class="container home-final-cta__grid">
+        <p class="eyebrow">Have a repeat task in mind?</p>
         <div>
-          <strong>40+</strong>
-          <span>Internal automations already running</span>
-        </div>
-        <div>
-          <strong>1</strong>
-          <span>Workflow selected before anything is built</span>
-        </div>
-        <div>
-          <strong>3</strong>
-          <span>Handover assets: prompts, logs, and runbook</span>
-        </div>
-        <div>
-          <strong>£100/mo</strong>
-          <span>Optional support after launch</span>
-        </div>
-      </div>
-      <p class="proof-strip">Designed for the people who have to run it</p>
-    </section>
-
-    <section class="process-section">
-      <video class="process-video" src="/videos/process.mp4" autoplay muted loop playsinline preload="metadata"></video>
-      <div class="process-overlay"></div>
-      <div class="container process-content">
-        <h2>One painful task becomes a working loop</h2>
-        <p>
-          The first build is intentionally narrow: real inputs, real outputs, review points, logs,
-          and enough failure handling to decide whether it belongs in the business.
-        </p>
-        <a class="button" href="/services#packages">See packages</a>
-      </div>
-    </section>
-
-    <section class="operator-section">
-      <div class="container">
-        <p class="eyebrow">Operating layer</p>
-        <h2>Built for <span>repeat use</span></h2>
-        <div class="operator-grid">
-          <article>
-            <video src="/videos/bento.mp4" autoplay muted loop playsinline preload="metadata"></video>
-            <div>
-              <h3>Inspect everything</h3>
-              <p>The important pieces stay visible: prompts, schedules, logs, scripts, and runbooks.</p>
-            </div>
-          </article>
-          <article>
-            <video src="/videos/process.mp4" autoplay muted loop playsinline preload="metadata"></video>
-            <div>
-              <h3>Honest engineering</h3>
-              <p>Every assumption is visible. No mystery costs, no vague claims, no fragile handover.</p>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="final-cta">
-      <video src="/videos/cta-footer.mp4" autoplay muted loop playsinline preload="metadata"></video>
-      <div class="final-cta-overlay"></div>
-      <div class="container final-cta-content">
-        <Logo size={42} />
-        <h2>Start with one task that already hurts.</h2>
-        <p>
-          If your team has repeat work that follows a pattern, I can help you test whether a small
-          owned system should take it on.
-        </p>
-        <div class="cta-row">
-          <a class="button" href="/services#packages">{site.cta.primary}</a>
-          <a class="button ghost" href="/services">{site.cta.secondary}</a>
+          <h2>Send the task, the tools and the review point.</h2>
+          <p>
+            Tell me what happens now, where it gets stuck, who checks the result and what a useful
+            output would look like.
+          </p>
+          <a class="button" href="/services#contact">Start an enquiry</a>
         </div>
       </div>
     </section>

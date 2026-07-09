@@ -7,239 +7,283 @@ import { site } from "../data/site.js";
   title="Services | Oliver Hitchings"
   description="Automation mapping, focused builds, and handover packages for repeatable business tasks."
 >
-  <main class="subpage">
-    <section class="container subpage-hero-grid">
-      <div class="subpage-hero">
-        <p class="eyebrow">Services</p>
-        <h1>Clear packages for turning repeat tasks into working systems.</h1>
-        <p>
-          Start with a mapped task, a focused build, or a wider operating system. Each option has a
-          defined outcome, visible pricing, and a practical handover.
-        </p>
-        <div class="cta-row left">
-          <a class="button" href="#packages">View packages</a>
-          <a class="button ghost" href="/about">How I work</a>
+  <main class="subpage services-page">
+    <section class="services-hero">
+      <div class="container services-hero__grid">
+        <div class="services-hero__copy">
+          <p class="eyebrow">Services</p>
+          <h1>Start with one repeat task and the right-sized first step.</h1>
+          <p class="services-hero__intro">
+            Choose a mapping sprint, a focused build or a wider operator system. Each option has
+            visible scope, pricing and handover.
+          </p>
+          <div class="cta-row left">
+            <a class="button" href="#packages">Compare packages</a>
+            <a class="button ghost" href="#contact">Start an enquiry</a>
+          </div>
+        </div>
+
+        <aside class="services-hero__trace" aria-label="Service sequence">
+          <span>Working sequence</span>
+          <p class="method-trace">Map → Build → Hand over</p>
+          <p>One bounded path, with ownership and review made explicit before it grows.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="container editorial-section services-method" data-services-method data-reveal>
+      <div class="editorial-heading compact-heading">
+        <div>
+          <p class="eyebrow">Method</p>
+          <h2>Map the work before building the loop.</h2>
         </div>
       </div>
-      <div class="visual-panel">
-        <video src="/videos/process.mp4" autoplay muted loop playsinline preload="metadata"></video>
-        <div>
+
+      <div class="services-editorial-rows">
+        <article data-method-step>
           <span>01</span>
-          <strong>Map, build, hand over</strong>
-        </div>
+          <h3>Map</h3>
+          <p>Name the trigger, inputs, owner, approvals and failure states.</p>
+        </article>
+        <article data-method-step>
+          <span>02</span>
+          <h3>Build</h3>
+          <p>Create a narrow loop with review, logs and clear stop conditions.</p>
+        </article>
+        <article data-method-step>
+          <span>03</span>
+          <h3>Hand over</h3>
+          <p>Leave the prompts, logs, run instructions and change notes with the owner.</p>
+        </article>
       </div>
     </section>
 
-    <section class="container service-list">
-      <article>
-        <span>01</span>
-        <h2>Map the task</h2>
-        <p>Find the inputs, failure points, source systems, approvals, and the simplest useful shape.</p>
-      </article>
-      <article>
-        <span>02</span>
-        <h2>Build the loop</h2>
-        <p>Create the first reliable version with prompts, scripts, logs, schedules, and operator controls.</p>
-      </article>
-      <article>
-        <span>03</span>
-        <h2>Operational handover</h2>
-        <p>Document the setup, train the owner, and leave a path for future changes and debugging.</p>
-      </article>
-    </section>
-
-    <section id="packages" class="container package-section">
-      <div class="section-heading">
-        <p class="eyebrow">Prices and packages</p>
-        <h2>Pick the size of the first step.</h2>
-      </div>
-      <div class="package-grid">
-        <article class="package-card">
-          <p class="eyebrow">Fixed scope</p>
-          <h3>Task Map</h3>
-          <p class="price">£250</p>
-          <p>
-            Best when you know something should be automated, but the exact build shape is still
-            unclear. This turns one repeat task into a scoped plan.
-          </p>
-          <ul>
-            <li>One discovery session</li>
-            <li>Current process, owner, inputs, and output map</li>
-            <li>Failure points, approval moments, and edge cases</li>
-            <li>Recommended build shape, tools, and next-step estimate</li>
-          </ul>
-          <a class="button ghost" href="#contact">Enquire</a>
-        </article>
-        <article class="package-card featured">
-          <p class="eyebrow">Most common</p>
-          <h3>First Build</h3>
-          <p class="price">£500</p>
-          <p>
-            A focused first implementation for one use case. The aim is to prove the task can run
-            with useful controls before it becomes part of the business.
-          </p>
-          <ul>
-            <li>Task map and implementation plan</li>
-            <li>Working automation using real inputs and outputs</li>
-            <li>Prompts, logs, review rules, and failure handling</li>
-            <li>Run guide plus two review sessions after first use</li>
-          </ul>
-          <a class="button" href="#contact">Start here</a>
-        </article>
-        <article class="package-card">
-          <p class="eyebrow">Larger build</p>
-          <h3>Operator System</h3>
-          <p class="price">£1,000</p>
-          <p>
-            For work that has more than one step, owner, or system involved. This creates a more
-            complete operating setup around the automation.
-          </p>
-          <ul>
-            <li>Multiple task paths or departments</li>
-            <li>Monitoring, alerts, reporting, and exception handling</li>
-            <li>Documentation, owner training, and change notes</li>
-            <li>30-day improvement period after launch</li>
-          </ul>
-          <a class="button ghost" href="#contact">Discuss scope</a>
-        </article>
-      </div>
-      <p class="package-note">
-        Prices are guide prices for May 2026. VAT, third-party software, model usage, and hosting
-        are separate if they apply.
-      </p>
-      <div class="retainer-strip">
+    <section id="packages" class="container editorial-section services-packages" data-reveal>
+      <div class="editorial-heading compact-heading">
         <div>
-          <p class="eyebrow">Optional retainer</p>
-          <h3>Ongoing support from £100/month</h3>
-          <p>
-            For teams that want a light monthly support layer after launch: monitoring, small
-            improvements, fixes, usage checks, and one review call.
-          </p>
+          <p class="eyebrow">Prices and packages</p>
+          <h2>Choose the smallest useful first step.</h2>
         </div>
-        <a class="button ghost" href="#contact">Add support</a>
-      </div>
-    </section>
-
-    <section id="contact" class="container proof-panel contact-panel">
-      <p class="eyebrow">Start the conversation</p>
-      <h2>Send the task you want removed from the week.</h2>
-      <p>
-        Useful detail: what happens now, which tools are involved, who checks the output, and what a
-        good result would look like.
-      </p>
-      <form
-        class="contact-form"
-        action="/api/contact"
-        method="POST"
-        aria-describedby="contact-form-status"
-        data-contact-form
-      >
-        <input type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true" />
-
-        <div class="form-grid">
-          <label>
-            <span>Name</span>
-            <input name="name" type="text" autocomplete="name" required />
-          </label>
-          <label>
-            <span>Email</span>
-            <input name="email" type="email" autocomplete="email" required />
-          </label>
-          <label>
-            <span>Contact number</span>
-            <input name="contact_number" type="tel" autocomplete="tel" />
-          </label>
-          <label>
-            <span>Package interest</span>
-            <select name="package_interest" required>
-              <option value="">Choose one</option>
-              <option>Task Map</option>
-              <option>First Build</option>
-              <option>Operator System</option>
-              <option>Ongoing support</option>
-              <option>Not sure yet</option>
-            </select>
-          </label>
-        </div>
-
-        <label>
-          <span>What do you want automated?</span>
-          <textarea
-            name="automation_request"
-            rows="5"
-            required
-            placeholder="Tell me the repeat task, who handles it now, and what a good result would look like."
-          ></textarea>
-        </label>
-
-        <label>
-          <span>Tools or systems involved</span>
-          <textarea
-            name="tools_involved"
-            rows="3"
-            placeholder="For example: Gmail, Outlook, Sheets, Notion, Slack, CRM, website forms, internal docs."
-          ></textarea>
-        </label>
-
-        <button class="button" type="submit">Send enquiry</button>
-        <p
-          id="contact-form-status"
-          class="form-status"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          data-contact-status
-        >
-          This sends the enquiry directly from the website to {site.email}.
+        <p class="editorial-intro">
+          The scope expands only when the task needs it. Every option names the work and the
+          handover before a build begins.
         </p>
-      </form>
+      </div>
+
+      <div class="services-package-rows">
+        <article class="services-package-row">
+          <header>
+            <p class="eyebrow">Fixed scope</p>
+            <h3>Task Map</h3>
+            <p class="price">£250</p>
+          </header>
+          <div>
+            <p>
+              Best when you know something should be automated, but the exact build shape is still
+              unclear. This turns one repeat task into a scoped plan.
+            </p>
+            <ul>
+              <li>One discovery session</li>
+              <li>Current process, owner, inputs, and output map</li>
+              <li>Failure points, approval moments, and edge cases</li>
+              <li>Recommended build shape, tools, and next-step estimate</li>
+            </ul>
+            <a class="button ghost" href="#contact">Enquire</a>
+          </div>
+        </article>
+
+        <article class="services-package-row">
+          <header>
+            <p class="eyebrow">Focused implementation</p>
+            <h3>First Build</h3>
+            <p class="price">£500</p>
+          </header>
+          <div>
+            <p>
+              A focused first implementation for one use case. The aim is to prove the task can run
+              with useful controls before it becomes part of the business.
+            </p>
+            <ul>
+              <li>Task map and implementation plan</li>
+              <li>Working automation using real inputs and outputs</li>
+              <li>Prompts, logs, review rules, and failure handling</li>
+              <li>Run guide plus two review sessions after first use</li>
+            </ul>
+            <a class="button" href="#contact">Start here</a>
+          </div>
+        </article>
+
+        <article class="services-package-row">
+          <header>
+            <p class="eyebrow">Connected workflow</p>
+            <h3>Operator System</h3>
+            <p class="price">£1,000</p>
+          </header>
+          <div>
+            <p>
+              For work that has more than one step, owner, or system involved. This creates a more
+              complete operating setup around the automation.
+            </p>
+            <ul>
+              <li>Multiple task paths or departments</li>
+              <li>Monitoring, alerts, reporting, and exception handling</li>
+              <li>Documentation, owner training, and change notes</li>
+              <li>30-day improvement period after launch</li>
+            </ul>
+            <a class="button ghost" href="#contact">Discuss scope</a>
+          </div>
+        </article>
+
+        <article class="services-package-row services-package-row--support">
+          <header>
+            <p class="eyebrow">Optional retainer</p>
+            <p class="price">from £100/month</p>
+          </header>
+          <div>
+            <p>
+              For teams that want a light monthly support layer after launch: monitoring, small
+              improvements, fixes, usage checks, and one review call.
+            </p>
+            <a class="button ghost" href="#contact">Add support</a>
+          </div>
+        </article>
+      </div>
+
+      <p class="package-note">
+        Guide prices. VAT, third-party software, model usage and hosting are separate where they
+        apply.
+      </p>
     </section>
 
-    <section class="container detail-section">
-      <div>
-        <p class="eyebrow">Good-fit tasks</p>
-        <h2>Best for work that is frequent, structured, and annoying.</h2>
-      </div>
-      <div class="detail-grid">
-        <article>
-          <h3>Inbox and intake triage</h3>
-          <p>Classify, route, summarize, and prepare responses while keeping the final send under human control.</p>
-        </article>
-        <article>
-          <h3>Research and monitoring</h3>
-          <p>Watch sources, deduplicate results, score importance, and produce a short decision-ready brief.</p>
-        </article>
-        <article>
-          <h3>Reporting loops</h3>
-          <p>Collect recurring inputs, check them for gaps, and produce a consistent operational report.</p>
-        </article>
-        <article>
-          <h3>Internal coordination</h3>
-          <p>Turn meeting notes, tickets, calendars, and docs into follow-ups that do not rely on memory.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="container visual-split">
-      <div class="visual-panel wide">
-        <video src="/videos/feature-card.mp4" autoplay muted loop playsinline preload="metadata"></video>
+    <section class="container editorial-section good-fit-section" data-good-fit>
+      <div class="editorial-heading compact-heading">
         <div>
-          <span>Live system shape</span>
-          <strong>Prompts, logs, controls, and owner notes kept visible.</strong>
+          <p class="eyebrow">Good-fit criteria</p>
+          <h2>Frequent enough to matter. Clear enough to inspect.</h2>
+        </div>
+        <p class="editorial-intro">
+          A useful first candidate usually has a named trigger, repeat inputs, an expected output
+          and a person who can review it.
+        </p>
+      </div>
+
+      <div class="criteria-rows">
+        <article>
+          <h3>Frequent</h3>
+          <p>The task happens often enough for repeatability to matter.</p>
+        </article>
+        <article>
+          <h3>Structured</h3>
+          <p>The trigger, inputs and expected output can be named.</p>
+        </article>
+        <article>
+          <h3>Reviewable</h3>
+          <p>A person can inspect the result and approve what happens next.</p>
+        </article>
+        <article>
+          <h3>Contained</h3>
+          <p>The first useful boundary is small enough to map and test.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="container editorial-section handover-section" data-handover data-reveal>
+      <p class="eyebrow">Handover</p>
+      <div class="handover-section__grid">
+        <h2>What stays with the owner.</h2>
+        <div>
+          <p>
+            First Build and Operator System include prompts, run instructions, logs, review rules,
+            failure states and owner notes—the material needed to operate, inspect and change the
+            system.
+          </p>
+          <p>
+            Task Map ends with the process map and build recommendation, so the next decision is
+            clear before implementation starts.
+          </p>
         </div>
       </div>
     </section>
 
-    <section class="container proof-panel">
-      <p class="eyebrow">What you leave with</p>
-      <h2>A working setup, not a dependency.</h2>
-      <p>
-        The deliverable includes the task map, prompts, run commands, logs, review rules, failure
-        states, and a short operator guide. The point is simple: your team should understand what
-        the system does and how to change it.
-      </p>
-    </section>
+    <section id="contact" class="container editorial-section contact-panel enquiry-section">
+      <div class="enquiry-section__grid">
+        <div class="enquiry-section__heading">
+          <p class="eyebrow">Start the conversation</p>
+          <h2>Describe the repeat task.</h2>
+          <p class="contact-intro">
+            Tell me what happens now, which tools are involved, who checks the output and what a
+            useful result would look like. This form sends the enquiry directly from the website.
+          </p>
+        </div>
 
+        <form
+          class="contact-form"
+          action="/api/contact"
+          method="POST"
+          aria-describedby="contact-form-status"
+          data-contact-form
+        >
+          <input type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+          <div class="form-grid">
+            <label>
+              <span>Name</span>
+              <input name="name" type="text" autocomplete="name" required />
+            </label>
+            <label>
+              <span>Email</span>
+              <input name="email" type="email" autocomplete="email" required />
+            </label>
+            <label>
+              <span>Contact number (optional)</span>
+              <input name="contact_number" type="tel" autocomplete="tel" />
+            </label>
+            <label>
+              <span>Package interest</span>
+              <select name="package_interest" required>
+                <option value="">Choose one</option>
+                <option>Task Map</option>
+                <option>First Build</option>
+                <option>Operator System</option>
+                <option>Ongoing support</option>
+                <option>Not sure yet</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            <span>What do you want automated?</span>
+            <textarea
+              name="automation_request"
+              rows="5"
+              required
+              placeholder="Tell me the repeat task, who handles it now, and what a good result would look like."
+            ></textarea>
+          </label>
+
+          <label>
+            <span>Tools or systems involved</span>
+            <textarea
+              name="tools_involved"
+              rows="3"
+              placeholder="For example: Gmail, Outlook, Sheets, Notion, Slack, CRM, website forms, internal docs."
+            ></textarea>
+          </label>
+
+          <button class="button" type="submit">Send enquiry</button>
+          <p
+            id="contact-form-status"
+            class="form-status"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            data-contact-status
+          >
+            This sends the enquiry directly from the website to {site.email}.
+          </p>
+        </form>
+      </div>
+    </section>
   </main>
 
   <script>
