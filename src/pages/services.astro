@@ -1,6 +1,11 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { site } from "../data/site.js";
+
+const turnstileMode =
+  import.meta.env.PUBLIC_TURNSTILE_MODE?.trim().toLowerCase() || "off";
+const turnstileSiteKey =
+  import.meta.env.PUBLIC_TURNSTILE_SITE_KEY?.trim() || "";
 ---
 
 <BaseLayout
@@ -223,6 +228,8 @@ import { site } from "../data/site.js";
           method="POST"
           aria-describedby="contact-form-status"
           data-contact-form
+          data-turnstile-mode={turnstileMode}
+          data-turnstile-site-key={turnstileSiteKey}
         >
           <input type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true" />
 
@@ -271,6 +278,14 @@ import { site } from "../data/site.js";
             ></textarea>
           </label>
 
+          <div
+            class="turnstile-check"
+            aria-label="Security check"
+            data-turnstile-container
+            tabindex="-1"
+            hidden={turnstileMode === "off"}
+          ></div>
+
           <button class="button" type="submit">Send enquiry</button>
           <p
             id="contact-form-status"
@@ -290,6 +305,80 @@ import { site } from "../data/site.js";
   <script>
     import { initContactForms } from "../scripts/contact-form.js";
 
-    initContactForms();
+    const configuredMode =
+      import.meta.env.PUBLIC_TURNSTILE_MODE?.trim().toLowerCase() || "off";
+
+    if (configuredMode === "off") {
+      initContactForms();
+    } else {
+      const form = document.querySelector("[data-contact-form]");
+      const status = form?.querySelector("[data-contact-status]");
+      const container = form?.querySelector("[data-turnstile-container]");
+      let adapter = null;
+      let destroyed = false;
+
+      const announce = (message) => {
+        if (!status) return;
+        status.classList.remove("is-success");
+        status.textContent = message;
+      };
+      const pendingMessage =
+        configuredMode === "observe"
+          ? "Security check is loading. You can still send your enquiry."
+          : configuredMode === "required"
+            ? "Security check is loading. Wait a moment, then try again."
+            : "The enquiry form security mode is not configured correctly. Email Oliver directly.";
+
+      announce(pendingMessage);
+
+      const turnstile = {
+        get required() {
+          return adapter?.required ?? configuredMode !== "observe";
+        },
+        prepareSubmission() {
+          return (
+            adapter?.prepareSubmission() ?? {
+              allowed: configuredMode === "observe",
+              state: "loading",
+              token: "",
+            }
+          );
+        },
+        reset() {
+          adapter?.reset();
+        },
+        focus() {
+          if (adapter) {
+            adapter.focus();
+          } else {
+            container?.focus();
+          }
+        },
+        destroy() {
+          destroyed = true;
+          adapter?.destroy();
+        },
+      };
+
+      initContactForms({ turnstile });
+
+      import("../scripts/turnstile.js")
+        .then(({ createTurnstileAdapter }) => {
+          adapter = createTurnstileAdapter({
+            mode: configuredMode,
+            siteKey: form?.dataset.turnstileSiteKey || "",
+            container,
+            announce,
+          });
+          if (destroyed) adapter.destroy();
+        })
+        .catch(() => {
+          announce(
+            configuredMode === "observe"
+              ? "The security check could not load. You can still send your enquiry."
+              : "The security check could not load. Refresh the page or email Oliver directly.",
+          );
+        });
+    }
   </script>
 </BaseLayout>

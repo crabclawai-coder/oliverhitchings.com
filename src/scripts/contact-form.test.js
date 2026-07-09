@@ -41,16 +41,35 @@ function renderForm() {
   return { form, status, button };
 }
 
-function setupController({ fetchImpl = vi.fn(), timeoutMs } = {}) {
+function setupController({ fetchImpl = vi.fn(), timeoutMs, turnstile } = {}) {
   const elements = renderForm();
   const controller = contactFormModule.createContactFormController({
     form: elements.form,
     status: elements.status,
     fetchImpl,
     timeoutMs,
+    turnstile,
   });
 
   return { ...elements, controller, fetchImpl };
+}
+
+function turnstileAdapter({
+  allowed = true,
+  token = "",
+  state = token ? "ready" : "missing",
+  preparation,
+} = {}) {
+  return {
+    prepareSubmission: vi
+      .fn()
+      .mockImplementation(() =>
+        preparation ? preparation.promise : { allowed, state, token },
+      ),
+    reset: vi.fn(),
+    focus: vi.fn(),
+    destroy: vi.fn(),
+  };
 }
 
 function dispatchSubmit(form) {
@@ -336,6 +355,149 @@ describe("createContactFormController", () => {
     expect(requestSignal.aborted).toBe(true);
     expect(status.textContent).toBe(DELIVERY_UNKNOWN_STATUS);
     expect(button.disabled).toBe(false);
+  });
+
+  it.each(["missing", "loading", "error"])(
+    "allows one observe-mode request while the security state is %s",
+    async (state) => {
+      const turnstile = turnstileAdapter({ allowed: true, state });
+      const fetchImpl = vi
+        .fn()
+        .mockResolvedValue(jsonResponse(503, { message: "Try again later." }));
+      const { form, status } = setupController({ fetchImpl, turnstile });
+
+      dispatchSubmit(form);
+
+      await vi.waitFor(() => expect(status.textContent).toBe("Try again later."));
+      expect(fetchImpl).toHaveBeenCalledOnce();
+      expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).not.toHaveProperty(
+        "turnstile_token",
+      );
+      expect(turnstile.reset).toHaveBeenCalledOnce();
+    },
+  );
+
+  it("adds exactly one non-empty Turnstile token to the JSON payload", async () => {
+    const turnstile = turnstileAdapter({ token: "verified-token" });
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, { ok: true }));
+    const { form, status } = setupController({ fetchImpl, turnstile });
+
+    dispatchSubmit(form);
+
+    await vi.waitFor(() => expect(status.textContent).toBe(SUCCESS_STATUS));
+    const payload = JSON.parse(fetchImpl.mock.calls[0][1].body);
+    expect(payload.turnstile_token).toBe("verified-token");
+    expect(
+      Object.keys(payload).filter((key) => key === "turnstile_token"),
+    ).toHaveLength(1);
+  });
+
+  it.each(["loading", "missing", "error", "unsupported"])(
+    "blocks required mode in %s state without fetch, reset, or form loss",
+    async (state) => {
+      const turnstile = turnstileAdapter({ allowed: false, state });
+      const { form, fetchImpl } = setupController({ turnstile });
+
+      dispatchSubmit(form);
+
+      await vi.waitFor(() =>
+        expect(turnstile.prepareSubmission).toHaveBeenCalledOnce(),
+      );
+      expect(fetchImpl).not.toHaveBeenCalled();
+      expect(turnstile.reset).not.toHaveBeenCalled();
+      expect(turnstile.focus).toHaveBeenCalledOnce();
+      expect(form.elements.namedItem("name").value).toBe("Roger");
+      expect(form.elements.namedItem("automation_request").value).toBe(
+        "Automate the weekly report",
+      );
+    },
+  );
+
+  it("guards duplicate submits while security preparation is pending", async () => {
+    const preparation = deferred();
+    const turnstile = turnstileAdapter({ preparation });
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, { ok: true }));
+    const { form, status } = setupController({ fetchImpl, turnstile });
+
+    dispatchSubmit(form);
+    dispatchSubmit(form);
+
+    expect(turnstile.prepareSubmission).toHaveBeenCalledOnce();
+    expect(fetchImpl).not.toHaveBeenCalled();
+
+    preparation.resolve({ allowed: true, state: "ready", token: "token-1" });
+    await vi.waitFor(() => expect(status.textContent).toBe(SUCCESS_STATUS));
+
+    expect(turnstile.prepareSubmission).toHaveBeenCalledOnce();
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ["confirmed success", () => Promise.resolve(jsonResponse(200, { ok: true }))],
+    ["other 2xx", () => Promise.resolve(jsonResponse(202, { ok: false }))],
+    ["client error", () => Promise.resolve(jsonResponse(400, { message: "Bad request" }))],
+    ["server error", () => Promise.resolve(jsonResponse(503, { message: "Unavailable" }))],
+    ["network loss", () => Promise.reject(new TypeError("Failed to fetch"))],
+    [
+      "request abort",
+      () => Promise.reject(new DOMException("Timed out", "AbortError")),
+    ],
+  ])("resets the widget exactly once after %s", async (_label, response) => {
+    const turnstile = turnstileAdapter({ token: "one-use-token" });
+    const fetchImpl = vi.fn().mockImplementation(response);
+    const { form, button } = setupController({ fetchImpl, turnstile });
+
+    dispatchSubmit(form);
+
+    await vi.waitFor(() => expect(button.disabled).toBe(false));
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(turnstile.reset).toHaveBeenCalledOnce();
+  });
+
+  it("starts the request timeout only after security allows the attempt", async () => {
+    vi.useFakeTimers();
+    const preparation = deferred();
+    const turnstile = turnstileAdapter({ preparation });
+    let requestSignal;
+    const fetchImpl = vi.fn().mockImplementation((_url, options) => {
+      requestSignal = options.signal;
+      return new Promise((_resolve, reject) => {
+        requestSignal.addEventListener(
+          "abort",
+          () => reject(new DOMException("Timed out", "AbortError")),
+          { once: true },
+        );
+      });
+    });
+    const { form, status } = setupController({ fetchImpl, turnstile });
+
+    dispatchSubmit(form);
+    await vi.advanceTimersByTimeAsync(12_000);
+    expect(fetchImpl).not.toHaveBeenCalled();
+
+    preparation.resolve({ allowed: true, state: "ready", token: "token-1" });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(requestSignal.aborted).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(11_999);
+    expect(requestSignal.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(requestSignal.aborted).toBe(true);
+    expect(status.textContent).toBe(DELIVERY_UNKNOWN_STATUS);
+    expect(turnstile.reset).toHaveBeenCalledOnce();
+  });
+
+  it("destroys both the controller listener and adapter", async () => {
+    const turnstile = turnstileAdapter();
+    const { form, controller, fetchImpl } = setupController({ turnstile });
+
+    controller.destroy();
+    dispatchSubmit(form);
+    await Promise.resolve();
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(turnstile.destroy).toHaveBeenCalledOnce();
   });
 });
 

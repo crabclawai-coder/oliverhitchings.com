@@ -9,15 +9,22 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 const projectRoot = new URL("../", import.meta.url);
 const guidePriceNote =
   "Guide prices. VAT, third-party software, model usage and hosting are separate where they apply.";
+const turnstileTestSiteKey = "1x00000000000000000000AA";
+const turnstileTestSecret = "1x0000000000000000000000000000000AA";
 
 let buildDirectory;
+let observeBuildDirectory;
 let temporaryDirectory;
 let home;
 let services;
+let servicesHtml;
+let observeServices;
+let observeServicesHtml;
 let about;
 let blog;
 let articlePages;
 let servicesModuleSources;
+let observeServicesModuleSources;
 let servicesStylesheetSource;
 
 const expectedPosts = [
@@ -61,12 +68,34 @@ function textFragments(root) {
   return fragments;
 }
 
-async function readPage(filePath) {
-  const html = await readFile(join(buildDirectory, filePath), "utf8");
+async function readPage(filePath, directory = buildDirectory) {
+  const html = await readFile(join(directory, filePath), "utf8");
   return new JSDOM(html).window.document;
 }
 
-function buildInIsolatedProcess({ cwd, outDir, root }) {
+async function readModuleSources(documentRef, directory) {
+  return Promise.all(
+    Array.from(
+      documentRef.querySelectorAll("script[type='module'][src]"),
+      (script) =>
+        readFile(
+          join(directory, script.getAttribute("src").replace(/^\//, "")),
+          "utf8",
+        ),
+    ),
+  );
+}
+
+function buildEnvironment(overrides = {}) {
+  const environment = { ...process.env };
+  delete environment.PUBLIC_TURNSTILE_MODE;
+  delete environment.PUBLIC_TURNSTILE_SITE_KEY;
+  delete environment.TURNSTILE_SECRET_KEY;
+
+  return { ...environment, ...overrides };
+}
+
+function buildInIsolatedProcess({ cwd, env, outDir, root }) {
   const astroModuleUrl = import.meta.resolve("astro");
   const source = `
     import { build } from ${JSON.stringify(astroModuleUrl)};
@@ -85,7 +114,7 @@ function buildInIsolatedProcess({ cwd, outDir, root }) {
       ["--input-type=module", "--eval", source],
       {
         cwd,
-        env: process.env,
+        env,
         stdio: ["ignore", "pipe", "pipe"],
       },
     );
@@ -140,6 +169,7 @@ beforeAll(async () => {
     await mkdtemp(join(tmpdir(), "oliverhitchings-pages-content-")),
   );
   buildDirectory = join(temporaryDirectory, "dist");
+  observeBuildDirectory = join(temporaryDirectory, "dist-observe");
   await symlink(
     join(fileURLToPath(projectRoot), "node_modules"),
     join(temporaryDirectory, "node_modules"),
@@ -147,12 +177,32 @@ beforeAll(async () => {
 
   await buildInIsolatedProcess({
     cwd: temporaryDirectory,
+    env: buildEnvironment(),
     outDir: buildDirectory,
+    root: fileURLToPath(projectRoot),
+  });
+  await buildInIsolatedProcess({
+    cwd: temporaryDirectory,
+    env: buildEnvironment({
+      PUBLIC_TURNSTILE_MODE: "observe",
+      PUBLIC_TURNSTILE_SITE_KEY: turnstileTestSiteKey,
+      TURNSTILE_SECRET_KEY: turnstileTestSecret,
+    }),
+    outDir: observeBuildDirectory,
     root: fileURLToPath(projectRoot),
   });
 
   home = await readPage("index.html");
   services = await readPage("services/index.html");
+  servicesHtml = await readFile(join(buildDirectory, "services/index.html"), "utf8");
+  observeServices = await readPage(
+    "services/index.html",
+    observeBuildDirectory,
+  );
+  observeServicesHtml = await readFile(
+    join(observeBuildDirectory, "services/index.html"),
+    "utf8",
+  );
   about = await readPage("about/index.html");
   blog = await readPage("blog/index.html");
   articlePages = await Promise.all(
@@ -161,13 +211,10 @@ beforeAll(async () => {
       document: await readPage(`blog/${post.slug}/index.html`),
     })),
   );
-  servicesModuleSources = await Promise.all(
-    Array.from(services.querySelectorAll("script[type='module'][src]"), (script) =>
-      readFile(
-        join(buildDirectory, script.getAttribute("src").replace(/^\//, "")),
-        "utf8",
-      ),
-    ),
+  servicesModuleSources = await readModuleSources(services, buildDirectory);
+  observeServicesModuleSources = await readModuleSources(
+    observeServices,
+    observeBuildDirectory,
   );
   const stylesheetPath = services
     .querySelector("link[rel='stylesheet']")
@@ -176,7 +223,7 @@ beforeAll(async () => {
     join(buildDirectory, stylesheetPath.replace(/^\//, "")),
     "utf8",
   );
-}, 60_000);
+}, 120_000);
 
 afterAll(async () => {
   await rm(temporaryDirectory, { force: true, recursive: true });
@@ -495,6 +542,60 @@ describe("generated Services content", () => {
           /[A-Za-z_$][\w$]*\(\);?\s*$/.test(source),
       ),
     ).toBe(true);
+  });
+
+  it("defaults to an inert off-mode container without a Turnstile network reference", () => {
+    const form = services.querySelector("form[data-contact-form]");
+    const container = form?.querySelector(
+      "[data-turnstile-container][aria-label='Security check'][tabindex='-1']",
+    );
+
+    expect(form?.getAttribute("data-turnstile-mode")).toBe("off");
+    expect(form?.getAttribute("data-turnstile-site-key")).toBe("");
+    expect(container).not.toBeNull();
+    expect(container?.hasAttribute("hidden")).toBe(true);
+    expect(servicesHtml).not.toContain("challenges.cloudflare.com");
+    expect(servicesModuleSources.join("\n")).not.toContain(
+      "challenges.cloudflare.com",
+    );
+  });
+
+  it("emits observe configuration and a same-origin external initializer", () => {
+    const form = observeServices.querySelector("form[data-contact-form]");
+    const container = form?.querySelector(
+      "[data-turnstile-container][aria-label='Security check'][tabindex='-1']",
+    );
+    const externalModules = Array.from(
+      observeServices.querySelectorAll("script[type='module'][src]"),
+    );
+
+    expect(form?.getAttribute("action")).toBe("/api/contact");
+    expect(form?.getAttribute("data-turnstile-mode")).toBe("observe");
+    expect(form?.getAttribute("data-turnstile-site-key")).toBe(
+      turnstileTestSiteKey,
+    );
+    expect(container).not.toBeNull();
+    expect(container?.hasAttribute("hidden")).toBe(false);
+    expect(externalModules.length).toBeGreaterThan(0);
+    expect(
+      externalModules.every((script) =>
+        script.getAttribute("src")?.startsWith("/"),
+      ),
+    ).toBe(true);
+    expect(
+      observeServices.querySelector("script[type='module']:not([src])"),
+    ).toBeNull();
+    expect(observeServicesModuleSources.join("\n")).toContain("turnstile");
+  });
+
+  it("never emits the private Turnstile variable name or value", () => {
+    const generated = [
+      observeServicesHtml,
+      ...observeServicesModuleSources,
+    ].join("\n");
+
+    expect(generated).not.toContain("TURNSTILE_SECRET_KEY");
+    expect(generated).not.toContain(turnstileTestSecret);
   });
 });
 

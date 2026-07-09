@@ -493,6 +493,27 @@ h3 {
   opacity: 0;
 }
 
+.turnstile-check {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 65px;
+  overflow: hidden;
+}
+
+.turnstile-check[hidden] {
+  display: none;
+}
+
+.turnstile-check iframe {
+  max-width: 100%;
+}
+
+.turnstile-check:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .form-status {
   display: inline-flex;
   align-items: center;

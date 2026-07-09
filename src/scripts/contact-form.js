@@ -71,28 +71,51 @@ export function createContactFormController({
     const initialAriaBusy = form.getAttribute("aria-busy");
     const initialButtonDisabled = submitButton?.disabled;
     const initialButtonText = submitButton?.textContent;
-    const abortController = new AbortController();
-    const timeoutId = globalThis.setTimeout(
-      () => abortController.abort(),
-      timeoutMs,
-    );
+    let abortController;
+    let timeoutId;
+    let serverAttempted = false;
 
     form.setAttribute("aria-busy", "true");
-    setStatus(MESSAGES.pending);
 
     if (submitButton) {
       submitButton.disabled = true;
-      submitButton.textContent = "Sending…";
     }
 
     try {
+      const decision = turnstile?.prepareSubmission
+        ? await turnstile.prepareSubmission()
+        : { allowed: true, token: turnstile?.getToken?.() ?? "" };
+
+      if (decision?.allowed === false) {
+        turnstile?.focus?.();
+        return;
+      }
+
+      const token = String(decision?.token ?? "").trim();
+      const requestBody = Object.fromEntries(formData.entries());
+      if (token) {
+        requestBody.turnstile_token = token;
+      }
+
+      abortController = new AbortController();
+      timeoutId = globalThis.setTimeout(
+        () => abortController.abort(),
+        timeoutMs,
+      );
+      serverAttempted = true;
+      setStatus(MESSAGES.pending);
+
+      if (submitButton) {
+        submitButton.textContent = "Sending…";
+      }
+
       const response = await fetchImpl(form.action, {
         method: "POST",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(Object.fromEntries(formData.entries())),
+        body: JSON.stringify(requestBody),
         signal: abortController.signal,
       });
       const payload = await readJson(response);
@@ -115,7 +138,12 @@ export function createContactFormController({
           : MESSAGES.error,
       );
     } finally {
-      globalThis.clearTimeout(timeoutId);
+      if (timeoutId !== undefined) {
+        globalThis.clearTimeout(timeoutId);
+      }
+      if (serverAttempted) {
+        turnstile?.reset?.();
+      }
       inFlight = false;
 
       if (initialAriaBusy === null) {
@@ -133,13 +161,10 @@ export function createContactFormController({
 
   form.addEventListener("submit", handleSubmit);
 
-  // Release B can supply this adapter without changing the controller API.
-  // It is deliberately not required or invoked in the urgent release.
-  void turnstile;
-
   return {
     destroy() {
       form.removeEventListener("submit", handleSubmit);
+      turnstile?.destroy?.();
     },
   };
 }
