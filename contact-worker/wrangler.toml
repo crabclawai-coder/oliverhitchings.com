@@ -3,6 +3,18 @@ main = "src/index.js"
 compatibility_date = "2026-05-20"
 workers_dev = false
 
+[vars]
+TURNSTILE_MODE = "off"
+RATE_LIMIT_MODE = "off"
+TURNSTILE_ALLOWED_HOSTNAMES = "oliverhitchings.com,www.oliverhitchings.com"
+
+[secrets]
+required = ["TURNSTILE_SECRET_KEY"]
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
 [[routes]]
 pattern = "oliverhitchings.com/api/contact"
 zone_name = "oliverhitchings.com"

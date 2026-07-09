@@ -12,6 +12,7 @@ const ALLOWED_PACKAGES = [
   "Ongoing support",
   "Not sure yet",
 ];
+const VALID_TURNSTILE_TOKEN = "turnstile-token-test-value";
 
 const VALID_PAYLOAD = {
   _honey: "",
@@ -53,6 +54,35 @@ function createLoggerFake({ infoError, errorError } = {}) {
     logger: { info, error },
     info,
     error,
+  };
+}
+
+function createTurnstileResponse(overrides = {}, responseOptions = {}) {
+  const body = {
+    success: true,
+    challenge_ts: new Date(Date.now() - 60_000).toISOString(),
+    hostname: "oliverhitchings.com",
+    action: "contact",
+    "error-codes": [],
+    ...overrides,
+  };
+
+  return new Response(
+    responseOptions.rawBody ?? JSON.stringify(body),
+    {
+      status: responseOptions.status ?? 200,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
+}
+
+function createTurnstileEnv(mode = "enforce", overrides = {}) {
+  return {
+    TURNSTILE_MODE: mode,
+    TURNSTILE_SECRET_KEY: "turnstile-secret-test-value",
+    TURNSTILE_ALLOWED_HOSTNAMES:
+      " oliverhitchings.com,oliverhitchings.com,www.oliverhitchings.com ",
+    ...overrides,
   };
 }
 
@@ -109,7 +139,8 @@ async function submit(payload = VALID_PAYLOAD, options = {}) {
     ? createLoggerFake(options.loggerErrors)
     : { logger: { info() {}, error() {} } };
   const request = createPostRequest(payload, options.request);
-  const response = await handleContactRequest(request, email.env, {
+  const env = { ...email.env, ...options.env };
+  const response = await handleContactRequest(request, env, {
     waitUntil: vi.fn(),
     logger: logging.logger,
   });
@@ -117,6 +148,7 @@ async function submit(payload = VALID_PAYLOAD, options = {}) {
   return {
     ...email,
     ...logging,
+    env,
     request,
     response,
     body: await response.json(),
@@ -155,6 +187,8 @@ function expectCapturedLogsToExclude(
 }
 
 afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -633,6 +667,762 @@ describe("handleContactRequest field validation", () => {
   });
 });
 
+describe("handleContactRequest staged-control compatibility", () => {
+  it.each([
+    ["absent modes", {}],
+    ["explicitly disabled modes", { TURNSTILE_MODE: "off", RATE_LIMIT_MODE: "off" }],
+  ])("accepts a legacy tokenless payload with %s", async (_label, env) => {
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await submit(VALID_PAYLOAD, {
+      env: { ...env, CONTACT_RATE_LIMITER: { limit } },
+    });
+
+    expect(result.response.status).toBe(200);
+    expect(result.send).toHaveBeenCalledOnce();
+    expect(limit).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts and ignores a token-bearing payload while controls are off", async () => {
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await submit(
+      { ...VALID_PAYLOAD, turnstile_token: "off-mode-token" },
+      {
+        env: {
+          TURNSTILE_MODE: "off",
+          RATE_LIMIT_MODE: "off",
+          CONTACT_RATE_LIMITER: { limit },
+        },
+      },
+    );
+
+    expect(result.response.status).toBe(200);
+    expect(result.send).toHaveBeenCalledOnce();
+    expect(result.send.mock.calls[0][0].text).not.toContain("off-mode-token");
+    expect(limit).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each([null, 42, [], { token: "value" }])(
+    "rejects the non-string Turnstile token %j",
+    async (turnstileToken) => {
+      const result = await submit({
+        ...VALID_PAYLOAD,
+        turnstile_token: turnstileToken,
+      });
+
+      expect(result.response.status).toBe(400);
+      expectStableError(result.body, "invalid_submission");
+      expect(result.send).not.toHaveBeenCalled();
+    },
+  );
+
+  it("accepts 2,048 token characters and rejects 2,049", async () => {
+    const accepted = await submit({
+      ...VALID_PAYLOAD,
+      turnstile_token: "🛡".repeat(2_048),
+    });
+    const rejected = await submit({
+      ...VALID_PAYLOAD,
+      turnstile_token: "🛡".repeat(2_049),
+    });
+
+    expect(accepted.response.status).toBe(200);
+    expect(accepted.send).toHaveBeenCalledOnce();
+    expect(rejected.response.status).toBe(400);
+    expectStableError(rejected.body, "invalid_submission");
+    expect(rejected.send).not.toHaveBeenCalled();
+  });
+});
+
+describe("handleContactRequest rate limiting", () => {
+  it("uses only CF-Connecting-IP as the key and logs an allowed observe result", async () => {
+    const connectingIp = "203.0.113.50";
+    const limit = vi.fn().mockResolvedValue({ success: true });
+    const result = await submit(VALID_PAYLOAD, {
+      captureLogs: true,
+      env: {
+        RATE_LIMIT_MODE: "observe",
+        CONTACT_RATE_LIMITER: { limit },
+      },
+      request: {
+        headers: {
+          "CF-Connecting-IP": connectingIp,
+          "CF-Ray": "ray-rate-allowed",
+        },
+      },
+    });
+
+    expect(result.response.status).toBe(200);
+    expect(limit).toHaveBeenCalledOnce();
+    expect(limit).toHaveBeenCalledWith({ key: connectingIp });
+    expect(result.send).toHaveBeenCalledOnce();
+    expect(result.info).toHaveBeenCalledWith({
+      event: "contact_rate_limit",
+      mode: "observe",
+      requestId: result.body.requestId,
+      cfRay: "ray-rate-allowed",
+      outcome: "allowed",
+    });
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, connectingIp);
+  });
+
+  it("observes a limited result without blocking email", async () => {
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    const result = await submit(VALID_PAYLOAD, {
+      captureLogs: true,
+      env: {
+        RATE_LIMIT_MODE: "observe",
+        CONTACT_RATE_LIMITER: { limit },
+      },
+      request: {
+        headers: {
+          "CF-Connecting-IP": "198.51.100.20",
+          "CF-Ray": "ray-rate-observe-limited",
+        },
+      },
+    });
+
+    expect(result.response.status).toBe(200);
+    expect(limit).toHaveBeenCalledOnce();
+    expect(result.send).toHaveBeenCalledOnce();
+    expect(result.info).toHaveBeenCalledWith({
+      event: "contact_rate_limit",
+      mode: "observe",
+      requestId: result.body.requestId,
+      cfRay: "ray-rate-observe-limited",
+      outcome: "limited",
+    });
+  });
+
+  it("enforces a limited result with stable 429 JSON and skips later work", async () => {
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await submit(
+      { ...VALID_PAYLOAD, turnstile_token: "valid-looking-token" },
+      {
+        captureLogs: true,
+        env: {
+          RATE_LIMIT_MODE: "enforce",
+          TURNSTILE_MODE: "enforce",
+          TURNSTILE_SECRET_KEY: "test-secret",
+          TURNSTILE_ALLOWED_HOSTNAMES: "oliverhitchings.com",
+          CONTACT_RATE_LIMITER: { limit },
+        },
+        request: {
+          headers: {
+            "CF-Connecting-IP": "192.0.2.12",
+            "CF-Ray": "ray-rate-enforced",
+          },
+        },
+      },
+    );
+
+    expect(result.response.status).toBe(429);
+    expect(result.response.headers.get("Retry-After")).toBe("60");
+    expectStableError(result.body, "rate_limited");
+    expectJsonResponseHeaders(result.response);
+    expect(limit).toHaveBeenCalledOnce();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.send).not.toHaveBeenCalled();
+    expect(result.info).toHaveBeenCalledWith({
+      event: "contact_rate_limit",
+      mode: "enforce",
+      requestId: result.body.requestId,
+      cfRay: "ray-rate-enforced",
+      outcome: "limited",
+    });
+  });
+
+  it.each([
+    ["missing binding", undefined, "203.0.113.1"],
+    ["malformed result", { limit: vi.fn().mockResolvedValue({ allowed: true }) }, "203.0.113.2"],
+    ["missing IP", { limit: vi.fn().mockResolvedValue({ success: false }) }, undefined],
+  ])("fails open in enforce mode for %s", async (_label, binding, connectingIp) => {
+    const result = await submit(VALID_PAYLOAD, {
+      captureLogs: true,
+      env: {
+        RATE_LIMIT_MODE: "enforce",
+        ...(binding ? { CONTACT_RATE_LIMITER: binding } : {}),
+      },
+      request: {
+        headers: {
+          ...(connectingIp ? { "CF-Connecting-IP": connectingIp } : {}),
+          "CF-Ray": "ray-rate-unavailable",
+        },
+      },
+    });
+
+    expect(result.response.status).toBe(200);
+    expect(result.send).toHaveBeenCalledOnce();
+    if (!connectingIp && binding) {
+      expect(binding.limit).not.toHaveBeenCalled();
+    }
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_rate_limit",
+      mode: "enforce",
+      requestId: result.body.requestId,
+      cfRay: "ray-rate-unavailable",
+      outcome: "unavailable",
+    });
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, connectingIp);
+  });
+
+  it("fails open and logs unavailable when the binding throws", async () => {
+    const connectingIp = "198.51.100.44";
+    const limit = vi.fn().mockRejectedValue(
+      new Error(`binding leaked ${connectingIp} ${VALID_PAYLOAD.email}`),
+    );
+    const result = await submit(VALID_PAYLOAD, {
+      captureLogs: true,
+      env: {
+        RATE_LIMIT_MODE: "enforce",
+        CONTACT_RATE_LIMITER: { limit },
+      },
+      request: {
+        headers: {
+          "CF-Connecting-IP": connectingIp,
+          "CF-Ray": "ray-rate-thrown",
+        },
+      },
+    });
+
+    expect(result.response.status).toBe(200);
+    expect(limit).toHaveBeenCalledOnce();
+    expect(result.send).toHaveBeenCalledOnce();
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_rate_limit",
+      mode: "enforce",
+      requestId: result.body.requestId,
+      cfRay: "ray-rate-thrown",
+      outcome: "unavailable",
+    });
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, connectingIp, [
+      "binding leaked",
+    ]);
+  });
+
+  it("logs an unknown non-empty mode as a high-severity configuration event and fails open", async () => {
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    const result = await submit(VALID_PAYLOAD, {
+      captureLogs: true,
+      env: {
+        RATE_LIMIT_MODE: "ENFORCE",
+        CONTACT_RATE_LIMITER: { limit },
+      },
+      request: {
+        headers: {
+          "CF-Connecting-IP": "203.0.113.8",
+          "CF-Ray": "ray-rate-invalid-mode",
+        },
+      },
+    });
+
+    expect(result.response.status).toBe(200);
+    expect(limit).not.toHaveBeenCalled();
+    expect(result.send).toHaveBeenCalledOnce();
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_rate_limit_configuration",
+      mode: "invalid",
+      requestId: result.body.requestId,
+      cfRay: "ray-rate-invalid-mode",
+      outcome: "unavailable",
+    });
+  });
+
+  it("never calls the limiter for invalid or honeypot submissions", async () => {
+    const limit = vi.fn().mockResolvedValue({ success: true });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const env = {
+      ...createTurnstileEnv(),
+      RATE_LIMIT_MODE: "enforce",
+      CONTACT_RATE_LIMITER: { limit },
+    };
+    const request = {
+      headers: { "CF-Connecting-IP": "192.0.2.99" },
+    };
+
+    const invalid = await submit(
+      { ...VALID_PAYLOAD, email: "invalid" },
+      { env, request },
+    );
+    const honeypot = await submit(
+      {
+        ...VALID_PAYLOAD,
+        _honey: "filled",
+        turnstile_token: { ignored: true },
+      },
+      { env, request },
+    );
+
+    expect(invalid.response.status).toBe(400);
+    expect(honeypot.response.status).toBe(200);
+    expect(limit).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(invalid.send).not.toHaveBeenCalled();
+    expect(honeypot.send).not.toHaveBeenCalled();
+  });
+
+  it("keeps the enforced 429 response stable when control logging throws", async () => {
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    const result = await submit(VALID_PAYLOAD, {
+      captureLogs: true,
+      loggerErrors: { infoError: new Error("rate logger unavailable") },
+      env: {
+        RATE_LIMIT_MODE: "enforce",
+        CONTACT_RATE_LIMITER: { limit },
+      },
+      request: {
+        headers: { "CF-Connecting-IP": "192.0.2.77" },
+      },
+    });
+
+    expect(result.response.status).toBe(429);
+    expectStableError(result.body, "rate_limited");
+    expect(result.send).not.toHaveBeenCalled();
+    expect(limit).toHaveBeenCalledOnce();
+  });
+});
+
+describe("handleContactRequest Turnstile validation", () => {
+  it("accepts one valid contact token and sends the request ID without remote IP", async () => {
+    const connectingIp = "203.0.113.70";
+    const fetchMock = vi.fn().mockResolvedValue(createTurnstileResponse());
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await submit(
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      {
+        captureLogs: true,
+        env: createTurnstileEnv(),
+        request: {
+          headers: {
+            "CF-Connecting-IP": connectingIp,
+            "CF-Ray": "ray-turnstile-accepted",
+          },
+        },
+      },
+    );
+
+    expect(result.response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(result.send).toHaveBeenCalledOnce();
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    );
+    expect(options.method).toBe("POST");
+    expect(options.signal).toBeInstanceOf(AbortSignal);
+    expect(options.body).toBeInstanceOf(FormData);
+    expect(options.body.get("secret")).toBe("turnstile-secret-test-value");
+    expect(options.body.get("response")).toBe(VALID_TURNSTILE_TOKEN);
+    expect(options.body.get("idempotency_key")).toBe(result.body.requestId);
+    expect(options.body.has("remoteip")).toBe(false);
+    expect(result.send.mock.calls[0][0].text).not.toContain(
+      VALID_TURNSTILE_TOKEN,
+    );
+    expect(result.info).toHaveBeenCalledWith({
+      event: "contact_turnstile",
+      mode: "enforce",
+      requestId: result.body.requestId,
+      cfRay: "ray-turnstile-accepted",
+      outcome: "accepted",
+      reason: "verified",
+    });
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, connectingIp, [
+      VALID_TURNSTILE_TOKEN,
+      "turnstile-secret-test-value",
+    ]);
+  });
+
+  it.each([
+    ["observe", 200, true],
+    ["enforce", 400, false],
+  ])(
+    "handles a missing token in %s mode",
+    async (mode, expectedStatus, shouldSend) => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      const result = await submit(VALID_PAYLOAD, {
+        captureLogs: true,
+        env: createTurnstileEnv(mode),
+        request: { headers: { "CF-Ray": "ray-turnstile-missing" } },
+      });
+
+      expect(result.response.status).toBe(expectedStatus);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(result.send).toHaveBeenCalledTimes(shouldSend ? 1 : 0);
+      if (mode === "enforce") {
+        expectStableError(result.body, "turnstile_required");
+      }
+      expect(result.info).toHaveBeenCalledWith({
+        event: "contact_turnstile",
+        mode,
+        requestId: result.body.requestId,
+        cfRay: "ray-turnstile-missing",
+        outcome: "rejected",
+        reason: "missing_token",
+      });
+    },
+  );
+
+  it("returns token-required before checking optional Turnstile configuration", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await submit(VALID_PAYLOAD, {
+      captureLogs: true,
+      env: createTurnstileEnv("enforce", {
+        TURNSTILE_SECRET_KEY: undefined,
+        TURNSTILE_ALLOWED_HOSTNAMES: undefined,
+      }),
+    });
+
+    expect(result.response.status).toBe(400);
+    expectStableError(result.body, "turnstile_required");
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.send).not.toHaveBeenCalled();
+    expect(result.info).toHaveBeenCalledWith({
+      event: "contact_turnstile",
+      mode: "enforce",
+      requestId: result.body.requestId,
+      cfRay: "unknown",
+      outcome: "rejected",
+      reason: "missing_token",
+    });
+    expect(result.error).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["invalid-input-response", "invalid token"],
+    ["timeout-or-duplicate", "expired or duplicate token"],
+  ])("rejects an enforced %s result", async (errorCode) => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      createTurnstileResponse({
+        success: false,
+        "error-codes": [errorCode],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await submit(
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      {
+        captureLogs: true,
+        env: createTurnstileEnv(),
+      },
+    );
+
+    expect(result.response.status).toBe(400);
+    expectStableError(result.body, "turnstile_rejected");
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(result.send).not.toHaveBeenCalled();
+    expect(result.info).toHaveBeenCalledWith({
+      event: "contact_turnstile",
+      mode: "enforce",
+      requestId: result.body.requestId,
+      cfRay: "unknown",
+      outcome: "rejected",
+      reason: "token_rejected",
+    });
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, undefined, [
+      VALID_TURNSTILE_TOKEN,
+      errorCode,
+    ]);
+  });
+
+  it.each([
+    ["wrong action", { action: "login" }],
+    ["wrong hostname", { hostname: "attacker.example" }],
+    ["invalid timestamp", { challenge_ts: "not-a-date" }],
+    [
+      "old timestamp",
+      { challenge_ts: new Date(Date.now() - 360_000).toISOString() },
+    ],
+    [
+      "future timestamp",
+      { challenge_ts: new Date(Date.now() + 120_000).toISOString() },
+    ],
+  ])("rejects a successful Siteverify response with %s", async (_label, overrides) => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(createTurnstileResponse(overrides));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await submit(
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      { env: createTurnstileEnv() },
+    );
+
+    expect(result.response.status).toBe(400);
+    expectStableError(result.body, "turnstile_rejected");
+    expect(result.send).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["five-minute boundary", -300_000],
+    ["future-skew boundary", 60_000],
+  ])("accepts the exact %s timestamp", async (_label, offset) => {
+    vi.useFakeTimers();
+    const now = Date.parse("2026-07-10T00:00:00.000Z");
+    vi.setSystemTime(now);
+    const challengeTs = new Date(now + offset).toISOString();
+    const fetchMock = vi.fn().mockResolvedValue(
+      createTurnstileResponse({ challenge_ts: challengeTs }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await submit(
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      { env: createTurnstileEnv() },
+    );
+
+    expect(result.response.status).toBe(200);
+    expect(result.send).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ["missing secret", { TURNSTILE_SECRET_KEY: undefined }, "missing_secret"],
+    ["blank secret", { TURNSTILE_SECRET_KEY: "   " }, "missing_secret"],
+    [
+      "missing hostname allowlist",
+      { TURNSTILE_ALLOWED_HOSTNAMES: undefined },
+      "missing_hostnames",
+    ],
+    [
+      "empty hostname allowlist",
+      { TURNSTILE_ALLOWED_HOSTNAMES: " , , " },
+      "missing_hostnames",
+    ],
+  ])("treats %s as unavailable configuration", async (_label, envChange, reason) => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await submit(
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      {
+        captureLogs: true,
+        env: createTurnstileEnv("enforce", envChange),
+      },
+    );
+
+    expect(result.response.status).toBe(503);
+    expectStableError(result.body, "turnstile_unavailable");
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.send).not.toHaveBeenCalled();
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_turnstile",
+      mode: "enforce",
+      requestId: result.body.requestId,
+      cfRay: "unknown",
+      outcome: "unavailable",
+      reason,
+    });
+  });
+
+  it.each([
+    ["internal-error"],
+    ["missing-input-secret"],
+    ["invalid-input-secret"],
+    ["bad-request"],
+    ["unknown-provider-code"],
+  ])("maps the provider code %s to unavailable without exposing it", async (errorCode) => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      createTurnstileResponse({
+        success: false,
+        "error-codes": [errorCode],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await submit(
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      {
+        captureLogs: true,
+        env: createTurnstileEnv(),
+      },
+    );
+
+    expect(result.response.status).toBe(503);
+    expectStableError(result.body, "turnstile_unavailable");
+    expect(result.send).not.toHaveBeenCalled();
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, undefined, [
+      errorCode,
+      VALID_TURNSTILE_TOKEN,
+      "turnstile-secret-test-value",
+    ]);
+  });
+
+  it.each([
+    [
+      "non-2xx response",
+      () => Promise.resolve(createTurnstileResponse({}, { status: 503 })),
+    ],
+    [
+      "malformed JSON",
+      () =>
+        Promise.resolve(
+          createTurnstileResponse({}, { rawBody: "{not-json" }),
+        ),
+    ],
+    [
+      "non-object JSON",
+      () => Promise.resolve(new Response("[]", { status: 200 })),
+    ],
+    ["fetch rejection", () => Promise.reject(new Error("network failed"))],
+  ])("treats %s as unavailable in enforce mode", async (_label, implementation) => {
+    const fetchMock = vi.fn().mockImplementation(implementation);
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await submit(
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      { env: createTurnstileEnv() },
+    );
+
+    expect(result.response.status).toBe(503);
+    expectStableError(result.body, "turnstile_unavailable");
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(result.send).not.toHaveBeenCalled();
+  });
+
+  it("aborts Siteverify after 3.5 seconds without retrying", async () => {
+    vi.useFakeTimers();
+    let capturedSignal;
+    const fetchMock = vi.fn((_url, options) => {
+      capturedSignal = options.signal;
+      return new Promise((_resolve, reject) => {
+        options.signal.addEventListener("abort", () => {
+          reject(new DOMException("aborted", "AbortError"));
+        });
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const responsePromise = submit(
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      { env: createTurnstileEnv() },
+    );
+
+    await vi.advanceTimersByTimeAsync(3_499);
+    expect(capturedSignal.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    const result = await responsePromise;
+
+    expect(capturedSignal.aborted).toBe(true);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(result.response.status).toBe(503);
+    expectStableError(result.body, "turnstile_unavailable");
+    expect(result.send).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      "missing token",
+      VALID_PAYLOAD,
+      vi.fn(),
+    ],
+    [
+      "rejected token",
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      vi.fn().mockResolvedValue(
+        createTurnstileResponse({
+          success: false,
+          "error-codes": ["invalid-input-response"],
+        }),
+      ),
+    ],
+    [
+      "unavailable verification",
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      vi.fn().mockRejectedValue(new Error("offline")),
+    ],
+    [
+      "missing configuration",
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      vi.fn(),
+    ],
+  ])("observe mode never blocks email for %s", async (label, payload, fetchMock) => {
+    vi.stubGlobal("fetch", fetchMock);
+    const env = createTurnstileEnv(
+      "observe",
+      label === "missing configuration"
+        ? { TURNSTILE_SECRET_KEY: undefined }
+        : {},
+    );
+    const result = await submit(payload, { env });
+
+    expect(result.response.status).toBe(200);
+    expect(result.send).toHaveBeenCalledOnce();
+  });
+
+  it("rejects an unknown non-empty mode as a configuration failure", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await submit(
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      {
+        captureLogs: true,
+        env: createTurnstileEnv("ENFORCE"),
+        request: { headers: { "CF-Ray": "ray-turnstile-invalid-mode" } },
+      },
+    );
+
+    expect(result.response.status).toBe(503);
+    expectStableError(result.body, "turnstile_unavailable");
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.send).not.toHaveBeenCalled();
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_turnstile_configuration",
+      mode: "invalid",
+      requestId: result.body.requestId,
+      cfRay: "ray-turnstile-invalid-mode",
+      outcome: "unavailable",
+      reason: "invalid_mode",
+    });
+  });
+
+  it("runs the limiter before Siteverify for meaningful valid data", async () => {
+    const limit = vi.fn().mockResolvedValue({ success: true });
+    const fetchMock = vi.fn().mockResolvedValue(createTurnstileResponse());
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await submit(
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      {
+        env: {
+          ...createTurnstileEnv(),
+          RATE_LIMIT_MODE: "enforce",
+          CONTACT_RATE_LIMITER: { limit },
+        },
+        request: { headers: { "CF-Connecting-IP": "192.0.2.40" } },
+      },
+    );
+
+    expect(result.response.status).toBe(200);
+    expect(limit).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(limit.mock.invocationCallOrder[0]).toBeLessThan(
+      fetchMock.mock.invocationCallOrder[0],
+    );
+    expect(result.send).toHaveBeenCalledOnce();
+  });
+
+  it("keeps responses stable and provider calls singular when control logs throw", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(createTurnstileResponse());
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await submit(
+      { ...VALID_PAYLOAD, turnstile_token: VALID_TURNSTILE_TOKEN },
+      {
+        captureLogs: true,
+        loggerErrors: { infoError: new Error("control logger unavailable") },
+        env: createTurnstileEnv(),
+      },
+    );
+
+    expect(result.response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(result.send).toHaveBeenCalledOnce();
+  });
+});
+
 describe("handleContactRequest email boundary and response schema", () => {
   it("sends the complete privacy-safe message and logs delivery metadata", async () => {
     const connectingIp = "203.0.113.42";
@@ -677,7 +1467,7 @@ describe("handleContactRequest email boundary and response schema", () => {
 
     expect(result.info).toHaveBeenCalledOnce();
     expect(result.info).toHaveBeenCalledWith({
-      event: "contact_email_delivered",
+      event: "contact_email_accepted",
       requestId: result.body.requestId,
       cfRay: "ray-test-123",
       messageId: "message-test-1",
@@ -707,7 +1497,7 @@ describe("handleContactRequest email boundary and response schema", () => {
     expect(text).toContain("Tools or systems involved:\nNot provided");
     expect(result.info).toHaveBeenCalledOnce();
     expect(result.info).toHaveBeenCalledWith({
-      event: "contact_email_delivered",
+      event: "contact_email_accepted",
       requestId: result.body.requestId,
       cfRay: "unknown",
       messageId: "unavailable",

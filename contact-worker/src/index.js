@@ -1,6 +1,13 @@
 const CONTACT_EMAIL = "oliverhitch2008@gmail.com";
 const FROM_EMAIL = "contact@oliverhitchings.com";
 const MAX_BODY_BYTES = 16 * 1024;
+const MAX_TURNSTILE_TOKEN_CHARACTERS = 2_048;
+const TURNSTILE_SITEVERIFY_URL =
+  "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+const TURNSTILE_ACTION = "contact";
+const TURNSTILE_TIMEOUT_MS = 3_500;
+const TURNSTILE_MAX_AGE_MS = 5 * 60 * 1_000;
+const TURNSTILE_MAX_FUTURE_SKEW_MS = 60 * 1_000;
 
 const ALLOWED_PACKAGES = new Set([
   "Task Map",
@@ -51,6 +58,24 @@ const ERRORS = {
     message:
       "Please complete your name, email, package interest, and automation request with valid details.",
   },
+  rateLimited: {
+    code: "rate_limited",
+    message: "Too many enquiries were sent. Please wait a minute and try again.",
+  },
+  turnstileRequired: {
+    code: "turnstile_required",
+    message: "Please complete the website security check and try again.",
+  },
+  turnstileRejected: {
+    code: "turnstile_rejected",
+    message:
+      "The website security check could not be confirmed. Please complete it again.",
+  },
+  turnstileUnavailable: {
+    code: "turnstile_unavailable",
+    message:
+      "The website security check is temporarily unavailable. Please try again shortly.",
+  },
   emailSendFailed: {
     code: "email_send_failed",
     message:
@@ -85,6 +110,282 @@ const logSafely = (writeLog) => {
   } catch {}
 };
 
+const isObjectPayload = (payload) =>
+  payload !== null && typeof payload === "object" && !Array.isArray(payload);
+
+const parseControlMode = (value) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === "" ||
+    value === "off"
+  ) {
+    return "off";
+  }
+
+  if (value === "observe" || value === "enforce") {
+    return value;
+  }
+
+  return "invalid";
+};
+
+const logControl = (logger, level, entry) => {
+  logSafely(() => {
+    logger[level](entry);
+  });
+};
+
+const applyRateLimit = async ({ request, env, logger, requestId, cfRay }) => {
+  const mode = parseControlMode(env.RATE_LIMIT_MODE);
+
+  if (mode === "off") {
+    return false;
+  }
+
+  if (mode === "invalid") {
+    logControl(logger, "error", {
+      event: "contact_rate_limit_configuration",
+      mode: "invalid",
+      requestId,
+      cfRay,
+      outcome: "unavailable",
+    });
+    return false;
+  }
+
+  const connectingIp = request.headers.get("CF-Connecting-IP");
+  const limiter = env.CONTACT_RATE_LIMITER;
+
+  if (!connectingIp || typeof limiter?.limit !== "function") {
+    logControl(logger, "error", {
+      event: "contact_rate_limit",
+      mode,
+      requestId,
+      cfRay,
+      outcome: "unavailable",
+    });
+    return false;
+  }
+
+  let result;
+
+  try {
+    result = await limiter.limit({ key: connectingIp });
+  } catch {
+    logControl(logger, "error", {
+      event: "contact_rate_limit",
+      mode,
+      requestId,
+      cfRay,
+      outcome: "unavailable",
+    });
+    return false;
+  }
+
+  if (
+    !isObjectPayload(result) ||
+    typeof result.success !== "boolean"
+  ) {
+    logControl(logger, "error", {
+      event: "contact_rate_limit",
+      mode,
+      requestId,
+      cfRay,
+      outcome: "unavailable",
+    });
+    return false;
+  }
+
+  const outcome = result.success ? "allowed" : "limited";
+  logControl(logger, "info", {
+    event: "contact_rate_limit",
+    mode,
+    requestId,
+    cfRay,
+    outcome,
+  });
+
+  return mode === "enforce" && !result.success;
+};
+
+const parseAllowedHostnames = (value) => {
+  if (typeof value !== "string") {
+    return new Set();
+  }
+
+  return new Set(
+    value
+      .split(",")
+      .map((hostname) => hostname.trim())
+      .filter(Boolean),
+  );
+};
+
+const rejectedTurnstileCodes = new Set([
+  "missing-input-response",
+  "invalid-input-response",
+  "timeout-or-duplicate",
+]);
+
+const interpretSiteverifyResult = (result, allowedHostnames) => {
+  if (!isObjectPayload(result) || typeof result.success !== "boolean") {
+    return { outcome: "unavailable", reason: "malformed_response" };
+  }
+
+  if (!result.success) {
+    const errorCodes = result["error-codes"];
+    if (
+      !Array.isArray(errorCodes) ||
+      errorCodes.length === 0 ||
+      !errorCodes.every(
+        (code) => typeof code === "string" && rejectedTurnstileCodes.has(code),
+      )
+    ) {
+      return { outcome: "unavailable", reason: "provider_unavailable" };
+    }
+
+    return { outcome: "rejected", reason: "token_rejected" };
+  }
+
+  if (result.action !== TURNSTILE_ACTION) {
+    return { outcome: "rejected", reason: "action_mismatch" };
+  }
+
+  if (
+    typeof result.hostname !== "string" ||
+    !allowedHostnames.has(result.hostname)
+  ) {
+    return { outcome: "rejected", reason: "hostname_mismatch" };
+  }
+
+  const challengeTimestamp = Date.parse(result.challenge_ts);
+  if (!Number.isFinite(challengeTimestamp)) {
+    return { outcome: "rejected", reason: "invalid_timestamp" };
+  }
+
+  const now = Date.now();
+  if (
+    now - challengeTimestamp > TURNSTILE_MAX_AGE_MS ||
+    challengeTimestamp - now > TURNSTILE_MAX_FUTURE_SKEW_MS
+  ) {
+    return { outcome: "rejected", reason: "invalid_timestamp" };
+  }
+
+  return { outcome: "accepted", reason: "verified" };
+};
+
+const verifyTurnstile = async ({
+  token,
+  secret,
+  allowedHostnames,
+  requestId,
+}) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TURNSTILE_TIMEOUT_MS);
+  const body = new FormData();
+  body.set("secret", secret);
+  body.set("response", token);
+  body.set("idempotency_key", requestId);
+
+  try {
+    const response = await fetch(TURNSTILE_SITEVERIFY_URL, {
+      method: "POST",
+      body,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return { outcome: "unavailable", reason: "non_2xx" };
+    }
+
+    let result;
+
+    try {
+      result = await response.json();
+    } catch {
+      return { outcome: "unavailable", reason: "malformed_response" };
+    }
+
+    return interpretSiteverifyResult(result, allowedHostnames);
+  } catch (error) {
+    return {
+      outcome: "unavailable",
+      reason: error?.name === "AbortError" ? "timeout" : "network",
+    };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+const applyTurnstile = async ({ payload, env, logger, requestId, cfRay }) => {
+  const mode = parseControlMode(env.TURNSTILE_MODE);
+
+  if (mode === "off") {
+    return null;
+  }
+
+  if (mode === "invalid") {
+    logControl(logger, "error", {
+      event: "contact_turnstile_configuration",
+      mode: "invalid",
+      requestId,
+      cfRay,
+      outcome: "unavailable",
+      reason: "invalid_mode",
+    });
+    return errorJson(ERRORS.turnstileUnavailable, 503, requestId);
+  }
+
+  const secret = env.TURNSTILE_SECRET_KEY;
+  const allowedHostnames = parseAllowedHostnames(
+    env.TURNSTILE_ALLOWED_HOSTNAMES,
+  );
+  let result;
+
+  if (!payload.turnstile_token) {
+    result = { outcome: "rejected", reason: "missing_token" };
+  } else if (typeof secret !== "string" || !secret.trim()) {
+    result = { outcome: "unavailable", reason: "missing_secret" };
+  } else if (allowedHostnames.size === 0) {
+    result = { outcome: "unavailable", reason: "missing_hostnames" };
+  } else {
+    result = await verifyTurnstile({
+      token: payload.turnstile_token,
+      secret,
+      allowedHostnames,
+      requestId,
+    });
+  }
+
+  logControl(
+    logger,
+    result.outcome === "unavailable" ? "error" : "info",
+    {
+      event: "contact_turnstile",
+      mode,
+      requestId,
+      cfRay,
+      outcome: result.outcome,
+      reason: result.reason,
+    },
+  );
+
+  if (mode === "observe" || result.outcome === "accepted") {
+    return null;
+  }
+
+  if (result.reason === "missing_token") {
+    return errorJson(ERRORS.turnstileRequired, 400, requestId);
+  }
+
+  if (result.outcome === "rejected") {
+    return errorJson(ERRORS.turnstileRejected, 400, requestId);
+  }
+
+  return errorJson(ERRORS.turnstileUnavailable, 503, requestId);
+};
+
 const normalizeSingleLine = (value) =>
   value.replace(/[\r\n]+/g, " ").trim();
 
@@ -94,9 +395,6 @@ const characterCount = (value) => [...value].length;
 
 const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-const isObjectPayload = (payload) =>
-  payload !== null && typeof payload === "object" && !Array.isArray(payload);
-
 const hasValidFieldTypes = (payload) => {
   const requiredFields = [
     "name",
@@ -104,7 +402,11 @@ const hasValidFieldTypes = (payload) => {
     "package_interest",
     "automation_request",
   ];
-  const optionalFields = ["contact_number", "tools_involved"];
+  const optionalFields = [
+    "contact_number",
+    "tools_involved",
+    "turnstile_token",
+  ];
 
   return (
     requiredFields.every((field) => typeof payload[field] === "string") &&
@@ -192,16 +494,49 @@ export async function handleContactRequest(request, env, context) {
     return errorJson(ERRORS.invalidSubmission, 400, requestId);
   }
 
+  if (
+    payload.turnstile_token !== undefined &&
+    characterCount(payload.turnstile_token) > MAX_TURNSTILE_TOKEN_CHARACTERS
+  ) {
+    return errorJson(ERRORS.invalidSubmission, 400, requestId);
+  }
+
   const enquiry = buildEnquiry(payload);
 
   if (!isValidEnquiry(enquiry)) {
     return errorJson(ERRORS.invalidSubmission, 400, requestId);
   }
 
-  const subject = `Automation enquiry: ${enquiry.packageInterest}`;
-  const submittedAt = new Date().toISOString();
   const cfRay = request.headers.get("CF-Ray") || "unknown";
   const logger = context.logger ?? console;
+  const rateLimited = await applyRateLimit({
+    request,
+    env,
+    logger,
+    requestId,
+    cfRay,
+  });
+
+  if (rateLimited) {
+    return errorJson(ERRORS.rateLimited, 429, requestId, {
+      "Retry-After": "60",
+    });
+  }
+
+  const turnstileResponse = await applyTurnstile({
+    payload,
+    env,
+    logger,
+    requestId,
+    cfRay,
+  });
+
+  if (turnstileResponse) {
+    return turnstileResponse;
+  }
+
+  const subject = `Automation enquiry: ${enquiry.packageInterest}`;
+  const submittedAt = new Date().toISOString();
   const text = [
     "New automation enquiry from oliverhitchings.com",
     "",
@@ -248,7 +583,7 @@ export async function handleContactRequest(request, env, context) {
 
   logSafely(() => {
     logger.info({
-      event: "contact_email_delivered",
+      event: "contact_email_accepted",
       requestId,
       cfRay,
       messageId: result?.messageId || "unavailable",
