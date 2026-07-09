@@ -127,7 +127,13 @@ import { site } from "../data/site.js";
         Useful detail: what happens now, which tools are involved, who checks the output, and what a
         good result would look like.
       </p>
-      <form class="contact-form" action="/api/contact" method="POST" data-contact-form>
+      <form
+        class="contact-form"
+        action="/api/contact"
+        method="POST"
+        aria-describedby="contact-form-status"
+        data-contact-form
+      >
         <input type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true" />
 
         <div class="form-grid">
@@ -176,7 +182,14 @@ import { site } from "../data/site.js";
         </label>
 
         <button class="button" type="submit">Send enquiry</button>
-        <p class="form-status" data-contact-status>
+        <p
+          id="contact-form-status"
+          class="form-status"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          data-contact-status
+        >
           This sends the enquiry directly from the website to {site.email}.
         </p>
       </form>
@@ -230,61 +243,8 @@ import { site } from "../data/site.js";
   </main>
 
   <script>
-    const contactForm = document.querySelector("[data-contact-form]");
-    const contactStatus = document.querySelector("[data-contact-status]");
+    import { initContactForms } from "../scripts/contact-form.js";
 
-    contactForm?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-
-      if (!contactForm.checkValidity()) {
-        contactForm.reportValidity();
-        return;
-      }
-
-      const formData = new FormData(contactForm);
-
-      if (formData.get("_honey")) {
-        return;
-      }
-
-      const showSubmitted = () => {
-        contactForm.reset();
-
-        if (contactStatus) {
-          contactStatus.classList.add("is-success");
-          contactStatus.innerHTML = '<span aria-hidden="true">✓</span> Submitted';
-        }
-      };
-
-      if (contactStatus) {
-        contactStatus.classList.remove("is-success");
-        contactStatus.textContent = "Sending enquiry...";
-      }
-
-      const submitButton = contactForm.querySelector("button[type='submit']");
-
-      if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.textContent = "Sending...";
-      }
-
-      showSubmitted();
-
-      fetch("/api/contact", {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(Object.fromEntries(formData.entries())),
-        }).catch(() => {});
-
-      window.setTimeout(() => {
-        if (submitButton) {
-          submitButton.disabled = false;
-          submitButton.textContent = "Send enquiry";
-        }
-      }, 650);
-    });
+    initContactForms();
   </script>
 </BaseLayout>
