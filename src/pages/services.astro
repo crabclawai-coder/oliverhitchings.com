@@ -280,7 +280,9 @@ const turnstileSiteKey =
 
           <div
             class="turnstile-check"
+            role="group"
             aria-label="Security check"
+            aria-describedby="contact-form-status"
             data-turnstile-container
             tabindex="-1"
             hidden={turnstileMode === "off"}

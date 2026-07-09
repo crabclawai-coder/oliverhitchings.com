@@ -1,6 +1,13 @@
 import { JSDOM } from "jsdom";
 import { spawn } from "node:child_process";
-import { mkdtemp, readFile, realpath, rm, symlink } from "node:fs/promises";
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  realpath,
+  rm,
+  symlink,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,12 +26,12 @@ let home;
 let services;
 let servicesHtml;
 let observeServices;
-let observeServicesHtml;
 let about;
 let blog;
 let articlePages;
 let servicesModuleSources;
 let observeServicesModuleSources;
+let observeGeneratedFiles;
 let servicesStylesheetSource;
 
 const expectedPosts = [
@@ -84,6 +91,23 @@ async function readModuleSources(documentRef, directory) {
         ),
     ),
   );
+}
+
+async function readGeneratedFiles(directory) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const nestedFiles = await Promise.all(
+    entries.map(async (entry) => {
+      const filePath = join(directory, entry.name);
+
+      if (entry.isDirectory()) {
+        return readGeneratedFiles(filePath);
+      }
+
+      return [{ filePath, contents: await readFile(filePath) }];
+    }),
+  );
+
+  return nestedFiles.flat();
 }
 
 function buildEnvironment(overrides = {}) {
@@ -199,10 +223,6 @@ beforeAll(async () => {
     "services/index.html",
     observeBuildDirectory,
   );
-  observeServicesHtml = await readFile(
-    join(observeBuildDirectory, "services/index.html"),
-    "utf8",
-  );
   about = await readPage("about/index.html");
   blog = await readPage("blog/index.html");
   articlePages = await Promise.all(
@@ -216,6 +236,7 @@ beforeAll(async () => {
     observeServices,
     observeBuildDirectory,
   );
+  observeGeneratedFiles = await readGeneratedFiles(observeBuildDirectory);
   const stylesheetPath = services
     .querySelector("link[rel='stylesheet']")
     ?.getAttribute("href");
@@ -547,7 +568,7 @@ describe("generated Services content", () => {
   it("defaults to an inert off-mode container without a Turnstile network reference", () => {
     const form = services.querySelector("form[data-contact-form]");
     const container = form?.querySelector(
-      "[data-turnstile-container][aria-label='Security check'][tabindex='-1']",
+      "[data-turnstile-container][role='group'][aria-label='Security check'][aria-describedby='contact-form-status'][tabindex='-1']",
     );
 
     expect(form?.getAttribute("data-turnstile-mode")).toBe("off");
@@ -560,10 +581,16 @@ describe("generated Services content", () => {
     );
   });
 
+  it("ships a visible outline for programmatically focused fallback checks", () => {
+    expect(servicesStylesheetSource).toMatch(
+      /\.turnstile-check:focus\{[^}]*outline:/,
+    );
+  });
+
   it("emits observe configuration and a same-origin external initializer", () => {
     const form = observeServices.querySelector("form[data-contact-form]");
     const container = form?.querySelector(
-      "[data-turnstile-container][aria-label='Security check'][tabindex='-1']",
+      "[data-turnstile-container][role='group'][aria-label='Security check'][aria-describedby='contact-form-status'][tabindex='-1']",
     );
     const externalModules = Array.from(
       observeServices.querySelectorAll("script[type='module'][src]"),
@@ -588,14 +615,24 @@ describe("generated Services content", () => {
     expect(observeServicesModuleSources.join("\n")).toContain("turnstile");
   });
 
-  it("never emits the private Turnstile variable name or value", () => {
-    const generated = [
-      observeServicesHtml,
-      ...observeServicesModuleSources,
-    ].join("\n");
-
-    expect(generated).not.toContain("TURNSTILE_SECRET_KEY");
-    expect(generated).not.toContain(turnstileTestSecret);
+  it("recursively scans every observe-build file for private Turnstile data", () => {
+    expect(
+      observeGeneratedFiles.some(
+        ({ filePath, contents }) =>
+          /[/\\]_astro[/\\]turnstile\.[^/\\]+\.js$/.test(filePath) &&
+          contents.includes("challenges.cloudflare.com"),
+      ),
+    ).toBe(true);
+    expect(
+      observeGeneratedFiles.filter(({ contents }) =>
+        contents.includes("TURNSTILE_SECRET_KEY"),
+      ),
+    ).toEqual([]);
+    expect(
+      observeGeneratedFiles.filter(({ contents }) =>
+        contents.includes(turnstileTestSecret),
+      ),
+    ).toEqual([]);
   });
 });
 
