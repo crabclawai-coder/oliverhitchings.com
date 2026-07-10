@@ -38,9 +38,11 @@ const canonical = new URL(Astro.url.pathname, site.url);
     </div>
     <Footer />
     <script>
+      import { initializeMedia } from "../scripts/media.js";
       import { initializeSiteBehaviour } from "../scripts/site-behaviour.js";
 
       initializeSiteBehaviour();
+      initializeMedia();
     </script>
   </body>
 </html>

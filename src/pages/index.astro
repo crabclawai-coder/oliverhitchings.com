@@ -8,15 +8,35 @@ import { site } from "../data/site.js";
     <section class="home-hero">
       <video
         class="home-hero__video"
-        src="/videos/hero.mp4"
-        autoplay
+        poster="/images/posters/hero.webp"
         muted
         loop
         playsinline
-        preload="auto"
+        preload="none"
         aria-hidden="true"
         tabindex="-1"
-      ></video>
+        data-media
+        data-media-load="eager"
+      >
+        <source
+          data-src="/videos/hero-960.webm"
+          type='video/webm; codecs="av01.0.04M.08"'
+          media="(max-width: 640px)"
+        />
+        <source
+          data-src="/videos/hero-960.mp4"
+          type='video/mp4; codecs="avc1.64001f"'
+          media="(max-width: 640px)"
+        />
+        <source
+          data-src="/videos/hero-1280.webm"
+          type='video/webm; codecs="av01.0.05M.08"'
+        />
+        <source
+          data-src="/videos/hero-1280.mp4"
+          type='video/mp4; codecs="avc1.640028"'
+        />
+      </video>
       <div class="home-hero__scrim"></div>
 
       <div class="container home-hero__content">

@@ -1,6 +1,7 @@
 import { JSDOM } from "jsdom";
 import { spawn } from "node:child_process";
 import {
+  access,
   mkdtemp,
   readFile,
   readdir,
@@ -18,6 +19,35 @@ const guidePriceNote =
   "Guide prices. VAT, third-party software, model usage and hosting are separate where they apply.";
 const turnstileTestSiteKey = "1x00000000000000000000AA";
 const turnstileTestSecret = "1x0000000000000000000000000000000AA";
+const expectedHeroSources = [
+  {
+    dataSrc: "/videos/hero-960.webm",
+    media: "(max-width: 640px)",
+    type: 'video/webm; codecs="av01.0.04M.08"',
+  },
+  {
+    dataSrc: "/videos/hero-960.mp4",
+    media: "(max-width: 640px)",
+    type: 'video/mp4; codecs="avc1.64001f"',
+  },
+  {
+    dataSrc: "/videos/hero-1280.webm",
+    media: null,
+    type: 'video/webm; codecs="av01.0.05M.08"',
+  },
+  {
+    dataSrc: "/videos/hero-1280.mp4",
+    media: null,
+    type: 'video/mp4; codecs="avc1.640028"',
+  },
+];
+const obsoleteVideoNames = [
+  "hero.mp4",
+  "process.mp4",
+  "feature-card.mp4",
+  "cta-footer.mp4",
+  "bento.mp4",
+];
 
 let buildDirectory;
 let observeBuildDirectory;
@@ -30,6 +60,7 @@ let about;
 let blog;
 let articlePages;
 let servicesModuleSources;
+let homeModuleSources;
 let observeServicesModuleSources;
 let observeGeneratedFiles;
 let servicesStylesheetSource;
@@ -78,6 +109,15 @@ function textFragments(root) {
 async function readPage(filePath, directory = buildDirectory) {
   const html = await readFile(join(directory, filePath), "utf8");
   return new JSDOM(html).window.document;
+}
+
+async function fileExists(filePath) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function readModuleSources(documentRef, directory) {
@@ -232,6 +272,7 @@ beforeAll(async () => {
     })),
   );
   servicesModuleSources = await readModuleSources(services, buildDirectory);
+  homeModuleSources = await readModuleSources(home, buildDirectory);
   observeServicesModuleSources = await readModuleSources(
     observeServices,
     observeBuildDirectory,
@@ -689,14 +730,107 @@ describe("generated page truthfulness and media", () => {
     }
   });
 
-  it("keeps only the atmospheric hero video on home and no Services video", () => {
-    const homeVideos = Array.from(
-      home.querySelectorAll("video"),
-      (video) => video.getAttribute("src"),
+  it("keeps exactly one atmospheric video on home and none on other content pages", () => {
+    const otherContentPages = [
+      services,
+      about,
+      blog,
+      ...articlePages.map((post) => post.document),
+    ];
+
+    expect(home.querySelectorAll("video")).toHaveLength(1);
+    for (const document of otherContentPages) {
+      expect(document.querySelectorAll("video")).toHaveLength(0);
+    }
+  });
+
+  it("renders the hero poster and deferred decorative-media semantics", () => {
+    const video = home.querySelector(".home-hero__video");
+
+    expect(video?.getAttribute("poster")).toBe("/images/posters/hero.webp");
+    expect(video?.getAttribute("preload")).toBe("none");
+    expect(video?.hasAttribute("autoplay")).toBe(false);
+    expect(video?.hasAttribute("src")).toBe(false);
+    expect(video?.hasAttribute("muted")).toBe(true);
+    expect(video?.hasAttribute("loop")).toBe(true);
+    expect(video?.hasAttribute("playsinline")).toBe(true);
+    expect(video?.getAttribute("aria-hidden")).toBe("true");
+    expect(video?.getAttribute("tabindex")).toBe("-1");
+    expect(video?.hasAttribute("data-media")).toBe(true);
+    expect(video?.getAttribute("data-media-load")).toBe("eager");
+  });
+
+  it("emits four unique same-origin deferred sources in responsive order", async () => {
+    const sources = Array.from(
+      home.querySelectorAll(".home-hero__video source"),
+      (source) => ({
+        dataSrc: source.getAttribute("data-src"),
+        media: source.getAttribute("media"),
+        type: source.getAttribute("type"),
+      }),
     );
 
-    expect(homeVideos).toEqual(["/videos/hero.mp4"]);
-    expect(services.querySelectorAll("video")).toHaveLength(0);
+    expect(sources).toEqual(expectedHeroSources);
+    expect(new Set(sources.map(({ dataSrc }) => dataSrc)).size).toBe(4);
+    expect(
+      sources.every(
+        ({ dataSrc }) => dataSrc?.startsWith("/") && !dataSrc.startsWith("//"),
+      ),
+    ).toBe(true);
+    expect(
+      home.querySelectorAll(".home-hero__video source[src]"),
+    ).toHaveLength(0);
+    expect(
+      await Promise.all(
+        expectedHeroSources.map(({ dataSrc }) =>
+          fileExists(join(buildDirectory, dataSrc.slice(1))),
+        ),
+      ),
+    ).toEqual([true, true, true, true]);
+    expect(
+      await fileExists(join(buildDirectory, "images/posters/hero.webp")),
+    ).toBe(true);
+  });
+
+  it("removes obsolete video references and governs future below-fold media", () => {
+    const contentPages = [
+      home,
+      services,
+      about,
+      blog,
+      ...articlePages.map((post) => post.document),
+    ];
+    const generatedMarkup = contentPages
+      .map((document) => document.documentElement.outerHTML)
+      .join("\n");
+    const belowFoldVideos = contentPages.flatMap((document) =>
+      Array.from(document.querySelectorAll("video:not(.home-hero__video)")),
+    );
+
+    for (const obsoleteName of obsoleteVideoNames) {
+      expect(generatedMarkup).not.toContain(`/videos/${obsoleteName}`);
+    }
+    for (const video of belowFoldVideos) {
+      expect(video.hasAttribute("poster")).toBe(true);
+      expect(video.getAttribute("preload")).toBe("none");
+      expect(video.getAttribute("data-media-load")).toBe("nearby");
+      expect(video.hasAttribute("autoplay")).toBe(false);
+      expect(video.hasAttribute("src")).toBe(false);
+    }
+  });
+
+  it("keeps the media initializer in same-origin external modules", () => {
+    const externalModules = Array.from(
+      home.querySelectorAll("script[type='module'][src]"),
+    );
+
+    expect(externalModules.length).toBeGreaterThan(0);
+    expect(
+      externalModules.every((script) => script.getAttribute("src")?.startsWith("/")),
+    ).toBe(true);
+    expect(home.querySelector("script[type='module']:not([src])")).toBeNull();
+    expect(homeModuleSources.join("\n")).toContain("video[data-media]");
+    expect(homeModuleSources.join("\n")).toContain("320px 0px");
   });
 });
 
