@@ -155,6 +155,16 @@ function collectObjectKeys(value, keys = []) {
   return keys;
 }
 
+function expectedPageUrl(filePath) {
+  if (filePath === "index.html") return `${siteOrigin}/`;
+
+  const pathname = filePath.endsWith("/index.html")
+    ? `/${filePath.slice(0, -"index.html".length)}`
+    : `/${filePath}`;
+
+  return new URL(pathname, siteOrigin).href;
+}
+
 beforeAll(async () => {
   temporaryDirectory = await mkdtemp(join(tmpdir(), "oliverhitchings-site-frame-"));
   buildDirectory = join(temporaryDirectory, "dist");
@@ -441,10 +451,7 @@ describe("generated discovery and response policy", () => {
       expect(openGraphUrls, filePath).toHaveLength(1);
 
       const canonical = canonicalLinks[0].getAttribute("href");
-      expect(new URL(canonical).origin, filePath).toBe(siteOrigin);
-      expect(canonical, filePath).toMatch(
-        /^https:\/\/oliverhitchings\.com\/(?:[^?#]*)$/,
-      );
+      expect(canonical, filePath).toBe(expectedPageUrl(filePath));
       expect(openGraphUrls[0].getAttribute("content"), filePath).toBe(canonical);
     }
   });
@@ -560,6 +567,39 @@ describe("generated discovery and response policy", () => {
         );
       }
     }
+  });
+
+  it("preserves the layout's literal less-than escape for safely embedded JSON-LD", async () => {
+    const layoutSource = await readFile(
+      new URL("./layouts/BaseLayout.astro", import.meta.url),
+      "utf8",
+    );
+    const escapeLiteralSource = layoutSource.match(
+      /const serializedStructuredData = JSON\.stringify\(structuredData\)\.replace\(\s*\/<\/g,\s*("(?:\\.|[^"])*")\s*,?\s*\);/s,
+    )?.[1];
+
+    expect(escapeLiteralSource).toBeDefined();
+
+    const lessThanEscape = JSON.parse(escapeLiteralSource);
+    const trustedFixture = {
+      description: "</script><script>throw new Error('unsafe')</script>",
+    };
+    const serializedFixture = JSON.stringify(trustedFixture).replace(
+      /</g,
+      lessThanEscape,
+    );
+    const fixtureDocument = new JSDOM(
+      `<script type="application/ld+json">${serializedFixture}</script>`,
+    ).window.document;
+
+    expect(lessThanEscape).toBe("\\u003c");
+    expect(serializedFixture).toContain("\\u003c/script>");
+    expect(serializedFixture).not.toContain("<");
+    expect(JSON.parse(serializedFixture)).toEqual(trustedFixture);
+    expect(fixtureDocument.querySelectorAll("script")).toHaveLength(1);
+    expect(
+      fixtureDocument.querySelectorAll("script:not([type='application/ld+json'])"),
+    ).toHaveLength(0);
   });
 
   it("keeps every executable script external and on an approved origin", async () => {
