@@ -8,9 +8,46 @@ import "../styles/global.css";
 const {
   title = site.name,
   description = site.description,
+  noindex = false,
+  includeCanonical = true,
+  includeStructuredData = true,
+  ogType = "website",
+  publishedTime,
 } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, site.url);
+const canonical = includeCanonical ? new URL(Astro.url.pathname, site.url) : null;
+const apexUrl = new URL("/", site.url).href;
+const socialImageUrl = new URL(
+  "/images/social/oliver-hitchings-og.jpg",
+  site.url,
+).href;
+const socialImageAlt = "Oliver Hitchings — inspectable automation systems";
+const personId = new URL("/#person", site.url).href;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": personId,
+      name: site.name,
+      url: apexUrl,
+    },
+    {
+      "@type": "ProfessionalService",
+      "@id": new URL("/#professional-service", site.url).href,
+      name: site.name,
+      url: apexUrl,
+      description: site.description,
+      serviceType: "Business process automation",
+      founder: { "@id": personId },
+      image: socialImageUrl,
+    },
+  ],
+};
+const serializedStructuredData = JSON.stringify(structuredData).replace(
+  /</g,
+  "\\u003c",
+);
 ---
 
 <!doctype html>
@@ -19,15 +56,39 @@ const canonical = new URL(Astro.url.pathname, site.url);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="canonical" href={canonical} />
+    {includeCanonical && <link rel="canonical" href={canonical} />}
+    {noindex && <meta name="robots" content="noindex,follow" />}
     <meta name="description" content={description} />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content={ogType} />
+    {includeCanonical && <meta property="og:url" content={canonical} />}
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:image" content={socialImageUrl} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={socialImageAlt} />
+    {
+      publishedTime && (
+        <meta property="article:published_time" content={publishedTime} />
+      )
+    }
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImageUrl} />
+    <meta name="twitter:image:alt" content={socialImageAlt} />
+    {
+      includeStructuredData && (
+        <script
+          type="application/ld+json"
+          is:inline
+          set:html={serializedStructuredData}
+        />
+      )
+    }
     <title>{title}</title>
   </head>
   <body>

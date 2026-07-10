@@ -16,9 +16,15 @@ const formattedDate = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
   year: "numeric",
 }).format(new Date(`${post.date}T00:00:00Z`));
+const publishedTime = new Date(`${post.date}T00:00:00Z`).toISOString();
 ---
 
-<BaseLayout title={`${post.title} | Oliver Hitchings`} description={post.summary}>
+<BaseLayout
+  title={`${post.title} | Oliver Hitchings`}
+  description={post.summary}
+  ogType="article"
+  publishedTime={publishedTime}
+>
   <main class="subpage article-template">
     <article class="container article-page">
       <nav class="article-breadcrumb" aria-label="Breadcrumb">
