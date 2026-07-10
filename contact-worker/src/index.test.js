@@ -3,7 +3,11 @@ import worker, { handleContactRequest } from "./index.js";
 
 const ENDPOINT = "https://oliverhitchings.com/api/contact";
 const CONTACT_EMAIL = "oliverhitch2008@gmail.com";
-const FROM_EMAIL = "contact@oliverhitchings.com";
+const FROM_EMAIL =
+  "Oliver Hitchings Website <contact@forms.oliverhitchings.com>";
+const RESEND_API_URL = "https://api.resend.com/emails";
+const RESEND_API_KEY = "re_test_secret_value";
+const RESEND_USER_AGENT = "oliverhitchings-contact-worker/1.0";
 const MAX_BODY_BYTES = 16 * 1024;
 const ALLOWED_PACKAGES = [
   "Task Map",
@@ -26,14 +30,27 @@ const VALID_PAYLOAD = {
 
 function createEmailFake({
   error,
-  result = { messageId: "message-test-1" },
+  result = { id: "message-test-1" },
 } = {}) {
   const send = error
     ? vi.fn().mockRejectedValue(error)
     : vi.fn().mockResolvedValue(result);
+  const upstreamFetch = globalThis.fetch;
+
+  vi.stubGlobal("fetch", async (url, options) => {
+    if (String(url) !== RESEND_API_URL) {
+      return upstreamFetch(url, options);
+    }
+
+    const providerResult = await send(JSON.parse(options.body));
+    return new Response(JSON.stringify(providerResult), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  });
 
   return {
-    env: { CONTACT_EMAIL: { send } },
+    env: { RESEND_API_KEY },
     send,
   };
 }
@@ -150,6 +167,39 @@ async function submit(payload = VALID_PAYLOAD, options = {}) {
     ...logging,
     env,
     request,
+    response,
+    body: await response.json(),
+  };
+}
+
+async function submitWithResend({
+  fetchMock,
+  apiKey = RESEND_API_KEY,
+  omitApiKey = false,
+  captureLogs = true,
+  request = {},
+} = {}) {
+  const providerFetch =
+    fetchMock ??
+    vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: "resend-message-test-1" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+  vi.stubGlobal("fetch", providerFetch);
+  const logging = captureLogs
+    ? createLoggerFake()
+    : { logger: { info() {}, error() {} } };
+  const response = await handleContactRequest(
+    createPostRequest(VALID_PAYLOAD, request),
+    omitApiKey ? {} : { RESEND_API_KEY: apiKey },
+    { logger: logging.logger },
+  );
+
+  return {
+    ...logging,
+    fetchMock: providerFetch,
     response,
     body: await response.json(),
   };
@@ -1444,9 +1494,9 @@ describe("handleContactRequest email boundary and response schema", () => {
     expectJsonResponseHeaders(result.response);
     expect(result.send).toHaveBeenCalledOnce();
     expect(result.send).toHaveBeenCalledWith({
-      to: CONTACT_EMAIL,
       from: FROM_EMAIL,
-      replyTo: VALID_PAYLOAD.email,
+      reply_to: VALID_PAYLOAD.email,
+      to: [CONTACT_EMAIL],
       subject: `Automation enquiry: ${VALID_PAYLOAD.package_interest}`,
       text: expect.any(String),
     });
@@ -1468,6 +1518,7 @@ describe("handleContactRequest email boundary and response schema", () => {
     expect(result.info).toHaveBeenCalledOnce();
     expect(result.info).toHaveBeenCalledWith({
       event: "contact_email_accepted",
+      provider: "resend",
       requestId: result.body.requestId,
       cfRay: "ray-test-123",
       messageId: "message-test-1",
@@ -1476,7 +1527,7 @@ describe("handleContactRequest email boundary and response schema", () => {
     expectCapturedLogsToExclude(result, VALID_PAYLOAD, connectingIp);
   });
 
-  it("uses body and delivery-log fallbacks when optional values are unavailable", async () => {
+  it("uses body fallbacks when optional enquiry values are unavailable", async () => {
     const payload = {
       _honey: "",
       name: VALID_PAYLOAD.name,
@@ -1486,7 +1537,6 @@ describe("handleContactRequest email boundary and response schema", () => {
     };
     const result = await submit(payload, {
       captureLogs: true,
-      emailResult: {},
     });
 
     expect(result.response.status).toBe(200);
@@ -1498,15 +1548,16 @@ describe("handleContactRequest email boundary and response schema", () => {
     expect(result.info).toHaveBeenCalledOnce();
     expect(result.info).toHaveBeenCalledWith({
       event: "contact_email_accepted",
+      provider: "resend",
       requestId: result.body.requestId,
       cfRay: "unknown",
-      messageId: "unavailable",
+      messageId: "message-test-1",
     });
     expect(result.error).not.toHaveBeenCalled();
     expectCapturedLogsToExclude(result, payload);
   });
 
-  it("returns stable 502 JSON and logs only a provider error code", async () => {
+  it("returns stable 502 JSON and classifies a provider rejection as a network failure", async () => {
     const connectingIp = "198.51.100.77";
     const providerError = new Error(
       `provider message leaked ${VALID_PAYLOAD.name} ${VALID_PAYLOAD.email}`,
@@ -1534,15 +1585,16 @@ describe("handleContactRequest email boundary and response schema", () => {
       event: "contact_email_failed",
       requestId: result.body.requestId,
       cfRay: "ray-failure-456",
-      code: "provider_rejected",
+      code: "network",
     });
     expectCapturedLogsToExclude(result, VALID_PAYLOAD, connectingIp, [
       "provider message leaked",
+      "provider_rejected",
       "STACK_TOKEN",
     ]);
   });
 
-  it("falls back to unknown provider failure metadata", async () => {
+  it("classifies a plain provider exception as a network failure", async () => {
     const providerError = new Error("provider unavailable");
     const result = await submit(VALID_PAYLOAD, {
       captureLogs: true,
@@ -1557,7 +1609,7 @@ describe("handleContactRequest email boundary and response schema", () => {
       event: "contact_email_failed",
       requestId: result.body.requestId,
       cfRay: "unknown",
-      code: "unknown",
+      code: "network",
     });
     expectCapturedLogsToExclude(result, VALID_PAYLOAD, undefined, [
       providerError.message,
@@ -1614,5 +1666,206 @@ describe("handleContactRequest email boundary and response schema", () => {
     });
     expectJsonResponseHeaders(response);
     expect(send).toHaveBeenCalledOnce();
+  });
+});
+
+describe("handleContactRequest Resend delivery boundary", () => {
+  it("posts the exact enquiry to Resend with private authentication and idempotency", async () => {
+    const connectingIp = "203.0.113.91";
+    const result = await submitWithResend({
+      request: {
+        headers: {
+          "CF-Connecting-IP": connectingIp,
+          "CF-Ray": "ray-resend-success",
+        },
+      },
+    });
+
+    expect(result.response.status).toBe(200);
+    expect(result.body).toEqual({
+      ok: true,
+      requestId: expect.any(String),
+    });
+    expect(result.fetchMock).toHaveBeenCalledOnce();
+    const [url, options] = result.fetchMock.mock.calls[0];
+    expect(url).toBe(RESEND_API_URL);
+    expect(options).toMatchObject({
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+        "User-Agent": RESEND_USER_AGENT,
+        "Idempotency-Key": `contact/${result.body.requestId}`,
+      },
+      signal: expect.any(AbortSignal),
+    });
+    expect(JSON.parse(options.body)).toEqual({
+      from: FROM_EMAIL,
+      reply_to: VALID_PAYLOAD.email,
+      to: [CONTACT_EMAIL],
+      subject: `Automation enquiry: ${VALID_PAYLOAD.package_interest}`,
+      text: expect.any(String),
+    });
+    expect(result.info).toHaveBeenCalledOnce();
+    expect(result.info).toHaveBeenCalledWith({
+      event: "contact_email_accepted",
+      provider: "resend",
+      requestId: result.body.requestId,
+      cfRay: "ray-resend-success",
+      messageId: "resend-message-test-1",
+    });
+    expect(result.error).not.toHaveBeenCalled();
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, connectingIp, [
+      RESEND_API_KEY,
+      FROM_EMAIL,
+    ]);
+  });
+
+  it("returns the honest 502 response without a provider call when the API secret is missing", async () => {
+    const result = await submitWithResend({ omitApiKey: true });
+
+    expect(result.response.status).toBe(502);
+    expectStableError(result.body, "email_send_failed");
+    expect(result.fetchMock).not.toHaveBeenCalled();
+    expect(result.info).not.toHaveBeenCalled();
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_email_failed",
+      requestId: result.body.requestId,
+      cfRay: "unknown",
+      code: "missing_secret",
+    });
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD);
+  });
+
+  it("aborts Resend after roughly five seconds and reports a privacy-safe timeout", async () => {
+    vi.useFakeTimers();
+    let providerSignal;
+    const fetchMock = vi.fn((_url, options) => {
+      providerSignal = options.signal;
+      return new Promise((_resolve, reject) => {
+        options.signal.addEventListener("abort", () => {
+          reject(new DOMException("request timed out", "AbortError"));
+        });
+      });
+    });
+
+    const pending = submitWithResend({ fetchMock });
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(providerSignal.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    const result = await pending;
+
+    expect(providerSignal.aborted).toBe(true);
+    expect(result.response.status).toBe(502);
+    expectStableError(result.body, "email_send_failed");
+    expect(result.info).not.toHaveBeenCalled();
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_email_failed",
+      requestId: result.body.requestId,
+      cfRay: "unknown",
+      code: "timeout",
+    });
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, undefined, [
+      RESEND_API_KEY,
+    ]);
+  });
+
+  it("turns a Resend network error into a privacy-safe 502", async () => {
+    const leakedProviderError = new Error(
+      `network leaked ${VALID_PAYLOAD.email} ${RESEND_API_KEY}`,
+    );
+    const result = await submitWithResend({
+      fetchMock: vi.fn().mockRejectedValue(leakedProviderError),
+    });
+
+    expect(result.response.status).toBe(502);
+    expectStableError(result.body, "email_send_failed");
+    expect(result.info).not.toHaveBeenCalled();
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_email_failed",
+      requestId: result.body.requestId,
+      cfRay: "unknown",
+      code: "network",
+    });
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, undefined, [
+      RESEND_API_KEY,
+      "network leaked",
+    ]);
+  });
+
+  it("does not trust or log a non-2xx Resend response", async () => {
+    const providerBody = `rejected ${VALID_PAYLOAD.email} ${RESEND_API_KEY}`;
+    const result = await submitWithResend({
+      fetchMock: vi.fn().mockResolvedValue(
+        new Response(providerBody, {
+          status: 429,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      ),
+    });
+
+    expect(result.response.status).toBe(502);
+    expectStableError(result.body, "email_send_failed");
+    expect(result.info).not.toHaveBeenCalled();
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_email_failed",
+      requestId: result.body.requestId,
+      cfRay: "unknown",
+      code: "provider_non_2xx",
+    });
+    expectCapturedLogsToExclude(result, VALID_PAYLOAD, undefined, [
+      RESEND_API_KEY,
+      providerBody,
+    ]);
+  });
+
+  it.each([
+    ["invalid JSON", "not-json"],
+    ["a JSON array", JSON.stringify([{ id: "message-array" }])],
+  ])("rejects a 2xx Resend response containing %s", async (_label, body) => {
+    const result = await submitWithResend({
+      fetchMock: vi.fn().mockResolvedValue(
+        new Response(body, {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    });
+
+    expect(result.response.status).toBe(502);
+    expectStableError(result.body, "email_send_failed");
+    expect(result.info).not.toHaveBeenCalled();
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_email_failed",
+      requestId: result.body.requestId,
+      cfRay: "unknown",
+      code: "malformed_response",
+    });
+  });
+
+  it.each([
+    ["missing", {}],
+    ["empty", { id: "" }],
+    ["whitespace-only", { id: "   " }],
+    ["non-string", { id: 123 }],
+  ])("rejects a 2xx Resend response with a %s message ID", async (_label, body) => {
+    const result = await submitWithResend({
+      fetchMock: vi.fn().mockResolvedValue(
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    });
+
+    expect(result.response.status).toBe(502);
+    expectStableError(result.body, "email_send_failed");
+    expect(result.info).not.toHaveBeenCalled();
+    expect(result.error).toHaveBeenCalledWith({
+      event: "contact_email_failed",
+      requestId: result.body.requestId,
+      cfRay: "unknown",
+      code: "missing_message_id",
+    });
   });
 });

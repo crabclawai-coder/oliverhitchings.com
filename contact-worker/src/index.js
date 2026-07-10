@@ -1,7 +1,11 @@
 const CONTACT_EMAIL = "oliverhitch2008@gmail.com";
-const FROM_EMAIL = "contact@oliverhitchings.com";
+const FROM_EMAIL =
+  "Oliver Hitchings Website <contact@forms.oliverhitchings.com>";
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_TURNSTILE_TOKEN_CHARACTERS = 2_048;
+const RESEND_API_URL = "https://api.resend.com/emails";
+const RESEND_TIMEOUT_MS = 5_000;
+const RESEND_USER_AGENT = "oliverhitchings-contact-worker/1.0";
 const TURNSTILE_SITEVERIFY_URL =
   "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const TURNSTILE_ACTION = "contact";
@@ -112,6 +116,65 @@ const logSafely = (writeLog) => {
 
 const isObjectPayload = (payload) =>
   payload !== null && typeof payload === "object" && !Array.isArray(payload);
+
+const sendWithResend = async ({ apiKey, requestId, email }) => {
+  if (typeof apiKey !== "string" || !apiKey.trim()) {
+    return { ok: false, code: "missing_secret" };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), RESEND_TIMEOUT_MS);
+
+  try {
+    let response;
+
+    try {
+      response = await fetch(RESEND_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "User-Agent": RESEND_USER_AGENT,
+          "Idempotency-Key": `contact/${requestId}`,
+        },
+        body: JSON.stringify(email),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      return {
+        ok: false,
+        code: error?.name === "AbortError" ? "timeout" : "network",
+      };
+    }
+
+    if (!response.ok) {
+      return { ok: false, code: "provider_non_2xx" };
+    }
+
+    let result;
+
+    try {
+      result = await response.json();
+    } catch (error) {
+      return {
+        ok: false,
+        code: error?.name === "AbortError" ? "timeout" : "malformed_response",
+      };
+    }
+
+    if (!isObjectPayload(result)) {
+      return { ok: false, code: "malformed_response" };
+    }
+
+    if (typeof result.id !== "string" || !result.id.trim()) {
+      return { ok: false, code: "missing_message_id" };
+    }
+
+    return { ok: true, messageId: result.id };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 const parseControlMode = (value) => {
   if (
@@ -555,26 +618,25 @@ export async function handleContactRequest(request, env, context) {
     `Request ID: ${requestId}`,
   ].join("\n");
 
-  let result;
-
-  try {
-    result = await env.CONTACT_EMAIL.send({
-      to: CONTACT_EMAIL,
+  const result = await sendWithResend({
+    apiKey: env.RESEND_API_KEY,
+    requestId,
+    email: {
       from: FROM_EMAIL,
-      replyTo: enquiry.email,
+      reply_to: enquiry.email,
+      to: [CONTACT_EMAIL],
       subject,
       text,
-    });
-  } catch (error) {
+    },
+  });
+
+  if (!result.ok) {
     logSafely(() => {
       logger.error({
         event: "contact_email_failed",
         requestId,
         cfRay,
-        code:
-          typeof error?.code === "string" && error.code
-            ? error.code
-            : "unknown",
+        code: result.code,
       });
     });
 
@@ -584,9 +646,10 @@ export async function handleContactRequest(request, env, context) {
   logSafely(() => {
     logger.info({
       event: "contact_email_accepted",
+      provider: "resend",
       requestId,
       cfRay,
-      messageId: result?.messageId || "unavailable",
+      messageId: result.messageId,
     });
   });
 

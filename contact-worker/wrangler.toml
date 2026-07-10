@@ -9,7 +9,7 @@ RATE_LIMIT_MODE = "off"
 TURNSTILE_ALLOWED_HOSTNAMES = "oliverhitchings.com,www.oliverhitchings.com"
 
 [secrets]
-required = ["TURNSTILE_SECRET_KEY"]
+required = ["TURNSTILE_SECRET_KEY", "RESEND_API_KEY"]
 
 [observability]
 enabled = true
@@ -22,7 +22,3 @@ zone_name = "oliverhitchings.com"
 [[routes]]
 pattern = "www.oliverhitchings.com/api/contact"
 zone_name = "oliverhitchings.com"
-
-[[send_email]]
-name = "CONTACT_EMAIL"
-remote = true
