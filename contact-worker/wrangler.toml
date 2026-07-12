@@ -15,8 +15,19 @@ required = ["TURNSTILE_SECRET_KEY", "RESEND_API_KEY", "CONTACT_OWNER_EMAIL"]
 name = "CONTACT_EMAIL"
 
 [observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
 enabled = true
 head_sampling_rate = 1
+invocation_logs = true
+persist = true
+
+[observability.traces]
+enabled = false
+head_sampling_rate = 1
+persist = true
 
 [[routes]]
 pattern = "oliverhitchings.com/api/contact"

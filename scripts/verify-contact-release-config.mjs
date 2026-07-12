@@ -50,6 +50,24 @@ if (
   );
 }
 
+const productionObservability = workerConfig.observability;
+
+if (
+  productionObservability?.enabled !== false ||
+  productionObservability?.head_sampling_rate !== 1 ||
+  productionObservability?.logs?.enabled !== true ||
+  productionObservability?.logs?.head_sampling_rate !== 1 ||
+  productionObservability?.logs?.invocation_logs !== true ||
+  productionObservability?.logs?.persist !== true ||
+  productionObservability?.traces?.enabled !== false ||
+  productionObservability?.traces?.head_sampling_rate !== 1 ||
+  productionObservability?.traces?.persist !== true
+) {
+  throw new Error(
+    "The production observability configuration must match the reviewed Cloudflare dashboard-generated settings.",
+  );
+}
+
 await access(workerHandlerPath);
 await requireMissing(
   legacyPagesHandlerPath,
@@ -61,5 +79,5 @@ await requireMissing(
 );
 
 console.log(
-  "Contact release configuration verified: one protected backend, Turnstile enforced, rate limiting off, migration binding preserved.",
+  "Contact release configuration verified: one protected backend, Turnstile enforced, rate limiting off, migration binding and dashboard log settings preserved.",
 );

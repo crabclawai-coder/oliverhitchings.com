@@ -10,6 +10,7 @@ All notable changes to the website are recorded here.
 - Kept server-side rate limiting disabled until its real Cloudflare binding can be provisioned and tested safely.
 - Removed the older Cloudflare Pages email handler so preview hostnames cannot bypass the protected Worker.
 - Preserved the unused legacy Worker email binding during the first Resend release so strict deployment can reconcile configuration without silently deleting remote state.
+- Mirrored Cloudflare's dashboard-generated persisted-log settings exactly so strict deployment can proceed without overriding observability state.
 
 ### Added
 
