@@ -11,9 +11,6 @@ TURNSTILE_ALLOWED_HOSTNAMES = "oliverhitchings.com,www.oliverhitchings.com"
 [secrets]
 required = ["TURNSTILE_SECRET_KEY", "RESEND_API_KEY", "CONTACT_OWNER_EMAIL"]
 
-[[send_email]]
-name = "CONTACT_EMAIL"
-
 [observability]
 enabled = false
 head_sampling_rate = 1

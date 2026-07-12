@@ -42,7 +42,7 @@ describe("website deployment workflow", () => {
 
     expect(productionConfig.vars?.TURNSTILE_MODE).toBe("enforce");
     expect(productionConfig.vars?.RATE_LIMIT_MODE).toBe("off");
-    expect(productionConfig.send_email).toEqual([{ name: "CONTACT_EMAIL" }]);
+    expect(productionConfig.send_email).toBeUndefined();
     expect(productionConfig.observability).toEqual({
       enabled: false,
       head_sampling_rate: 1,
