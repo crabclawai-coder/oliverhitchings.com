@@ -328,6 +328,30 @@ describe("generated site frame", () => {
     expect(compactPanelLinksRule).toContain("min-height:44px");
   });
 
+  it("keeps decorative layers inert, horizontal overflow clipped and menu motion optional", async () => {
+    const bundledCss = (
+      await Promise.all(
+        outputFiles
+          .filter((filePath) => filePath.endsWith(".css"))
+          .map(readOutput),
+      )
+    ).join("\n");
+
+    expect(bundledCss).toMatch(/body\{[^}]*overflow-x:clip/);
+    expect(bundledCss).toMatch(
+      /\.motion-film__poster,.motion-film__video\{[^}]*pointer-events:none/,
+    );
+    expect(bundledCss).toMatch(
+      /\.home-hero__media,.home-hero__scrim\{[^}]*pointer-events:none/,
+    );
+    expect(bundledCss).toMatch(
+      /\.home-final-cta__film,.home-final-cta__scrim\{[^}]*pointer-events:none/,
+    );
+    expect(bundledCss).toMatch(
+      /@media\s*\(prefers-reduced-motion:\s*reduce\)\{[\s\S]*?\.mobile-menu-toggle,.mobile-navigation-panel a,.nav-pill\.is-mobile-navigation-ready \.mobile-navigation-panel\{[^}]*transition:none/,
+    );
+  });
+
   it("keeps availability date-agnostic", async () => {
     const document = await readPage("index.html");
 

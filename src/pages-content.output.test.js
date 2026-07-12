@@ -610,6 +610,48 @@ describe("generated Services content", () => {
     );
   });
 
+  it("uses one mobile page start, balanced pattern type and stable film crops", () => {
+    expect(servicesStylesheetSource).toMatch(
+      /--mobile-page-start:\s*9\.5rem/,
+    );
+    expect(servicesStylesheetSource).toMatch(
+      /\.pattern-heading h2\{[^}]*max-width:9ch;[^}]*text-wrap:balance/,
+    );
+    expect(servicesStylesheetSource).toMatch(
+      /@media\s*\(max-width:\s*620px\)\{[\s\S]*?\.home-hero__content,.services-hero,.about-hero,.blog-hero,.article-template,.error-page\{[^}]*padding-top:var\(--mobile-page-start\)/,
+    );
+    expect(servicesStylesheetSource).toMatch(
+      /@media\s*\(max-width:\s*620px\)\{[\s\S]*?\.pattern-heading h2\{[^}]*max-width:12ch;[^}]*font-size:clamp\([^}]+\)/,
+    );
+    expect(servicesStylesheetSource).toMatch(
+      /@media\s*\(max-width:\s*620px\)\{[\s\S]*?\.about-hero__visual,.blog-hero__film,.services-method__film,.handover-section__film,.pattern-section__film,.principles-section__film\{[^}]*order:-1/,
+    );
+
+    for (const selector of [
+      ".loop-section__film,.home-final-cta__film",
+      ".services-method__film",
+      ".blog-hero__film",
+    ]) {
+      expect(servicesStylesheetSource).toMatch(
+        new RegExp(
+          `${selector.replaceAll(".", "\\.")}\\{[^}]*aspect-ratio:16\\s*\\/\\s*9`,
+        ),
+      );
+    }
+
+    for (const selector of [
+      ".pattern-section__film,.principles-section__film",
+      ".handover-section__film",
+      ".about-hero__film .motion-film__poster,.about-hero__film .motion-film__video",
+    ]) {
+      expect(servicesStylesheetSource).toMatch(
+        new RegExp(
+          `${selector.replaceAll(".", "\\.")}\\{[^}]*aspect-ratio:3\\s*\\/\\s*4`,
+        ),
+      );
+    }
+  });
+
   it("preserves the complete enquiry form contract and honest visible copy", () => {
     const section = services.getElementById("contact");
     const form = section?.querySelector("form[data-contact-form]");

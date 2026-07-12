@@ -60,6 +60,7 @@
   --container-gutter: clamp(1rem, 3vw, 2.5rem);
   --editorial-section-space: clamp(5rem, 9vw, 8rem);
   --editorial-section-space-compact: clamp(4.25rem, 7.65vw, 6.8rem);
+  --mobile-page-start: 9.5rem;
 
   --motion-duration-fast: 180ms;
   --motion-duration-enter: 240ms;
@@ -890,6 +891,7 @@ main.services-page {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  pointer-events: none;
 }
 
 .motion-film__video {
@@ -907,6 +909,7 @@ main.services-page {
   inset: 0;
   width: 100%;
   height: 100%;
+  pointer-events: none;
 }
 
 .home-hero__media {
@@ -1174,6 +1177,7 @@ main.services-page {
 
 .pattern-heading h2 {
   max-width: 9ch;
+  text-wrap: balance;
 }
 
 .pattern-disclosure {
@@ -1783,11 +1787,6 @@ main.services-page {
     font-size: clamp(2.35rem, 11.5vw, 3.6rem);
   }
 
-  .home-hero__content,
-  .services-hero {
-    padding-top: 12rem;
-  }
-
   .home-hero h1,
   .services-hero h1 {
     font-size: clamp(2.7rem, 13vw, 4rem);
@@ -2382,12 +2381,6 @@ main.services-page {
     font-size: clamp(2.35rem, 11.5vw, 3.6rem);
   }
 
-  .about-hero,
-  .blog-hero,
-  .article-template {
-    padding-top: 12rem;
-  }
-
   .about-hero h1,
   .blog-hero h1,
   .article-header h1 {
@@ -2604,5 +2597,30 @@ main.services-page {
 
   .error-routes a:last-child {
     border-bottom: 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .home-hero__content,
+  .services-hero,
+  .about-hero,
+  .blog-hero,
+  .article-template,
+  .error-page {
+    padding-top: var(--mobile-page-start);
+  }
+
+  .pattern-heading h2 {
+    max-width: 12ch;
+    font-size: clamp(2.25rem, 10.5vw, 3.2rem);
+  }
+
+  .about-hero__visual,
+  .blog-hero__film,
+  .services-method__film,
+  .handover-section__film,
+  .pattern-section__film,
+  .principles-section__film {
+    order: -1;
   }
 }
