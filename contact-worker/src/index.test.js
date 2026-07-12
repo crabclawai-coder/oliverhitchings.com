@@ -1849,7 +1849,7 @@ describe("handleContactRequest Resend delivery boundary", () => {
     expect(url).toBe(RESEND_API_URL);
     expect(options).toMatchObject({
       method: "POST",
-      redirect: "error",
+      redirect: "manual",
       headers: {
         Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",

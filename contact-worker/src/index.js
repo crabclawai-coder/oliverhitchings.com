@@ -126,7 +126,7 @@ const sendWithResend = async ({ apiKey, requestId, email }) => {
     try {
       response = await fetch(RESEND_API_URL, {
         method: "POST",
-        redirect: "error",
+        redirect: "manual",
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
