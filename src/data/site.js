@@ -2,20 +2,18 @@ export const site = {
   name: "Oliver Hitchings",
   url: "https://oliverhitchings.com",
   email: "oliverhitch2008@gmail.com",
-  availability: "Accepting 1 client · May 2026",
+  availability: "Accepting 1 client",
   description:
     "Practical automation systems for repeatable business tasks, with clear handover, useful logs, and human control.",
   cta: {
     primary: "View packages",
     secondary: "See services",
+    contact: {
+      href: "/services#contact",
+      label: "Start an enquiry",
+    },
   },
 };
-
-export const contactHref = `mailto:${site.email}?subject=${encodeURIComponent(
-  "Automation package enquiry",
-)}&body=${encodeURIComponent(
-  "Hi Oliver,\n\nI would like to talk about automating a repeatable task.\n\nThe task I have in mind is:\n\nThe systems involved are:\n\nThe outcome I want is:\n",
-)}`;
 
 export const posts = [
   {
@@ -27,7 +25,7 @@ export const posts = [
     category: "Project design",
     body: [
       "A good first project starts with one task that already happens often enough to be painful. The goal is not to automate a whole department in one pass. The goal is to prove that a small, repeatable loop can be trusted.",
-      "That means clear inputs, expected outputs, evidence trails, and a way for a person to review or stop it. The early win is usually not glamour. It is one recurring job that stops taking attention every week.",
+      "That means clear inputs, expected outputs, evidence trails, and a way for a person to review or stop it. The useful test is more modest: can one recurring job have clear inputs, visible review points and a repeatable path?",
       "If the build survives real data, real delays, and real edge cases, it earns the right to become permanent infrastructure. If it does not, the business still leaves with a precise map of the process and the weak points.",
     ],
   },
@@ -41,7 +39,7 @@ export const posts = [
     body: [
       "Local-first does not mean pretending the cloud does not exist. It means the default control plane belongs to the business using the system. Prompts, scripts, schedules, logs, and data handling should be visible.",
       "Cloud models can still be useful for hard reasoning, long-context review, or specialist steps. The important distinction is that escalation is deliberate. The owned system decides when to ask for help, records what happened, and remains understandable afterwards.",
-      "That approach is slower to sell than a black-box SaaS dashboard, but it is easier to operate. The team can see what changed, inspect the run history, and decide what should happen next.",
+      "The trade-off is explicit ownership: the team needs to know where the system runs and how it is maintained. The team can see what changed, inspect the run history, and decide what should happen next.",
     ],
   },
   {

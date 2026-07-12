@@ -1,6 +1,6 @@
 # oliverhitchings.com
 
-Editable Astro site for `oliverhitchings.com`, prepared for local development and Cloudflare Pages deployment.
+Astro source for `oliverhitchings.com`, deployed as a static Cloudflare Pages site with a dedicated Cloudflare Worker for enquiries.
 
 ## Local development
 
@@ -11,25 +11,41 @@ npm run dev
 
 The local server runs on `http://localhost:4321` by default.
 
-## Production build
+Run the same checks used by CI before opening a pull request:
 
 ```bash
+npm ci
+npm audit --audit-level=moderate
+npm test
+npm run check:media
 npm run build
-npm run start
+git diff --check
 ```
+
+The media checks require `ffprobe`, which is included with `ffmpeg`; CI installs it explicitly.
 
 `npm run start` rebuilds before serving `dist/`, so local production checks do not use stale output.
 
-## Live Deployment
+## Deployment
 
-The live site is deployed through GitHub Actions to Cloudflare Pages.
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) verifies pull requests and `main`. The production build compiles the retained Pages Function into `dist/_worker.js` and `dist/_routes.json`; a successful push to `main`, or an explicit manual run selected on `main`, deploys that exact verified artifact to the `oliverhitchings` Cloudflare Pages project from a job with no source checkout. Manual runs selected on another ref cannot deploy production.
 
-- Workflow: `.github/workflows/deploy.yml`
-- Cloudflare Pages project: `oliverhitchings`
-- Production domain: `https://oliverhitchings.com`
+The contact Worker does not deploy on a push. Its workflow job is deliberately dormant until the provider, all delivery secrets, required/enforced Turnstile, the live Pages form, the active 100% rollback version, repository arming variable, typed confirmation, and protected-environment approval have all been confirmed. Follow the operations runbook rather than bypassing those gates.
 
-Pushes to `main` build the Astro site and deploy `dist/` to Cloudflare Pages.
+## Contact form
 
-## Contact Form
+The services form sends JSON to same-origin `POST /api/contact`. The intended production route is owned by the Worker in [`contact-worker/`](contact-worker/), which validates the request and sends one email through Resend:
 
-The services enquiry form posts to `/api/contact`. A dedicated Cloudflare Worker at `contact-worker/` owns that route and sends the enquiry using Cloudflare's email binding.
+- sender: `forms.oliverhitchings.com`, which must be verified in Resend before deployment;
+- destination: the configured owner inbox;
+- `Reply-To`: the visitor's validated email address.
+
+The root domain's existing mail MX and SPF records are outside this flow and must not be replaced. The older Pages Function in [`functions/api/contact.js`](functions/api/contact.js) remains temporarily as a rollback boundary; it must not be removed until the dedicated Worker has passed provider acceptance, delivery, inbox, and reply-to checks in production.
+
+See [`docs/operations/contact-form.md`](docs/operations/contact-form.md) for configuration, release, evidence, rollback, and eventual cleanup instructions.
+
+## Project records
+
+- [`CHANGELOG.md`](CHANGELOG.md) records the user-facing release history.
+- [`docs/superpowers/specs/2026-07-09-website-enquiry-redesign-design.md`](docs/superpowers/specs/2026-07-09-website-enquiry-redesign-design.md) records the approved design direction and implementation pivots.
+- [`docs/superpowers/plans/2026-07-09-website-enquiry-redesign.md`](docs/superpowers/plans/2026-07-09-website-enquiry-redesign.md) records the staged implementation and verification plan.

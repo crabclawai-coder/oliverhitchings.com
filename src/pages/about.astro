@@ -6,67 +6,95 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   title="About | Oliver Hitchings"
   description="About Oliver Hitchings and the practical engineering approach behind inspectable automation systems."
 >
-  <main class="subpage">
-    <section class="container subpage-hero-grid">
-      <div class="subpage-hero">
-        <p class="eyebrow">About</p>
-        <h1>I build practical automation for real business operations.</h1>
-        <p>
-          My bias is toward systems people can inspect: readable code, visible prompts, useful logs,
-          and review points that keep a human responsible for the important calls.
-        </p>
-      </div>
-      <div class="visual-panel portrait">
-        <video src="/videos/bento.mp4" autoplay muted loop playsinline preload="metadata"></video>
-        <div>
-          <span>Working style</span>
-          <strong>Small systems with clear ownership.</strong>
+  <main class="subpage about-page">
+    <section class="about-hero" data-about-hero>
+      <div class="container about-hero__grid">
+        <div class="about-hero__copy">
+          <p class="eyebrow">About Oliver Hitchings</p>
+          <h1>I design small automation systems around the work people already do.</h1>
+          <p class="about-hero__intro">
+            My approach starts with the task: what triggers it, which evidence it uses, where
+            judgement is needed and who owns the result.
+          </p>
         </div>
+
+        <aside
+          class="about-identity"
+          aria-label="Oliver Hitchings working focus"
+          data-about-identity
+        >
+          <p data-field="Name">Oliver Hitchings</p>
+          <p data-field="Focus">Automation systems</p>
+          <p data-field="Sequence">Map → Build → Hand over</p>
+        </aside>
       </div>
     </section>
 
-    <section class="container detail-section">
+    <section
+      class="container editorial-section about-stance"
+      data-operating-stance
+      data-reveal
+    >
       <div>
         <p class="eyebrow">Operating stance</p>
-        <h2>Useful automation is operations work first.</h2>
+        <h2>The model call is only one step.</h2>
       </div>
-      <div class="copy-stack">
-        <p>
-          The model call is rarely the hard part. The hard part is deciding what should happen
-          before the model runs, what evidence it should use, where it should stop, how it should
-          explain itself, and what a human should do when it is uncertain.
-        </p>
-        <p>
-          That is why I start with operational mapping before implementation. Once the task is
-          clear, the build can stay small, observable, and easier to maintain.
-        </p>
-      </div>
+      <p class="about-stance__copy">
+        The operational questions come first: which source of truth wins, when the system should
+        stop, what gets logged and what a person should do when confidence is low. Once those
+        boundaries are clear, the build can stay narrow, observable and easier to hand over.
+      </p>
     </section>
 
-    <section class="container service-list">
-      <article>
-        <span>Principle 1</span>
-        <h2>Show the work</h2>
-        <p>Prompts, assumptions, logs, and runbooks should be visible enough to debug a bad run.</p>
-      </article>
-      <article>
-        <span>Principle 2</span>
-        <h2>Keep ownership local</h2>
-        <p>The important parts should live somewhere the business can inspect, back up, and change.</p>
-      </article>
-      <article>
-        <span>Principle 3</span>
-        <h2>Escalate deliberately</h2>
-        <p>Use larger cloud models when they are worth it, but record why and keep the system legible.</p>
-      </article>
-    </section>
-
-    <section class="container visual-split">
-      <div class="visual-panel wide">
-        <video src="/videos/process.mp4" autoplay muted loop playsinline preload="metadata"></video>
+    <section
+      class="container editorial-section about-principles"
+      data-about-principles
+      data-reveal
+    >
+      <div class="editorial-heading compact-heading">
         <div>
-          <span>Operating stance</span>
-          <strong>The work is mapped before anything gets automated.</strong>
+          <p class="eyebrow">Operating principles</p>
+          <h2>Four rules for an operable system.</h2>
+        </div>
+      </div>
+
+      <div class="about-principle-rows">
+        <article>
+          <span aria-hidden="true">01</span>
+          <h3>Show the work</h3>
+          <p>Prompts, rules, assumptions and logs visible enough to review a bad run.</p>
+        </article>
+        <article>
+          <span aria-hidden="true">02</span>
+          <h3>Keep a person responsible</h3>
+          <p>Stop for review when a step is uncertain or consequential.</p>
+        </article>
+        <article>
+          <span aria-hidden="true">03</span>
+          <h3>Design the failure path</h3>
+          <p>Make retries, stop conditions and escalation explicit.</p>
+        </article>
+        <article>
+          <span aria-hidden="true">04</span>
+          <h3>Hand over ownership</h3>
+          <p>Leave run instructions, logs and change notes with the owner.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="about-final-cta" data-about-cta>
+      <div class="container about-final-cta__grid">
+        <p class="eyebrow">A useful starting point</p>
+        <div>
+          <h2>Bring one task that already repeats.</h2>
+          <p class="about-cta__copy">
+            Describe the trigger, inputs, output, tools and reviewer. That is enough to decide
+            whether a Task Map, First Build or Operator System is the sensible starting point.
+          </p>
+          <div class="cta-row left">
+            <a class="button ghost" href="/services#packages">View packages</a>
+            <a class="button" href="/services#contact">Start an enquiry</a>
+          </div>
         </div>
       </div>
     </section>

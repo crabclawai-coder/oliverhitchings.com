@@ -2,14 +2,52 @@
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import { site } from "../data/site.js";
+import "@fontsource-variable/archivo";
 import "../styles/global.css";
 
 const {
   title = site.name,
   description = site.description,
+  noindex = false,
+  includeCanonical = true,
+  includeStructuredData = true,
+  ogType = "website",
+  publishedTime,
 } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, site.url);
+const canonical = includeCanonical ? new URL(Astro.url.pathname, site.url) : null;
+const apexUrl = new URL("/", site.url).href;
+const socialImageUrl = new URL(
+  "/images/social/oliver-hitchings-og.jpg",
+  site.url,
+).href;
+const socialImageAlt = "Oliver Hitchings — inspectable automation systems";
+const personId = new URL("/#person", site.url).href;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": personId,
+      name: site.name,
+      url: apexUrl,
+    },
+    {
+      "@type": "ProfessionalService",
+      "@id": new URL("/#professional-service", site.url).href,
+      name: site.name,
+      url: apexUrl,
+      description: site.description,
+      serviceType: "Business process automation",
+      founder: { "@id": personId },
+      image: socialImageUrl,
+    },
+  ],
+};
+const serializedStructuredData = JSON.stringify(structuredData).replace(
+  /</g,
+  "\\u003c",
+);
 ---
 
 <!doctype html>
@@ -18,92 +56,54 @@ const canonical = new URL(Astro.url.pathname, site.url);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="canonical" href={canonical} />
+    {includeCanonical && <link rel="canonical" href={canonical} />}
+    {noindex && <meta name="robots" content="noindex,follow" />}
     <meta name="description" content={description} />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content={ogType} />
+    {includeCanonical && <meta property="og:url" content={canonical} />}
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:image" content={socialImageUrl} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={socialImageAlt} />
+    {
+      publishedTime && (
+        <meta property="article:published_time" content={publishedTime} />
+      )
+    }
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImageUrl} />
+    <meta name="twitter:image:alt" content={socialImageAlt} />
+    {
+      includeStructuredData && (
+        <script
+          type="application/ld+json"
+          is:inline
+          set:html={serializedStructuredData}
+        />
+      )
+    }
     <title>{title}</title>
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <Header />
-    <slot />
+    <div id="main-content" tabindex="-1">
+      <slot />
+    </div>
     <Footer />
     <script>
-      const revealTargets = document.querySelectorAll(
-        [
-          ".stats-grid > div",
-          ".proof-strip",
-          ".retainer-strip > *",
-          ".home-intro-section .eyebrow",
-          ".home-intro-section h2",
-          ".home-intro-section .copy-stack > *",
-          ".feature-copy > *",
-          ".media-card",
-          ".process-content > *",
-          ".operator-section > .container > .eyebrow",
-          ".operator-section > .container > h2",
-          ".operator-grid article",
-          ".final-cta-content > *",
-          ".subpage-hero-grid > *",
-          ".service-list article",
-          ".package-section .section-heading > *",
-          ".package-card",
-          ".detail-section > *",
-          ".detail-grid article",
-          ".proof-panel",
-          ".feature-copy .button",
-          ".process-content .button",
-          ".final-cta-content .button",
-          ".retainer-strip .button",
-          ".blog-card",
-          ".visual-panel",
-        ].join(","),
-      );
+      import { initializeMedia } from "../scripts/media.js";
+      import { initializeSiteBehaviour } from "../scripts/site-behaviour.js";
 
-      revealTargets.forEach((target, index) => {
-        target.classList.add("reveal");
-
-        if (
-          target.matches(".media-card, .visual-panel, .subpage-hero-grid > .visual-panel")
-        ) {
-          target.classList.add("reveal-from-right");
-        } else if (
-          target.matches(
-            ".package-card, .stats-grid > div, .operator-grid article, .service-list article, .detail-grid article, .blog-card, .button",
-          )
-        ) {
-          target.classList.add("reveal-pop");
-        } else if (target.matches("h1, h2, .eyebrow")) {
-          target.classList.add("reveal-from-left");
-        } else {
-          target.classList.add("reveal-up");
-        }
-
-        target.style.setProperty("--reveal-delay", `${Math.min(index % 6, 5) * 95}ms`);
-      });
-
-      if (!("IntersectionObserver" in window)) {
-        revealTargets.forEach((target) => target.classList.add("is-visible"));
-      } else {
-        const revealObserver = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (entry.isIntersecting) {
-                entry.target.classList.add("is-visible");
-                revealObserver.unobserve(entry.target);
-              }
-            });
-          },
-          { rootMargin: "0px 0px -12% 0px", threshold: 0.12 },
-        );
-
-        revealTargets.forEach((target) => revealObserver.observe(target));
-      }
+      initializeSiteBehaviour();
+      initializeMedia();
     </script>
   </body>
 </html>

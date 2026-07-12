@@ -14,8 +14,9 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
 
 <header class="site-header">
   <nav class="nav-pill" aria-label="Primary navigation">
-    <a class="brand-mark" href="/" aria-label="Oliver Hitchings home">
+    <a class="brand-mark brand-lockup" href="/" aria-label="Oliver Hitchings home">
       <Logo />
+      <span class="brand-name">{site.name}</span>
     </a>
     <div class="nav-links">
       {
@@ -30,6 +31,20 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
         })
       }
     </div>
-    <a class="nav-cta" href="/services#packages">{site.cta.primary}</a>
+    <a class="nav-cta" href={site.cta.contact.href}>{site.cta.contact.label}</a>
   </nav>
 </header>
+
+<style>
+  .brand-lockup {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    width: auto;
+    min-height: 44px;
+    height: auto;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+</style>

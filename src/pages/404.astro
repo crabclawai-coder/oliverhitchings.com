@@ -1,0 +1,45 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Page not found | Oliver Hitchings"
+  description="The requested page could not be found on oliverhitchings.com."
+  noindex
+  includeCanonical={false}
+  includeStructuredData={false}
+>
+  <main class="error-page">
+    <section class="container error-composition" aria-labelledby="error-title">
+      <div class="error-status" aria-hidden="true">
+        <span>Route status</span>
+        <strong>404</strong>
+        <span>Destination absent</span>
+      </div>
+
+      <div class="error-copy">
+        <p class="eyebrow">No matching route</p>
+        <h1 id="error-title">That page is not here.</h1>
+        <p class="error-explanation">
+          The address may have changed, or the page may no longer exist. Choose a useful route to
+          continue.
+        </p>
+
+        <nav class="error-routes" aria-label="Useful pages">
+          <a href="/">
+            <span>Home</span>
+            <span aria-hidden="true">→</span>
+          </a>
+          <a href="/services">
+            <span>Services</span>
+            <span aria-hidden="true">→</span>
+          </a>
+          <a href="/blog">
+            <span>Blog</span>
+            <span aria-hidden="true">→</span>
+          </a>
+        </nav>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

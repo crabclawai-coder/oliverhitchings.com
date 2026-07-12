@@ -1,16 +1,188 @@
-name: Deploy to Cloudflare Pages
+name: Website CI and deployment
 
 on:
+  pull_request:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      deploy_contact_worker:
+        description: "Deploy the production contact Worker after Pages has been tested"
+        required: false
+        default: false
+        type: boolean
+      resend_domain_verified:
+        description: "I confirmed forms.oliverhitchings.com is verified in Resend"
+        required: false
+        default: false
+        type: boolean
+      resend_api_key_stored:
+        description: "I confirmed RESEND_API_KEY is stored as a Cloudflare Worker secret"
+        required: false
+        default: false
+        type: boolean
+      contact_owner_email_stored:
+        description: "I confirmed CONTACT_OWNER_EMAIL is stored as a Cloudflare Worker secret"
+        required: false
+        default: false
+        type: boolean
+      contact_abuse_controls_ready:
+        description: "I confirmed the Pages frontend requires Turnstile and the Worker enforces it"
+        required: false
+        default: false
+        type: boolean
+      pages_frontend_preflight_tested:
+        description: "Current main Pages form passed preflight testing; re-test this run before approval"
+        required: false
+        default: false
+        type: boolean
+      worker_rollback_version:
+        description: "Existing Cloudflare Worker version ID recorded for rollback"
+        required: false
+        default: ""
+        type: string
+      protected_environment_ready:
+        description: "The main-only protected environment and independent reviewer are ready"
+        required: false
+        default: false
+        type: boolean
+      worker_deploy_confirmation:
+        description: "Type DEPLOY CONTACT WORKER to confirm the manual release"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: >-
+    ${{
+      github.event_name == 'pull_request' &&
+      format('oliverhitchings-pr-{0}', github.event.pull_request.number) ||
+      'oliverhitchings-production'
+    }}
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  verify:
+    name: Verify website
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Audit moderate and high severity dependencies
+        run: npm audit --audit-level=moderate
+
+      - name: Run tests
+        run: npm test
+
+      - name: Install ffprobe
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg
+          ffprobe -version
+
+      - name: Check media budgets
+        run: npm run check:media
+
+      - name: Build production site
+        run: npm run build
+        env:
+          PUBLIC_TURNSTILE_MODE: ${{ vars.PUBLIC_TURNSTILE_MODE || 'off' }}
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY || '' }}
+
+      - name: Check whitespace errors
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+        run: |
+          git diff --check
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            git diff --check "$PR_BASE_SHA...$PR_HEAD_SHA"
+          elif [[ "$EVENT_NAME" == "push" && ! "$PUSH_BEFORE_SHA" =~ ^0+$ ]]; then
+            git diff --check "$PUSH_BEFORE_SHA" "$CURRENT_SHA"
+          else
+            git show --check --format=fuller "$CURRENT_SHA" --
+          fi
+
+      - name: Upload verified Pages artifact
+        if: >-
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-dist-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+          include-hidden-files: true
+
+  deploy_pages:
+    name: Deploy Cloudflare Pages
+    needs: verify
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       deployments: write
+    steps:
+      - name: Download verified Pages artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pages-dist-${{ github.sha }}
+          path: dist/
+
+      - name: Deploy Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.110.0"
+          command: pages deploy ./dist --project-name=oliverhitchings --branch=main
+
+  deploy_contact_worker:
+    name: Deploy contact Worker (manual approval)
+    needs: [verify, deploy_pages]
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' &&
+        github.ref == 'refs/heads/main' &&
+        inputs.deploy_contact_worker == true &&
+        inputs.resend_domain_verified == true &&
+        inputs.resend_api_key_stored == true &&
+        inputs.contact_owner_email_stored == true &&
+        inputs.contact_abuse_controls_ready == true &&
+        inputs.pages_frontend_preflight_tested == true &&
+        inputs.protected_environment_ready == true &&
+        inputs.worker_rollback_version != '' &&
+        inputs.worker_deploy_confirmation == 'DEPLOY CONTACT WORKER' &&
+        vars.CONTACT_WORKER_DEPLOY_ENABLED == 'true'
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: contact-worker-production
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -19,13 +191,90 @@ jobs:
           node-version: "22"
           cache: "npm"
 
-      - run: npm ci
+      - name: Install locked dependencies
+        run: npm ci
 
-      - run: npm run build
+      - name: Verify production Turnstile is required end to end
+        env:
+          PUBLIC_TURNSTILE_MODE: ${{ vars.PUBLIC_TURNSTILE_MODE }}
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+        run: |
+          if [[ "$PUBLIC_TURNSTILE_MODE" != "required" || -z "$PUBLIC_TURNSTILE_SITE_KEY" ]]; then
+            echo "Pages must be built with required Turnstile and a configured site key." >&2
+            exit 1
+          fi
+          node -e '
+            const { readFileSync } = require("node:fs");
+            const config = readFileSync("contact-worker/wrangler.toml", "utf8");
+            if (!/^TURNSTILE_MODE\s*=\s*"enforce"\s*$/m.test(config)) {
+              console.error("The contact Worker must enforce Turnstile before production deployment.");
+              process.exit(1);
+            }
+          '
 
-      - name: Deploy
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ./dist --project-name=oliverhitchings --branch=main
+      - name: Verify the rollback version is the active production version
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ROLLBACK_VERSION: ${{ inputs.worker_rollback_version }}
+        run: |
+          if [[ ! "$ROLLBACK_VERSION" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+            echo "The rollback version must be a complete lowercase Cloudflare Worker version UUID." >&2
+            exit 1
+          fi
+          deployment_json="$(npx wrangler deployments status \
+            --config contact-worker/wrangler.toml \
+            --json)"
+          DEPLOYMENT_JSON="$deployment_json" EXPECTED_VERSION="$ROLLBACK_VERSION" node -e '
+            const deployment = JSON.parse(process.env.DEPLOYMENT_JSON || "null");
+            const versions = Array.isArray(deployment?.versions)
+              ? deployment.versions
+              : [];
+            const active = versions.length === 1 ? versions[0] : null;
+            if (
+              active?.version_id !== process.env.EXPECTED_VERSION ||
+              Number(active?.percentage) !== 100
+            ) {
+              console.error(
+                "The rollback version must be the sole version serving 100% of production traffic.",
+              );
+              process.exit(1);
+            }
+          '
+
+      - name: Verify contact delivery secrets exist without reading their values
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          secret_list="$(npx wrangler secret list \
+            --config contact-worker/wrangler.toml \
+            --format json)"
+          SECRET_LIST="$secret_list" node -e '
+            const entries = JSON.parse(process.env.SECRET_LIST || "null");
+            const names = Array.isArray(entries)
+              ? entries.flatMap((entry) =>
+                  typeof entry === "string"
+                    ? [entry]
+                    : typeof entry?.name === "string"
+                      ? [entry.name]
+                      : [],
+                )
+              : [];
+            const requiredNames = [
+              "CONTACT_OWNER_EMAIL",
+              "RESEND_API_KEY",
+              "TURNSTILE_SECRET_KEY",
+            ];
+            const missingNames = requiredNames.filter((name) => !names.includes(name));
+            if (missingNames.length > 0) {
+              console.error(`Missing required contact Worker secrets: ${missingNames.join(", ")}`);
+              process.exit(1);
+            }
+          '
+
+      - name: Deploy contact Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --strict --config contact-worker/wrangler.toml
