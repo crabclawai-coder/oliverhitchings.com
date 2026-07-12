@@ -101,6 +101,7 @@ const serializedStructuredData = JSON.stringify(structuredData).replace(
     <script>
       import { initializeMobileNavigation } from "../scripts/mobile-navigation.js";
       import { initializeMedia } from "../scripts/media.js";
+      import { initializePageLifecycle } from "../scripts/page-lifecycle.js";
       import { initializeScrollFilms } from "../scripts/scroll-film.js";
       import { initializeSiteBehaviour } from "../scripts/site-behaviour.js";
 
@@ -109,11 +110,10 @@ const serializedStructuredData = JSON.stringify(structuredData).replace(
       initializeSiteBehaviour();
       const media = initializeMedia();
 
-      window.addEventListener("pagehide", () => {
-        navigation.destroy();
-        scrollFilms.destroy();
-        media?.destroy?.();
-      }, { once: true });
+      initializePageLifecycle({
+        window,
+        controllers: [navigation, scrollFilms, media],
+      });
     </script>
   </body>
 </html>
