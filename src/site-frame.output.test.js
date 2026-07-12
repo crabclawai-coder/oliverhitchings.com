@@ -250,7 +250,7 @@ describe("generated site frame", () => {
 
   it("uses the on-site enquiry path for primary frame contact actions", async () => {
     const document = await readPage("index.html");
-    const headerAction = document.querySelector(".site-header .nav-cta");
+    const headerActions = document.querySelectorAll(".site-header .nav-cta");
     const footerAction = document.querySelector(
       ".site-footer .footer-links > div:last-child a[href='/services#contact']",
     );
@@ -258,10 +258,74 @@ describe("generated site frame", () => {
       ".site-header a[href^='mailto:'], .site-footer a[href^='mailto:']",
     );
 
-    expect(headerAction?.getAttribute("href")).toBe("/services#contact");
-    expect(headerAction?.textContent.trim()).toBe("Start an enquiry");
+    expect(headerActions).toHaveLength(2);
+    for (const headerAction of headerActions) {
+      expect(headerAction.getAttribute("href")).toBe("/services#contact");
+      expect(headerAction.textContent.trim()).toBe("Start an enquiry");
+    }
     expect(footerAction).not.toBeNull();
     expect(frameEmailLinks).toHaveLength(0);
+  });
+
+  it("renders matching desktop and compact primary navigation contracts", async () => {
+    const document = await readPage("index.html");
+    const navigation = document.querySelector("[data-mobile-navigation]");
+    const toggle = navigation?.querySelector("[data-mobile-menu-toggle]");
+    const panel = navigation?.querySelector("[data-mobile-menu-panel]");
+    const expectedLinks = [
+      ["Home", "/"],
+      ["Services", "/services"],
+      ["About", "/about"],
+      ["Blog", "/blog"],
+    ];
+    const linkContract = (selector) =>
+      Array.from(navigation?.querySelectorAll(selector) ?? [], (link) => [
+        link.textContent.trim(),
+        link.getAttribute("href"),
+      ]);
+
+    expect(navigation).not.toBeNull();
+    expect(toggle?.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle?.getAttribute("aria-controls")).toBe(
+      "mobile-primary-navigation",
+    );
+    expect(panel?.id).toBe("mobile-primary-navigation");
+    expect(panel?.hasAttribute("inert")).toBe(true);
+    expect(linkContract("[data-desktop-navigation-links] a")).toEqual(
+      expectedLinks,
+    );
+    expect(linkContract("[data-mobile-menu-panel] a")).toEqual(expectedLinks);
+    expect(
+      navigation.querySelectorAll(
+        "[data-desktop-navigation-links] a[aria-current='page']",
+      ),
+    ).toHaveLength(1);
+    expect(
+      navigation.querySelectorAll(
+        "[data-mobile-menu-panel] a[aria-current='page']",
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("keeps compact navigation controls at least 44px square", async () => {
+    const bundledCss = (
+      await Promise.all(
+        outputFiles
+          .filter((filePath) => filePath.endsWith(".css"))
+          .map(readOutput),
+      )
+    ).join("\n");
+    const compactControlsRule = bundledCss.match(
+      /\.mobile-navigation-actions>\*\{([^}]*)\}/,
+    )?.[1];
+    const compactPanelLinksRule = bundledCss.match(
+      /\.mobile-navigation-panel a\{([^}]*)\}/,
+    )?.[1];
+
+    expect(compactControlsRule).toContain("min-width:44px");
+    expect(compactControlsRule).toContain("min-height:44px");
+    expect(compactPanelLinksRule).toContain("min-width:44px");
+    expect(compactPanelLinksRule).toContain("min-height:44px");
   });
 
   it("keeps availability date-agnostic", async () => {
@@ -292,18 +356,22 @@ describe("generated site frame", () => {
     expect(availabilityRule).toContain("min-height:44px");
   });
 
-  it("loads site, scroll-film and media behaviour from same-origin external modules", async () => {
+  it("loads navigation, site, scroll-film and media behaviour from same-origin external modules", async () => {
     const siteOrigin = "https://oliverhitchings.com";
     const layoutSource = await readFile(
       new URL("./layouts/BaseLayout.astro", import.meta.url),
       "utf8",
+    );
+    const navigationInitialization = layoutSource.indexOf(
+      "initializeMobileNavigation();",
     );
     const scrollFilmInitialization = layoutSource.indexOf(
       "initializeScrollFilms();",
     );
     const mediaInitialization = layoutSource.indexOf("initializeMedia();");
 
-    expect(scrollFilmInitialization).toBeGreaterThan(-1);
+    expect(navigationInitialization).toBeGreaterThan(-1);
+    expect(scrollFilmInitialization).toBeGreaterThan(navigationInitialization);
     expect(mediaInitialization).toBeGreaterThan(scrollFilmInitialization);
 
     for (const filePath of contentPages) {
@@ -335,6 +403,9 @@ describe("generated site frame", () => {
       const behaviourModule = externalSources.find(({ source }) =>
         source.includes("[data-reveal]"),
       );
+      const navigationModule = externalSources.find(({ source }) =>
+        source.includes("[data-mobile-navigation]"),
+      );
       const scrollFilmModule = externalSources.find(({ source }) =>
         source.includes("video[data-scroll-film]"),
       );
@@ -344,11 +415,19 @@ describe("generated site frame", () => {
 
       expect(inlineModuleSource, filePath).not.toContain("[data-reveal]");
       expect(inlineModuleSource, filePath).not.toContain(
+        "[data-mobile-navigation]",
+      );
+      expect(inlineModuleSource, filePath).not.toContain(
         "video[data-scroll-film]",
       );
       expect(inlineModuleSource, filePath).not.toContain("video[data-media]");
 
-      for (const module of [behaviourModule, scrollFilmModule, mediaModule]) {
+      for (const module of [
+        navigationModule,
+        behaviourModule,
+        scrollFilmModule,
+        mediaModule,
+      ]) {
         expect(module, filePath).toBeDefined();
         expect(module.sourceUrl.origin, filePath).toBe(siteOrigin);
         expect(module.sourceUrl.pathname, filePath).toMatch(

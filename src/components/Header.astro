@@ -9,29 +9,55 @@ const links = [
   { href: "/blog", label: "Blog" },
 ];
 
-const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
+const normalisePath = (value) => value.replace(/\/$/, "") || "/";
+const currentPath = normalisePath(Astro.url.pathname);
+const isActive = (link) => currentPath === normalisePath(link.href);
 ---
 
 <header class="site-header">
-  <nav class="nav-pill" aria-label="Primary navigation">
+  <nav class="nav-pill" aria-label="Primary navigation" data-mobile-navigation>
     <a class="brand-mark brand-lockup" href="/" aria-label="Oliver Hitchings home">
       <Logo />
       <span class="brand-name">{site.name}</span>
     </a>
-    <div class="nav-links">
-      {
-        links.map((link) => {
-          const linkPath = link.href.replace(/\/$/, "") || "/";
-          const isActive = currentPath === linkPath;
-          return (
-            <a href={link.href} aria-current={isActive ? "page" : undefined}>
-              {link.label}
-            </a>
-          );
-        })
-      }
+    <div class="nav-links" data-desktop-navigation-links>
+      {links.map((link) => (
+        <a href={link.href} aria-current={isActive(link) ? "page" : undefined}>
+          {link.label}
+        </a>
+      ))}
     </div>
-    <a class="nav-cta" href={site.cta.contact.href}>{site.cta.contact.label}</a>
+    <a
+      class="nav-cta"
+      href={site.cta.contact.href}
+      data-desktop-navigation-cta
+    >{site.cta.contact.label}</a>
+
+    <div class="mobile-navigation-actions" data-mobile-navigation-actions>
+      <a class="nav-cta mobile-nav-cta" href={site.cta.contact.href}>
+        {site.cta.contact.label}
+      </a>
+      <button
+        class="mobile-menu-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="mobile-primary-navigation"
+        data-mobile-menu-toggle
+      >Menu</button>
+    </div>
+
+    <div
+      id="mobile-primary-navigation"
+      class="mobile-navigation-panel"
+      data-mobile-menu-panel
+      inert
+    >
+      {links.map((link) => (
+        <a href={link.href} aria-current={isActive(link) ? "page" : undefined}>
+          {link.label}
+        </a>
+      ))}
+    </div>
   </nav>
 </header>
 
