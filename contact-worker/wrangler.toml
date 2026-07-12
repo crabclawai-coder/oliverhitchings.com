@@ -4,7 +4,7 @@ compatibility_date = "2026-05-20"
 workers_dev = false
 
 [vars]
-TURNSTILE_MODE = "off"
+TURNSTILE_MODE = "enforce"
 RATE_LIMIT_MODE = "off"
 TURNSTILE_ALLOWED_HOSTNAMES = "oliverhitchings.com,www.oliverhitchings.com"
 

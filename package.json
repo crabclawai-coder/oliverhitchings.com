@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev --host 0.0.0.0",
-    "build": "astro build && node scripts/build-pages-functions.mjs",
+    "build": "astro build",
     "preview": "astro preview --host 0.0.0.0",
     "start": "npm run build && sirv dist --host 0.0.0.0 --port ${PORT:-3000}",
     "check:media": "node scripts/check-media-budget.mjs && vitest run src/scripts/media.test.js src/pages-content.output.test.js",
@@ -25,6 +25,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "4.1.10",
     "jsdom": "29.1.1",
+    "smol-toml": "1.7.0",
     "vitest": "4.1.10",
     "wrangler": "4.110.0"
   }

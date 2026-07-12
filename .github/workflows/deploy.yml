@@ -42,7 +42,7 @@ on:
         default: ""
         type: string
       protected_environment_ready:
-        description: "The main-only protected environment and independent reviewer are ready"
+        description: "The main-only protected environment release gate is ready"
         required: false
         default: false
         type: boolean
@@ -82,6 +82,9 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Verify the protected contact backend boundary
+        run: node scripts/verify-contact-release-config.mjs
+
       - name: Audit moderate and high severity dependencies
         run: npm audit --audit-level=moderate
 
@@ -102,6 +105,11 @@ jobs:
         env:
           PUBLIC_TURNSTILE_MODE: ${{ vars.PUBLIC_TURNSTILE_MODE || 'off' }}
           PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY || '' }}
+
+      - name: Verify Pages artifact is static
+        run: |
+          test ! -e dist/_worker.js
+          test ! -e dist/_routes.json
 
       - name: Check whitespace errors
         env:
@@ -159,6 +167,21 @@ jobs:
           wranglerVersion: "4.110.0"
           command: pages deploy ./dist --project-name=oliverhitchings --branch=main
 
+      - name: Verify the Pages hostname has no contact backend
+        shell: bash
+        run: |
+          status=""
+          for attempt in {1..12}; do
+            status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              https://oliverhitchings.pages.dev/api/contact)"
+            if [[ "$status" == "404" ]]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Expected the Pages contact endpoint to be absent; received HTTP $status." >&2
+          exit 1
+
   deploy_contact_worker:
     name: Deploy contact Worker (manual approval)
     needs: [verify, deploy_pages]
@@ -203,14 +226,7 @@ jobs:
             echo "Pages must be built with required Turnstile and a configured site key." >&2
             exit 1
           fi
-          node -e '
-            const { readFileSync } = require("node:fs");
-            const config = readFileSync("contact-worker/wrangler.toml", "utf8");
-            if (!/^TURNSTILE_MODE\s*=\s*"enforce"\s*$/m.test(config)) {
-              console.error("The contact Worker must enforce Turnstile before production deployment.");
-              process.exit(1);
-            }
-          '
+          node scripts/verify-contact-release-config.mjs
 
       - name: Verify the rollback version is the active production version
         env:

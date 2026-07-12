@@ -2,7 +2,7 @@
 
 > **For Codex:** Execute this plan test-first. Keep the urgent correctness release independently deployable. Do not enforce Turnstile in production until the token-producing frontend is verified live.
 
-> **Implementation pivot — 10 July 2026:** The implemented contact path sends through Resend using the isolated `forms.oliverhitchings.com` sender subdomain. The legacy Pages Function remains temporarily as a production fallback until provider acceptance, delivery, inbox, reply-to, and rollback checks have passed. The dedicated production Worker is now gated on required/enforced Turnstile rather than an unprotected delivery-proof interval. Any Cloudflare Email Service, disabled-production-control, or immediate Pages Function deletion steps below preserve the original plan and are superseded by the [contact form operations runbook](../../operations/contact-form.md).
+> **Implementation pivot — 12 July 2026:** The implemented contact path sends through Resend using the isolated `forms.oliverhitchings.com` sender subdomain. Final review found that retaining a Pages Function exposed a second endpoint on the public Pages hostname, so the release removes it and makes the Turnstile-enforcing Worker the only backend. Any Cloudflare Email Service, disabled-production-control, retained Pages fallback, or alternate deletion timing below preserves the original plan and is superseded by the [contact form operations runbook](../../operations/contact-form.md).
 
 **Goal:** Make `oliverhitchings.com` send enquiries directly and honestly, then ship a protected Cloudflare backend and a clearer, faster, founder-led redesign.
 
