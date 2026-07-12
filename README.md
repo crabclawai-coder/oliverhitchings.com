@@ -22,6 +22,8 @@ npm run build
 git diff --check
 ```
 
+The media checks require `ffprobe`, which is included with `ffmpeg`; CI installs it explicitly.
+
 `npm run start` rebuilds before serving `dist/`, so local production checks do not use stale output.
 
 ## Deployment

@@ -88,6 +88,12 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Install ffprobe
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg
+          ffprobe -version
+
       - name: Check media budgets
         run: npm run check:media
 
