@@ -42,6 +42,7 @@ describe("website deployment workflow", () => {
 
     expect(productionConfig.vars?.TURNSTILE_MODE).toBe("enforce");
     expect(productionConfig.vars?.RATE_LIMIT_MODE).toBe("off");
+    expect(productionConfig.send_email).toEqual([{ name: "CONTACT_EMAIL" }]);
   });
 
   it("keeps the protected Worker as the only contact backend", async () => {

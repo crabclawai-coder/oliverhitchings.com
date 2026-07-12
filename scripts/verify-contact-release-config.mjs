@@ -40,6 +40,16 @@ if (workerConfig.vars?.RATE_LIMIT_MODE !== "off") {
   );
 }
 
+if (
+  !Array.isArray(workerConfig.send_email) ||
+  workerConfig.send_email.length !== 1 ||
+  workerConfig.send_email[0]?.name !== "CONTACT_EMAIL"
+) {
+  throw new Error(
+    "The first Resend release must preserve the existing CONTACT_EMAIL binding until post-release cleanup.",
+  );
+}
+
 await access(workerHandlerPath);
 await requireMissing(
   legacyPagesHandlerPath,
@@ -51,5 +61,5 @@ await requireMissing(
 );
 
 console.log(
-  "Contact release configuration verified: one protected backend, Turnstile enforced, rate limiting off.",
+  "Contact release configuration verified: one protected backend, Turnstile enforced, rate limiting off, migration binding preserved.",
 );

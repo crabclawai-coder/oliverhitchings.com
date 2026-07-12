@@ -9,6 +9,7 @@ All notable changes to the website are recorded here.
 - Required Cloudflare Turnstile validation on the production enquiry Worker before a visitor's message can be sent.
 - Kept server-side rate limiting disabled until its real Cloudflare binding can be provisioned and tested safely.
 - Removed the older Cloudflare Pages email handler so preview hostnames cannot bypass the protected Worker.
+- Preserved the unused legacy Worker email binding during the first Resend release so strict deployment can reconcile configuration without silently deleting remote state.
 
 ### Added
 
