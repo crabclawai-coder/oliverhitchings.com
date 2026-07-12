@@ -7,6 +7,7 @@ import { basename, join } from "node:path";
 import * as mediaBudgetModule from "../../scripts/check-media-budget.mjs";
 import { motionFilms } from "../data/media-manifest.js";
 import { initializeMedia } from "./media.js";
+import { initializeScrollFilms } from "./scroll-film.js";
 
 const {
   calculateTransferBudgets,
@@ -360,6 +361,47 @@ describe("initializeMedia", () => {
     expect(video.play).toHaveBeenCalledOnce();
   });
 
+  it("loads the nearby process film after the scroll controller selects the no-observer loop fallback", () => {
+    document.body.innerHTML = `
+      <section data-scroll-film-region>
+        <video
+          data-media
+          data-media-load="nearby"
+          data-media-behaviour="scroll"
+          data-scroll-film
+        >
+          <source data-src="/videos/process-1280.webm" type="video/webm" />
+          <source data-src="/videos/process-1280.mp4" type="video/mp4" />
+        </video>
+      </section>
+    `;
+    const video = document.querySelector("video[data-scroll-film]");
+    video.load = vi.fn();
+    video.play = vi.fn().mockResolvedValue(undefined);
+    video.pause = vi.fn();
+
+    initializeScrollFilms({
+      document,
+      window: { innerHeight: 900, innerWidth: 861 },
+      matchMedia: motionPreference(false),
+      connection: { saveData: false },
+      IntersectionObserver: undefined,
+    });
+    initialize({ IntersectionObserver: undefined });
+
+    expect(video.dataset.scrollMode).toBe("loop");
+    expect(
+      Array.from(video.querySelectorAll("source"), (source) =>
+        source.getAttribute("src"),
+      ),
+    ).toEqual([
+      "/videos/process-1280.webm",
+      "/videos/process-1280.mp4",
+    ]);
+    expect(video.load).toHaveBeenCalledOnce();
+    expect(video.play).toHaveBeenCalledOnce();
+  });
+
   it("contains exceptions thrown while loading and pausing media", () => {
     const video = renderVideo();
     const observerHarness = createObserverHarness();
@@ -488,7 +530,7 @@ describe("initializeMedia", () => {
     expect(catchRejection).toHaveBeenCalledWith(expect.any(Function));
   });
 
-  it("loads eager media only when IntersectionObserver is unavailable", () => {
+  it("loads eager and nearby loop media when IntersectionObserver is unavailable", () => {
     document.body.innerHTML = `
       <video data-media data-media-load="eager">
         <source data-src="/videos/eager.mp4" type="video/mp4" />
@@ -512,9 +554,11 @@ describe("initializeMedia", () => {
     );
     expect(eagerVideo.load).toHaveBeenCalledOnce();
     expect(eagerVideo.play).toHaveBeenCalledOnce();
-    expect(nearbyVideo.querySelector("source").hasAttribute("src")).toBe(false);
-    expect(nearbyVideo.load).not.toHaveBeenCalled();
-    expect(nearbyVideo.play).not.toHaveBeenCalled();
+    expect(nearbyVideo.querySelector("source").getAttribute("src")).toBe(
+      "/videos/nearby.mp4",
+    );
+    expect(nearbyVideo.load).toHaveBeenCalledOnce();
+    expect(nearbyVideo.play).toHaveBeenCalledOnce();
   });
 
   it("does not play eager media when the document is already hidden", () => {

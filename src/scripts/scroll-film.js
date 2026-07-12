@@ -50,7 +50,6 @@ export function initializeScrollFilms({
   if (
     !region ||
     !windowRef ||
-    windowRef.innerWidth < MIN_SCRUB_WIDTH ||
     typeof IntersectionObserverImpl !== "function" ||
     typeof requestAnimationFrame !== "function"
   ) {
@@ -58,7 +57,9 @@ export function initializeScrollFilms({
     return noOpController();
   }
 
-  video.dataset.scrollMode = "scrub";
+  let scrollMode =
+    windowRef.innerWidth >= MIN_SCRUB_WIDTH ? "scrub" : "loop";
+  video.dataset.scrollMode = scrollMode;
 
   let destroyed = false;
   let frameId = null;
@@ -66,6 +67,7 @@ export function initializeScrollFilms({
   let listenersAttached = false;
   let metadataListenerAttached = false;
   let observerDisconnected = false;
+  let terminalFallback = false;
 
   const handleLoadedMetadata = () => {
     metadataListenerAttached = false;
@@ -106,8 +108,8 @@ export function initializeScrollFilms({
       return;
     }
 
-    windowRef.removeEventListener("scroll", scheduleUpdate);
-    windowRef.removeEventListener("resize", scheduleUpdate);
+    windowRef.removeEventListener("scroll", handleViewportEvent);
+    windowRef.removeEventListener("resize", handleViewportEvent);
     listenersAttached = false;
   };
 
@@ -121,17 +123,53 @@ export function initializeScrollFilms({
   };
 
   const fallBackToLoop = () => {
+    terminalFallback = true;
+    scrollMode = "loop";
     video.dataset.scrollMode = "loop";
     intersecting = false;
     removeListeners();
     removeMetadataListener();
+    cancelQueuedFrame();
     disconnectObserver();
-    safelyPlay(video);
+    if (!documentRef.hidden) {
+      safelyPlay(video);
+    }
+  };
+
+  const syncModeWithViewport = () => {
+    if (destroyed || terminalFallback) {
+      return;
+    }
+
+    const nextMode =
+      windowRef.innerWidth >= MIN_SCRUB_WIDTH ? "scrub" : "loop";
+    if (nextMode === scrollMode) {
+      return;
+    }
+
+    scrollMode = nextMode;
+    video.dataset.scrollMode = nextMode;
+    if (nextMode === "loop") {
+      removeMetadataListener();
+      cancelQueuedFrame();
+      if (!documentRef.hidden) {
+        safelyPlay(video);
+      }
+      return;
+    }
+
+    safelyPause(video);
+    scheduleUpdate();
   };
 
   const updateFrame = () => {
     frameId = null;
-    if (destroyed || !intersecting) {
+    if (
+      destroyed ||
+      terminalFallback ||
+      !intersecting ||
+      scrollMode !== "scrub"
+    ) {
       return;
     }
 
@@ -160,11 +198,24 @@ export function initializeScrollFilms({
   };
 
   function scheduleUpdate() {
-    if (destroyed || !intersecting || frameId !== null) {
+    if (
+      destroyed ||
+      terminalFallback ||
+      !intersecting ||
+      scrollMode !== "scrub" ||
+      frameId !== null
+    ) {
       return;
     }
 
     frameId = requestAnimationFrame(updateFrame);
+  }
+
+  function handleViewportEvent(event) {
+    if (event.type === "resize") {
+      syncModeWithViewport();
+    }
+    scheduleUpdate();
   }
 
   const addListeners = () => {
@@ -172,13 +223,17 @@ export function initializeScrollFilms({
       return;
     }
 
-    windowRef.addEventListener("scroll", scheduleUpdate, { passive: true });
-    windowRef.addEventListener("resize", scheduleUpdate, { passive: true });
+    windowRef.addEventListener("scroll", handleViewportEvent, {
+      passive: true,
+    });
+    windowRef.addEventListener("resize", handleViewportEvent, {
+      passive: true,
+    });
     listenersAttached = true;
   };
 
   const observer = new IntersectionObserverImpl((entries) => {
-    if (destroyed) {
+    if (destroyed || terminalFallback) {
       return;
     }
 
@@ -190,11 +245,13 @@ export function initializeScrollFilms({
       intersecting = entry.isIntersecting;
       if (intersecting) {
         addListeners();
+        syncModeWithViewport();
         scheduleUpdate();
         return;
       }
 
       removeListeners();
+      removeMetadataListener();
       cancelQueuedFrame();
     });
   });

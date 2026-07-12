@@ -105,7 +105,17 @@ export function initializeMedia({
   let loadObserver = null;
   let visibilityObserver = null;
 
-  if (typeof IntersectionObserverImpl === "function") {
+  if (typeof IntersectionObserverImpl !== "function") {
+    media
+      .filter(
+        (video) =>
+          video.dataset.mediaLoad === "nearby" && canAutoplay(video),
+      )
+      .forEach((video) => {
+        visibleMedia.add(video);
+        loadMedia(video);
+      });
+  } else {
     const nearbyMedia = media.filter(
       (video) => video.dataset.mediaLoad === "nearby",
     );

@@ -148,6 +148,10 @@ function initializeFixture(
 
 afterEach(() => {
   document.body.innerHTML = "";
+  Object.defineProperty(document, "hidden", {
+    configurable: true,
+    value: false,
+  });
   vi.restoreAllMocks();
 });
 
@@ -165,7 +169,7 @@ describe("initializeScrollFilms", () => {
     );
   });
 
-  it("uses loop mode at 860px without observing or seeking", () => {
+  it("uses loop mode at 860px without seeking", () => {
     const fixture = renderFixture({ width: 860 });
     const observerHarness = createObserverHarness();
     const rafHarness = createRafHarness();
@@ -173,8 +177,59 @@ describe("initializeScrollFilms", () => {
     initializeFixture(fixture, observerHarness, rafHarness);
 
     expect(fixture.video.dataset.scrollMode).toBe("loop");
-    expect(observerHarness.getInstance()).toBeUndefined();
     expect(rafHarness.requestAnimationFrame).not.toHaveBeenCalled();
+  });
+
+  it("transitions from scrub to loop at 860px and clears scrub work", () => {
+    const fixture = renderFixture({ duration: Number.NaN, width: 861 });
+    const observerHarness = createObserverHarness();
+    const rafHarness = createRafHarness();
+    const addEventListener = vi.spyOn(fixture.video, "addEventListener");
+    const removeEventListener = vi.spyOn(fixture.video, "removeEventListener");
+
+    initializeFixture(fixture, observerHarness, rafHarness);
+    const observer = observerHarness.getInstance();
+    expect(observer).toBeDefined();
+    observer.emit([{ target: fixture.region, isIntersecting: true }]);
+    rafHarness.flush();
+    const metadataListener = addEventListener.mock.calls.find(
+      ([eventName]) => eventName === "loadedmetadata",
+    )[1];
+    fixture.emitWindow("scroll");
+    const queuedFrame = Array.from(rafHarness.queued.keys())[0];
+
+    fixture.windowRef.innerWidth = 860;
+    fixture.emitWindow("resize");
+
+    expect(fixture.video.dataset.scrollMode).toBe("loop");
+    expect(fixture.video.play).toHaveBeenCalledOnce();
+    expect(rafHarness.cancelAnimationFrame).toHaveBeenCalledWith(queuedFrame);
+    expect(removeEventListener).toHaveBeenCalledWith(
+      "loadedmetadata",
+      metadataListener,
+    );
+    expect(observer.disconnect).not.toHaveBeenCalled();
+  });
+
+  it("transitions from loop to scrub when resized from 860px to 861px", () => {
+    const fixture = renderFixture({ width: 860 });
+    const observerHarness = createObserverHarness();
+    const rafHarness = createRafHarness();
+
+    initializeFixture(fixture, observerHarness, rafHarness);
+    const observer = observerHarness.getInstance();
+    expect(observer).toBeDefined();
+    observer.emit([{ target: fixture.region, isIntersecting: true }]);
+
+    fixture.windowRef.innerWidth = 861;
+    fixture.emitWindow("resize");
+
+    expect(fixture.video.dataset.scrollMode).toBe("scrub");
+    expect(fixture.video.pause).toHaveBeenCalledOnce();
+    expect(rafHarness.requestAnimationFrame).toHaveBeenCalledOnce();
+
+    rafHarness.flush();
+    expect(fixture.video.currentTime).toBe(4);
   });
 
   it("uses loop mode when IntersectionObserver is unavailable", () => {
@@ -210,6 +265,12 @@ describe("initializeScrollFilms", () => {
     expect(fixture.video.pause).toHaveBeenCalledOnce();
     expect(fixture.video.play).not.toHaveBeenCalled();
     expect(observerHarness.getInstance()).toBeUndefined();
+
+    fixture.windowRef.innerWidth = 860;
+    fixture.emitWindow("resize");
+    fixture.windowRef.innerWidth = 861;
+    fixture.emitWindow("resize");
+    expect(fixture.video.dataset.scrollMode).toBe("poster");
   });
 
   it("attaches passive scroll and resize listeners only while intersecting", () => {
@@ -324,6 +385,60 @@ describe("initializeScrollFilms", () => {
 
     expect(fixture.video.dataset.scrollMode).toBe("loop");
     expect(fixture.video.play).toHaveBeenCalledOnce();
+  });
+
+  it("does not re-arm scrub after terminal seek fallback", () => {
+    const fixture = renderFixture();
+    const observerHarness = createObserverHarness();
+    const rafHarness = createRafHarness();
+    Object.defineProperty(fixture.video, "currentTime", {
+      configurable: true,
+      set: () => {
+        throw new Error("seek unavailable");
+      },
+    });
+
+    initializeFixture(fixture, observerHarness, rafHarness);
+    const observer = observerHarness.getInstance();
+    observer.emit([{ target: fixture.region, isIntersecting: true }]);
+    rafHarness.flush();
+
+    expect(fixture.video.dataset.scrollMode).toBe("loop");
+    expect(fixture.listeners.get("scroll")).toHaveLength(0);
+    expect(fixture.listeners.get("resize")).toHaveLength(0);
+
+    observer.emit([{ target: fixture.region, isIntersecting: true }]);
+
+    expect(fixture.video.dataset.scrollMode).toBe("loop");
+    expect(fixture.listeners.get("scroll")).toHaveLength(0);
+    expect(fixture.listeners.get("resize")).toHaveLength(0);
+    expect(rafHarness.requestAnimationFrame).toHaveBeenCalledOnce();
+    expect(fixture.video.play).toHaveBeenCalledOnce();
+  });
+
+  it("does not start loop fallback while the document is hidden", () => {
+    const fixture = renderFixture();
+    const observerHarness = createObserverHarness();
+    const rafHarness = createRafHarness();
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      value: true,
+    });
+    Object.defineProperty(fixture.video, "currentTime", {
+      configurable: true,
+      set: () => {
+        throw new Error("seek unavailable");
+      },
+    });
+
+    initializeFixture(fixture, observerHarness, rafHarness);
+    observerHarness
+      .getInstance()
+      .emit([{ target: fixture.region, isIntersecting: true }]);
+    rafHarness.flush();
+
+    expect(fixture.video.dataset.scrollMode).toBe("loop");
+    expect(fixture.video.play).not.toHaveBeenCalled();
   });
 
   it("disconnects, removes active listeners and cancels queued work on destroy", () => {
