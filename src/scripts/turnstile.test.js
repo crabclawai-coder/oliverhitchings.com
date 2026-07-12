@@ -239,6 +239,23 @@ describe("createTurnstileAdapter", () => {
     );
   });
 
+  it("rejects a token when the initial render then throws", async () => {
+    const api = createApi();
+    api.render.mockImplementation((_container, options) => {
+      options.callback("failed-initial-token");
+      throw new Error("initial render failed after callback");
+    });
+    const { adapter } = createAdapter({ api });
+
+    await adapter.ready;
+
+    expect(adapter.prepareSubmission()).toMatchObject({
+      allowed: false,
+      state: "error",
+      token: "",
+    });
+  });
+
   it("stores a successful token and clears it on expiry or challenge timeout", async () => {
     const { adapter, api, announce } = createAdapter();
     await adapter.ready;
@@ -405,8 +422,142 @@ describe("createTurnstileAdapter", () => {
     expect(api.remove).toHaveBeenCalledWith("widget-1");
   });
 
-  it("contains provider reset failures after clearing the one-use token", async () => {
+  it("re-renders the challenge when the provider reset throws", async () => {
     const api = createApi();
+    api.render
+      .mockReturnValueOnce("widget-1")
+      .mockReturnValueOnce("widget-2");
+    api.reset.mockImplementation(() => {
+      throw new Error("provider reset failed");
+    });
+    const { adapter, announce, container } = createAdapter({ api });
+    await adapter.ready;
+    api.render.mock.calls[0][1].callback("one-use-token");
+    announce.mockClear();
+
+    expect(() => adapter.reset()).not.toThrow();
+    expect(api.reset).toHaveBeenCalledOnce();
+    expect(api.reset).toHaveBeenCalledWith("widget-1");
+    expect(api.remove).toHaveBeenCalledOnce();
+    expect(api.remove).toHaveBeenCalledWith("widget-1");
+    expect(api.render).toHaveBeenCalledTimes(2);
+    expect(api.render.mock.calls[1][0]).toBe(container);
+    expect(adapter.getToken()).toBe("");
+
+    api.render.mock.calls[1][1].callback("replacement-token");
+
+    expect(adapter.getSubmissionDecision()).toMatchObject({
+      allowed: true,
+      state: "ready",
+      token: "replacement-token",
+    });
+    expect(announce).not.toHaveBeenCalled();
+  });
+
+  it("offers accessible recovery when reset and re-render both fail", async () => {
+    const api = createApi();
+    api.render
+      .mockReturnValueOnce("widget-1")
+      .mockImplementationOnce(() => {
+        throw new Error("replacement render failed");
+      });
+    api.reset.mockImplementation(() => {
+      throw new Error("provider reset failed");
+    });
+    const { adapter, announce } = createAdapter({ api });
+    await adapter.ready;
+    api.render.mock.calls[0][1].callback("one-use-token");
+    announce.mockClear();
+
+    adapter.reset();
+
+    expect(adapter.prepareSubmission()).toMatchObject({
+      allowed: false,
+      state: "error",
+      token: "",
+    });
+    expect(announce.mock.calls.at(-1)[0]).toMatch(/refresh the page/i);
+  });
+
+  it("does not render over a stale challenge when removal fails", async () => {
+    const api = createApi();
+    api.reset.mockImplementation(() => {
+      throw new Error("provider reset failed");
+    });
+    api.remove.mockImplementation(() => {
+      throw new Error("provider remove failed");
+    });
+    const { adapter, announce } = createAdapter({ api });
+    await adapter.ready;
+    api.render.mock.calls[0][1].callback("one-use-token");
+    announce.mockClear();
+
+    adapter.reset();
+
+    expect(api.render).toHaveBeenCalledOnce();
+    expect(adapter.prepareSubmission()).toMatchObject({
+      allowed: false,
+      state: "error",
+      token: "",
+    });
+    expect(announce.mock.calls.at(-1)[0]).toMatch(/refresh the page/i);
+  });
+
+  it("rejects a stale callback fired by a reset that then throws", async () => {
+    const api = createApi();
+    const { adapter } = createAdapter({ api });
+    await adapter.ready;
+    const originalOptions = api.render.mock.calls[0][1];
+    originalOptions.callback("one-use-token");
+    api.reset.mockImplementation(() => {
+      originalOptions.callback("stale-token");
+      throw new Error("provider reset failed after callback");
+    });
+
+    adapter.reset();
+
+    expect(adapter.prepareSubmission()).toMatchObject({
+      allowed: false,
+      state: "missing",
+      token: "",
+    });
+  });
+
+  it("ignores callbacks from a failed widget after replacement", async () => {
+    const api = createApi();
+    const { adapter } = createAdapter({ api });
+    await adapter.ready;
+    const originalOptions = api.render.mock.calls[0][1];
+    originalOptions.callback("one-use-token");
+    api.reset.mockImplementation(() => {
+      throw new Error("provider reset failed");
+    });
+
+    adapter.reset();
+    originalOptions.callback("late-stale-token");
+
+    expect(adapter.prepareSubmission()).toMatchObject({
+      allowed: false,
+      state: "missing",
+      token: "",
+    });
+
+    api.render.mock.calls[1][1].callback("replacement-token");
+    expect(adapter.prepareSubmission()).toMatchObject({
+      allowed: true,
+      state: "ready",
+      token: "replacement-token",
+    });
+  });
+
+  it("rejects a replacement token when render then throws", async () => {
+    const api = createApi();
+    api.render
+      .mockReturnValueOnce("widget-1")
+      .mockImplementationOnce((_container, options) => {
+        options.callback("failed-replacement-token");
+        throw new Error("replacement render failed after callback");
+      });
     api.reset.mockImplementation(() => {
       throw new Error("provider reset failed");
     });
@@ -414,10 +565,13 @@ describe("createTurnstileAdapter", () => {
     await adapter.ready;
     api.render.mock.calls[0][1].callback("one-use-token");
 
-    expect(() => adapter.reset()).not.toThrow();
-    expect(api.reset).toHaveBeenCalledOnce();
-    expect(api.reset).toHaveBeenCalledWith("widget-1");
-    expect(adapter.getToken()).toBe("");
+    adapter.reset();
+
+    expect(adapter.prepareSubmission()).toMatchObject({
+      allowed: false,
+      state: "error",
+      token: "",
+    });
   });
 
   it("does not render after destruction while the loader is pending", async () => {
