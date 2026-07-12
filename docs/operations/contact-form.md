@@ -108,7 +108,7 @@ Optional binding:
 
 - `CONTACT_RATE_LIMITER`
 
-The checked-in Worker defaults both control modes to `off`, and the rate-limit binding is not yet declared. Do not set rate limiting to `observe` or `enforce` until the real binding has been provisioned, reviewed, and tested. Make Worker variable and binding changes in reviewed configuration rather than creating undocumented dashboard drift.
+The checked-in production Worker enforces Turnstile and keeps rate limiting off until its binding is provisioned. Do not set rate limiting to `observe` or `enforce` until the real binding has been provisioned, reviewed, and tested. Make Worker variable and binding changes in reviewed configuration rather than creating undocumented dashboard drift.
 
 ### Retained legacy Pages Function
 
