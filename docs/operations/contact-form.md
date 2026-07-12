@@ -111,6 +111,8 @@ Optional binding:
 
 The checked-in production Worker enforces Turnstile and keeps rate limiting off until its binding is provisioned. Do not set rate limiting to `observe` or `enforce` until the real binding has been provisioned, reviewed, and tested. Make Worker variable and binding changes in reviewed configuration rather than creating undocumented dashboard drift.
 
+The first Resend release also preserves the existing `CONTACT_EMAIL` Cloudflare Email Service send binding in Wrangler configuration so the strict deployment does not silently delete remote state. The Resend Worker code does not read or call that binding. Remove it only in a separate reviewed cleanup after the full production delivery proof has passed.
+
 ## Resend sender-domain boundary
 
 The dedicated Worker sends from `contact@forms.oliverhitchings.com` to the configured owner inbox and sets `reply_to` to the visitor's validated address.
@@ -148,6 +150,8 @@ An invalid Turnstile Worker mode fails closed with `503`; an invalid rate-limit 
 ## Privacy-safe observability
 
 The Worker uses structured logs. Correlate records using `requestId` and `cfRay`.
+
+Wrangler enables Cloudflare Workers observability for production. If the dashboard still has observability disabled before the first deployment, enable it there and reconfirm the active version used as the rollback target; do not bypass the strict configuration conflict check.
 
 | Event | Fields currently recorded |
 | --- | --- |
