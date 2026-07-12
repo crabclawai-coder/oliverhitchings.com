@@ -7,7 +7,7 @@ This runbook covers the enquiry form at `oliverhitchings.com`. It deliberately c
 - The repository's `main` branch is the source of truth for the Astro site, the contact Worker, tests, and deployment workflow.
 - `shared/contact-config.js` is the canonical non-secret source for package form values consumed by Astro and the dedicated Worker.
 - `src/pages/services.astro` and `src/scripts/contact-form.js` own the browser form and its honest pending/success/failure states.
-- `contact-worker/src/index.js` is the intended production backend for `/api/contact`; `contact-worker/wrangler.toml` declares its production routes and non-secret defaults.
+- `contact-worker/src/index.js` is the only backend for `/api/contact`; `contact-worker/wrangler.toml` declares its production routes and non-secret defaults.
 - Cloudflare is the runtime source of truth for Pages deployments, Worker routes and versions, Worker secrets, bindings, logs, and DNS.
 - Resend is the source of truth for sender-domain verification, provider message IDs, and delivery events.
 - The repository and those two dashboards supersede older planning documents. Do not copy credentials or DNS verification values into the repository, tickets, logs, or this runbook.
@@ -20,6 +20,7 @@ Production is intentionally split into two independently reversible parts:
    - `www.oliverhitchings.com/api/contact`
 
 The Worker has `workers_dev = false`; a `workers.dev` URL is not the production test target.
+Cloudflare Pages is static and has no contact handler of its own. Requests to `/api/contact` on a `pages.dev` or preview hostname must not deliver an enquiry.
 
 ## Request and response contract
 
@@ -110,16 +111,6 @@ Optional binding:
 
 The checked-in production Worker enforces Turnstile and keeps rate limiting off until its binding is provisioned. Do not set rate limiting to `observe` or `enforce` until the real binding has been provisioned, reviewed, and tested. Make Worker variable and binding changes in reviewed configuration rather than creating undocumented dashboard drift.
 
-### Retained legacy Pages Function
-
-`functions/api/contact.js` is still included in a Pages deployment. It may use these Pages environment names while it remains:
-
-- `RESEND_API_KEY`
-- `CONTACT_FROM_EMAIL`
-- `CONTACT_TO_EMAIL`
-
-This function is not the intended production backend. It is retained temporarily so deletion does not remove the only fallback before route ownership and end-to-end delivery have been proved.
-
 ## Resend sender-domain boundary
 
 The dedicated Worker sends from `contact@forms.oliverhitchings.com` to the configured owner inbox and sets `reply_to` to the visitor's validated address.
@@ -196,7 +187,7 @@ npm run build
 git diff --check
 ```
 
-Pull requests stop after verification. A `main` push or manual dispatch selected on the `main` ref can deploy Pages only after the verification job passes. The build compiles the retained Pages Function into `dist/_worker.js` and `dist/_routes.json`; the exact `dist` artifact is uploaded and deployed from a job with no source checkout, so Wrangler cannot rebuild unverified Functions. A manual run selected on any other ref cannot deploy production.
+Pull requests stop after verification. A `main` push or manual dispatch selected on the `main` ref can deploy Pages only after the verification job passes. The build must remain static: verification rejects `dist/_worker.js` or `dist/_routes.json`, the exact `dist` artifact is uploaded and deployed from a job with no source checkout, and the deployment job requires the public `pages.dev/api/contact` URL to return `404`. A manual run selected on any other ref cannot deploy production.
 
 The contact Worker never deploys from a push. Its manual job remains skipped unless all of these are true:
 
@@ -206,7 +197,7 @@ The contact Worker never deploys from a push. Its manual job remains skipped unl
 4. A non-empty existing Worker rollback version ID is supplied.
 5. `DEPLOY CONTACT WORKER` is typed exactly.
 6. The repository variable `CONTACT_WORKER_DEPLOY_ENABLED` is exactly `true`.
-7. The `contact-worker-production` GitHub Environment grants its separate manual approval. Before arming the repository variable, configure required reviewers, prevent self-review, disable administrator bypass where the account permits, and set deployment branches/tags to selected branches with `main` as the only allowed branch and no tags.
+7. The `contact-worker-production` GitHub Environment grants its separate manual approval. Before arming the repository variable, configure a required reviewer, disable administrator bypass where the account permits, and set deployment branches/tags to selected branches with `main` as the only allowed branch and no tags. This single-owner repository cannot provide independent or prevented-self review; the environment is an explicit release pause, not a two-person approval.
 8. The job validates the rollback version as a full lowercase UUID and requires it to be the sole version currently serving 100% of production traffic.
 9. The job confirms that `CONTACT_OWNER_EMAIL`, `RESEND_API_KEY`, and `TURNSTILE_SECRET_KEY` exist for the Worker without reading any value.
 10. The Pages deployment in the same run has completed first.
@@ -222,20 +213,21 @@ Before a production release:
 1. Make the full local and CI gate green.
 2. Verify the Resend sending subdomain without changing apex MX or SPF, then run a provider-level delivery test before routing public traffic to the Worker.
 3. Store `CONTACT_OWNER_EMAIL` and `RESEND_API_KEY` as Cloudflare Worker secrets; never pass either value through a workflow input.
-4. Record the current successful Pages deployment ID, current `main` commit, and current Worker version ID as rollback targets.
+4. Record the current Worker version ID as its rollback target. Do not record a Pages deployment containing the removed legacy handler as a safe rollback target.
 5. Configure the production Turnstile site key and secret. Complete the preview sequence `observe` → `required` on the frontend and `observe` → `enforce` on the Worker, then leave production at frontend `required` and Worker `enforce`.
-6. Confirm the repository `CLOUDFLARE_API_TOKEN` remains Pages-only. Configure the protected `contact-worker-production` GitHub Environment with required reviewers, prevention of self-review, no administrator bypass where supported, a `main`-only deployment branch policy, no allowed tags, and its separate `CLOUDFLARE_WORKER_API_TOKEN`. Arm `CONTACT_WORKER_DEPLOY_ENABLED` only for the intended release window.
+6. Confirm the repository `CLOUDFLARE_API_TOKEN` remains Pages-only. Configure the protected `contact-worker-production` GitHub Environment with a required reviewer, no administrator bypass where supported, a `main`-only deployment branch policy, no allowed tags, and its separate `CLOUDFLARE_WORKER_API_TOKEN`. In this single-owner repository, allow self-review and treat the environment as a deliberate release pause. Arm `CONTACT_WORKER_DEPLOY_ENABLED` only for the intended release window.
 
 Release in this order:
 
 1. Start the armed manual workflow on the `main` ref with every preflight input completed, but do not approve the protected environment yet.
 2. Wait for that run's `deploy_pages` job to finish and for `deploy_contact_worker` to show that it is waiting for environment approval.
-3. Test the exact live Pages deployment created by that run. Exercise the `/services/` form's pending, failure, timeout, keyboard, and responsive behaviour; confirm the deployed commit and Pages deployment ID match the release record.
-4. Confirm the live page uses frontend Turnstile mode `required` and can produce a token.
-5. Give the evidence to the independent environment reviewer. Only then should that reviewer approve `contact-worker-production`, allowing the Worker checks and deploy step to run.
-6. Send one labelled live enquiry and complete the five-level proof ladder.
-7. Inspect Worker logs, Resend events, Turnstile analytics when enabled, and route ownership.
-8. Disable or remove `CONTACT_WORKER_DEPLOY_ENABLED` after the intended Worker release.
+3. Confirm the workflow's static Pages check passed and `https://oliverhitchings.pages.dev/api/contact` returns `404`. Record this post-removal Pages deployment ID as the safe Pages rollback target; older deployments containing the legacy handler are not rollback candidates.
+4. Test the exact live Pages deployment created by that run. Exercise the `/services/` form's pending, failure, timeout, keyboard, and responsive behaviour; confirm the deployed commit and Pages deployment ID match the release record.
+5. Confirm the live page uses frontend Turnstile mode `required` and can produce a token.
+6. Review that evidence at the environment pause, then approve `contact-worker-production`, allowing the Worker checks and deploy step to run.
+7. Send one labelled live enquiry and complete the five-level proof ladder.
+8. Inspect Worker logs, Resend events, Turnstile analytics when enabled, and route ownership.
+9. Disable or remove `CONTACT_WORKER_DEPLOY_ENABLED` after the intended Worker release.
 
 Provision and observe the real rate-limit binding before enabling rate enforcement. Turnstile enforcement is the minimum production abuse control; rate limiting is an additional layer, not a substitute for a missing or failing binding.
 
@@ -245,7 +237,7 @@ Always record rollback identifiers before deploying.
 
 ### Pages rollback
 
-If Pages fails before the Worker release, stop; do not approve the Worker job. In Cloudflare Pages, roll back to the recorded successful deployment. Alternatively, create and review a revert on `main`, then manually dispatch that new `main` state; the workflow will not deploy an arbitrary older or feature-branch ref as production. Re-test `/services/`, the form status behaviour, assets, CSP console output, and the API contract.
+If Pages fails before the Worker release, stop; do not approve the Worker job. Roll back only to a recorded static deployment created after the legacy Pages contact handler was removed and verified absent. Never restore an older deployment containing that handler. Alternatively, create and review a revert on `main`, then manually dispatch that new `main` state; the workflow will not deploy an arbitrary older or feature-branch ref as production. Re-test `/services/`, the form status behaviour, assets, CSP console output, and the API contract.
 
 ### Worker rollback
 
@@ -259,7 +251,7 @@ npx wrangler rollback <recorded-version-id> \
 
 Confirm the command targets `oliverhitchings-contact` before accepting it. A version rollback may not undo separately changed secrets, DNS, bindings, or dashboard variables; restore those only from the reviewed pre-release record. Then send one controlled test and repeat the proof ladder.
 
-Do not delete the Worker route as an improvised rollback. Route ownership changes can expose the retained Pages Function and must be planned and verified separately.
+Do not delete the Worker route as an improvised rollback. Without that route there is deliberately no email backend; investigate or roll back the Worker version instead.
 
 ## CSP report-only period
 
@@ -267,14 +259,8 @@ Do not delete the Worker route as an improvised rollback. Route ownership change
 
 Pages `_headers` rules do not harden responses returned directly by the dedicated Worker; the Worker sets its own JSON, cache, content-type, and referrer headers.
 
-## Retiring the duplicate backend
+## Single-backend boundary
 
-Keep `functions/api/contact.js` until all of the following are true:
+The Pages Function previously retained at `functions/api/contact.js` has been removed because the public `pages.dev` hostname would otherwise expose a second, less protected email path. `scripts/verify-contact-release-config.mjs` and the deployment tests fail if that handler or its build helper returns, while also requiring the dedicated Worker and its production abuse-control modes.
 
-- production apex and `www` route ownership is confirmed for the dedicated Worker;
-- the full provider acceptance, delivery, inbox, and reply-to proof ladder has passed;
-- the Pages and Worker rollback targets are recorded and tested;
-- the dedicated Worker deployment path is repeatable;
-- preview/staging behaviour has an explicit replacement rather than silently depending on the legacy function.
-
-Then remove the Pages Function in its own reviewed change. In the same change, add a CI guard that fails if `functions/api/contact.js` or another second `/api/contact` handler appears, while asserting `contact-worker/src/index.js` remains the single backend source. Re-run the complete CI gate and production proof after deletion. Until that change lands, documentation must describe the Pages Function as retained, not dead or safely removable.
+Preview and staging Pages deployments intentionally do not send email. Test the browser states with mocks locally, then use the controlled production proof ladder for provider acceptance, delivery, inbox, and Reply-To evidence.

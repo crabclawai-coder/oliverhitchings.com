@@ -6,6 +6,8 @@
 
 **Architecture:** The dedicated contact Worker remains the only intended production owner of the apex and `www` contact routes. Its reviewed Wrangler configuration becomes the source of truth for the non-secret control modes, and a repository test prevents the production security settings from drifting back to an unsafe value.
 
+**Final-review amendment:** The retained Pages Function was found to expose a second contact endpoint on the public `pages.dev` hostname. The release therefore removes that handler and its build helper, adds a single-backend CI guard, and parses the root Wrangler `[vars]` table instead of matching TOML text across environments.
+
 **Tech Stack:** Cloudflare Workers, Wrangler TOML, Vitest, GitHub Actions.
 
 ## Global Constraints

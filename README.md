@@ -28,7 +28,7 @@ The media checks require `ffprobe`, which is included with `ffmpeg`; CI installs
 
 ## Deployment
 
-[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) verifies pull requests and `main`. The production build compiles the retained Pages Function into `dist/_worker.js` and `dist/_routes.json`; a successful push to `main`, or an explicit manual run selected on `main`, deploys that exact verified artifact to the `oliverhitchings` Cloudflare Pages project from a job with no source checkout. Manual runs selected on another ref cannot deploy production.
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) verifies pull requests and `main`. A successful push to `main`, or an explicit manual run selected on `main`, deploys the exact verified static artifact to the `oliverhitchings` Cloudflare Pages project from a job with no source checkout. Manual runs selected on another ref cannot deploy production. A release check prevents a second Pages `/api/contact` backend from being reintroduced.
 
 The contact Worker does not deploy on a push. Its workflow job is deliberately dormant until the provider, all delivery secrets, required/enforced Turnstile, the live Pages form, the active 100% rollback version, repository arming variable, typed confirmation, and protected-environment approval have all been confirmed. Follow the operations runbook rather than bypassing those gates.
 
@@ -40,7 +40,7 @@ The services form sends JSON to same-origin `POST /api/contact`. The intended pr
 - destination: the configured owner inbox;
 - `Reply-To`: the visitor's validated email address.
 
-The root domain's existing mail MX and SPF records are outside this flow and must not be replaced. The older Pages Function in [`functions/api/contact.js`](functions/api/contact.js) remains temporarily as a rollback boundary; it must not be removed until the dedicated Worker has passed provider acceptance, delivery, inbox, and reply-to checks in production.
+The root domain's existing mail MX and SPF records are outside this flow and must not be replaced. The dedicated Worker is the only contact backend; Cloudflare Pages and its public preview hostname cannot send enquiries independently.
 
 See [`docs/operations/contact-form.md`](docs/operations/contact-form.md) for configuration, release, evidence, rollback, and eventual cleanup instructions.
 
