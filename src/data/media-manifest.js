@@ -200,7 +200,8 @@ export const mediaBudgets = Object.freeze({
 });
 
 export function getMotionFilm(id) {
-  const filmData = motionFilms[id];
-  if (!filmData) throw new RangeError(`Unknown motion film: ${id}`);
-  return filmData;
+  if (!Object.hasOwn(motionFilms, id)) {
+    throw new RangeError(`Unknown motion film: ${id}`);
+  }
+  return motionFilms[id];
 }

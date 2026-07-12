@@ -52,8 +52,11 @@ describe("media manifest", () => {
 
   it("returns known films and rejects unknown identities", () => {
     expect(getMotionFilm("process")).toBe(motionFilms.process);
-    expect(() => getMotionFilm("missing")).toThrow(
-      "Unknown motion film: missing",
-    );
+    for (const id of ["missing", "constructor", "__proto__"]) {
+      const getUnknownFilm = () => getMotionFilm(id);
+
+      expect(getUnknownFilm).toThrow(RangeError);
+      expect(getUnknownFilm).toThrow(`Unknown motion film: ${id}`);
+    }
   });
 });
