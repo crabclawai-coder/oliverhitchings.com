@@ -2,6 +2,17 @@
 
 All notable changes to the website are recorded here.
 
+## [0.1.1.0] - 2026-07-12
+
+### Changed
+
+- Required Cloudflare Turnstile validation on the production enquiry Worker before a visitor's message can be sent.
+- Kept server-side rate limiting disabled until its real Cloudflare binding can be provisioned and tested safely.
+
+### Added
+
+- Added an automated release check that prevents the production abuse-control settings from drifting back to unsafe values.
+
 ## [0.1.0.0] - 2026-07-12
 
 ### Added
