@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { extractCssAtRuleBlocks } from "./css-test-helpers.js";
 import { posts, site } from "./data/site.js";
 
 const projectRoot = new URL("../", import.meta.url);
@@ -336,6 +337,10 @@ describe("generated site frame", () => {
           .map(readOutput),
       )
     ).join("\n");
+    const reducedMotionCss = extractCssAtRuleBlocks(
+      bundledCss,
+      "@media (prefers-reduced-motion: reduce)",
+    ).join("\n");
 
     expect(bundledCss).toMatch(/body\{[^}]*overflow-x:clip/);
     expect(bundledCss).toMatch(
@@ -347,8 +352,8 @@ describe("generated site frame", () => {
     expect(bundledCss).toMatch(
       /\.home-final-cta__film,.home-final-cta__scrim\{[^}]*pointer-events:none/,
     );
-    expect(bundledCss).toMatch(
-      /@media\s*\(prefers-reduced-motion:\s*reduce\)\{[\s\S]*?\.mobile-menu-toggle,.mobile-navigation-panel a,.nav-pill\.is-mobile-navigation-ready \.mobile-navigation-panel\{[^}]*transition:none/,
+    expect(reducedMotionCss).toMatch(
+      /\.mobile-menu-toggle,.mobile-navigation-panel a,.nav-pill\.is-mobile-navigation-ready \.mobile-navigation-panel\{[^}]*transition:none/,
     );
   });
 

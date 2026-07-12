@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { extractCssAtRuleBlocks } from "./css-test-helpers.js";
 
 const projectRoot = new URL("../", import.meta.url);
 const guidePriceNote =
@@ -88,6 +89,20 @@ const expectedPosts = [
 ];
 
 const clean = (value) => value?.replace(/\s+/g, " ").trim() ?? "";
+
+it("does not let a media assertion cross into a later at-rule", () => {
+  const fixture =
+    '@media(max-width:620px){.inside{content:"}"}}' +
+    "@media(min-width:621px){.outside{order:-1}}";
+  const compactBlocks = extractCssAtRuleBlocks(
+    fixture,
+    "@media (max-width: 620px)",
+  );
+
+  expect(compactBlocks).toHaveLength(1);
+  expect(compactBlocks[0]).toContain('.inside{content:"}"}');
+  expect(compactBlocks.join("\n")).not.toContain(".outside");
+});
 
 function textFragments(root) {
   const fragments = [];
@@ -611,20 +626,25 @@ describe("generated Services content", () => {
   });
 
   it("uses one mobile page start, balanced pattern type and stable film crops", () => {
+    const compactCss = extractCssAtRuleBlocks(
+      servicesStylesheetSource,
+      "@media (max-width: 620px)",
+    ).join("\n");
+
     expect(servicesStylesheetSource).toMatch(
       /--mobile-page-start:\s*9\.5rem/,
     );
     expect(servicesStylesheetSource).toMatch(
       /\.pattern-heading h2\{[^}]*max-width:9ch;[^}]*text-wrap:balance/,
     );
-    expect(servicesStylesheetSource).toMatch(
-      /@media\s*\(max-width:\s*620px\)\{[\s\S]*?\.home-hero__content,.services-hero,.about-hero,.blog-hero,.article-template,.error-page\{[^}]*padding-top:var\(--mobile-page-start\)/,
+    expect(compactCss).toMatch(
+      /\.home-hero__content,.services-hero,.about-hero,.blog-hero,.article-template,.error-page\{[^}]*padding-top:var\(--mobile-page-start\)/,
     );
-    expect(servicesStylesheetSource).toMatch(
-      /@media\s*\(max-width:\s*620px\)\{[\s\S]*?\.pattern-heading h2\{[^}]*max-width:12ch;[^}]*font-size:clamp\([^}]+\)/,
+    expect(compactCss).toMatch(
+      /\.pattern-heading h2\{[^}]*max-width:12ch;[^}]*font-size:clamp\([^}]+\)/,
     );
-    expect(servicesStylesheetSource).toMatch(
-      /@media\s*\(max-width:\s*620px\)\{[\s\S]*?\.about-hero__visual,.blog-hero__film,.services-method__film,.handover-section__film,.pattern-section__film,.principles-section__film\{[^}]*order:-1/,
+    expect(compactCss).toMatch(
+      /\.about-hero__visual,.blog-hero__film,.services-method__film,.handover-section__film,.pattern-section__film,.principles-section__film\{[^}]*order:-1/,
     );
 
     for (const selector of [
