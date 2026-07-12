@@ -107,6 +107,7 @@ function deferred() {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   document.body.innerHTML = "";
 });
 
@@ -197,6 +198,22 @@ describe("createContactFormController", () => {
     expect(form.elements.namedItem("name").value).toBe("Roger");
   });
 
+  it("reports delivery unknown when a successful response body is unreadable", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse(200, undefined, new SyntaxError("Truncated JSON")),
+      );
+    const { form, status } = setupController({ fetchImpl });
+
+    dispatchSubmit(form);
+
+    await vi.waitFor(() =>
+      expect(status.textContent).toBe(DELIVERY_UNKNOWN_STATUS),
+    );
+    expect(form.elements.namedItem("name").value).toBe("Roger");
+  });
+
   it("reports delivery unknown when the response body is lost", async () => {
     const fetchImpl = vi
       .fn()
@@ -233,6 +250,66 @@ describe("createContactFormController", () => {
       );
     },
   );
+
+  it("reuses an enquiry identity until the normalised fields change", async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+    const { form, status, button } = setupController({ fetchImpl });
+
+    dispatchSubmit(form);
+    await vi.waitFor(() => expect(button.disabled).toBe(false));
+    expect(status.textContent).toBe(DELIVERY_UNKNOWN_STATUS);
+
+    dispatchSubmit(form);
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(button.disabled).toBe(false));
+
+    const firstPayload = JSON.parse(fetchImpl.mock.calls[0][1].body);
+    const retryPayload = JSON.parse(fetchImpl.mock.calls[1][1].body);
+    expect(firstPayload.submission_id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+    expect(retryPayload.submission_id).toBe(firstPayload.submission_id);
+
+    form.elements.namedItem("name").value = "  Roger  ";
+    dispatchSubmit(form);
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(3));
+    await vi.waitFor(() => expect(button.disabled).toBe(false));
+
+    const normalisedPayload = JSON.parse(fetchImpl.mock.calls[2][1].body);
+    expect(normalisedPayload.submission_id).toBe(firstPayload.submission_id);
+
+    form.elements.namedItem("automation_request").value += " Include alerts.";
+    dispatchSubmit(form);
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(4));
+    await vi.waitFor(() => expect(button.disabled).toBe(false));
+
+    const editedPayload = JSON.parse(fetchImpl.mock.calls[3][1].body);
+    expect(editedPayload.submission_id).not.toBe(firstPayload.submission_id);
+  });
+
+  it("generates a UUID when randomUUID is unavailable", async () => {
+    const getRandomValues = vi.fn((bytes) => {
+      bytes.set([
+        0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+        0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
+      ]);
+      return bytes;
+    });
+    vi.stubGlobal("crypto", { getRandomValues });
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(503, { message: "Try again later." }));
+    const { form, button } = setupController({ fetchImpl });
+
+    dispatchSubmit(form);
+
+    await vi.waitFor(() => expect(button.disabled).toBe(false));
+    const payload = JSON.parse(fetchImpl.mock.calls[0][1].body);
+    expect(payload.submission_id).toBe(
+      "00112233-4455-4677-8899-aabbccddeeff",
+    );
+    expect(getRandomValues).toHaveBeenCalledOnce();
+  });
 
   it("does not start a second request while one is pending", async () => {
     const request = deferred();
@@ -326,6 +403,9 @@ describe("createContactFormController", () => {
       package_interest: "Task Map",
       automation_request: "Automate the weekly report",
       tools_involved: "Sheets",
+      submission_id: expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      ),
     });
     expect(options.signal).toBeInstanceOf(AbortSignal);
 

@@ -11,6 +11,7 @@ const RESEND_API_KEY = "re_test_secret_value";
 const RESEND_USER_AGENT = "oliverhitchings-contact-worker/1.0";
 const MAX_BODY_BYTES = 16 * 1024;
 const VALID_TURNSTILE_TOKEN = "turnstile-token-test-value";
+const VALID_SUBMISSION_ID = "2bd25f50-7b2d-4de8-9b71-19475ae271b8";
 
 const VALID_PAYLOAD = {
   _honey: "",
@@ -174,6 +175,7 @@ async function submitWithResend({
   omitContactEmail = false,
   captureLogs = true,
   request = {},
+  payload = VALID_PAYLOAD,
 } = {}) {
   const providerFetch =
     fetchMock ??
@@ -188,7 +190,7 @@ async function submitWithResend({
     ? createLoggerFake()
     : { logger: { info() {}, error() {} } };
   const response = await handleContactRequest(
-    createPostRequest(VALID_PAYLOAD, request),
+    createPostRequest(payload, request),
     {
       ...(omitApiKey ? {} : { RESEND_API_KEY: apiKey }),
       ...(omitContactEmail ? {} : { CONTACT_OWNER_EMAIL: contactEmail }),
@@ -804,8 +806,25 @@ describe("handleContactRequest field validation", () => {
     ["package_interest", { package: "Task Map" }],
     ["automation_request", ["Automate it"]],
     ["tools_involved", { tool: "Notion" }],
+    ["submission_id", 12345],
   ])("rejects a non-string %s", async (field, value) => {
     const result = await submit({ ...VALID_PAYLOAD, [field]: value });
+
+    expect(result.response.status).toBe(400);
+    expectStableError(result.body, "invalid_submission");
+    expect(result.send).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["blank", ""],
+    ["not a UUID", "submission-123"],
+    ["non-v4 UUID", "2bd25f50-7b2d-3de8-9b71-19475ae271b8"],
+    ["invalid variant", "2bd25f50-7b2d-4de8-7b71-19475ae271b8"],
+  ])("rejects a %s submission identity", async (_label, submissionId) => {
+    const result = await submit({
+      ...VALID_PAYLOAD,
+      submission_id: submissionId,
+    });
 
     expect(result.response.status).toBe(400);
     expectStableError(result.body, "invalid_submission");
@@ -842,7 +861,7 @@ describe("handleContactRequest field validation", () => {
     );
 
     const toolsStart = automationEnd + toolsMarker.length;
-    const toolsEnd = message.text.indexOf("\n\nSubmitted at:", toolsStart);
+    const toolsEnd = message.text.indexOf("\n\nSubmission ID:", toolsStart);
     expect(message.text.slice(toolsStart, toolsEnd)).toBe(
       "\n  Notion\nSheetsAirtable  \n",
     );
@@ -1666,10 +1685,9 @@ describe("handleContactRequest email boundary and response schema", () => {
     expect(text).toContain(`Package interest: ${VALID_PAYLOAD.package_interest}`);
     expect(text).toContain(VALID_PAYLOAD.automation_request);
     expect(text).toContain(VALID_PAYLOAD.tools_involved);
-    expect(text).toMatch(
-      /^Submitted at: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/m,
-    );
-    expect(text).toContain(`Request ID: ${result.body.requestId}`);
+    expect(text).toContain(`Submission ID: ${result.body.requestId}`);
+    expect(text).not.toContain("Submitted at:");
+    expect(text).not.toContain("Request ID:");
     expect(text).not.toContain("Submitted from:");
     expect(text).not.toContain(connectingIp);
 
@@ -1734,13 +1752,13 @@ describe("handleContactRequest email boundary and response schema", () => {
     });
 
     expect(result.response.status).toBe(502);
-    expectStableError(result.body, "email_send_failed");
+    expectStableError(result.body, "email_delivery_unknown");
     expectJsonResponseHeaders(result.response);
     expect(result.send).toHaveBeenCalledOnce();
     expect(result.info).not.toHaveBeenCalled();
     expect(result.error).toHaveBeenCalledOnce();
     expect(result.error).toHaveBeenCalledWith({
-      event: "contact_email_failed",
+      event: "contact_email_delivery_unknown",
       requestId: result.body.requestId,
       cfRay: "ray-failure-456",
       code: "network",
@@ -1760,11 +1778,11 @@ describe("handleContactRequest email boundary and response schema", () => {
     });
 
     expect(result.response.status).toBe(502);
-    expectStableError(result.body, "email_send_failed");
+    expectStableError(result.body, "email_delivery_unknown");
     expect(result.info).not.toHaveBeenCalled();
     expect(result.error).toHaveBeenCalledOnce();
     expect(result.error).toHaveBeenCalledWith({
-      event: "contact_email_failed",
+      event: "contact_email_delivery_unknown",
       requestId: result.body.requestId,
       cfRay: "unknown",
       code: "network",
@@ -1801,7 +1819,7 @@ describe("handleContactRequest email boundary and response schema", () => {
     });
 
     expect(result.response.status).toBe(502);
-    expectStableError(result.body, "email_send_failed");
+    expectStableError(result.body, "email_delivery_unknown");
     expectJsonResponseHeaders(result.response);
     expect(result.send).toHaveBeenCalledOnce();
     expect(result.info).not.toHaveBeenCalled();
@@ -1880,6 +1898,40 @@ describe("handleContactRequest Resend delivery boundary", () => {
     ]);
   });
 
+  it("reuses an unchanged submission identity after an ambiguous provider response", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("provider response lost"))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: "resend-message-retry" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    const payload = {
+      ...VALID_PAYLOAD,
+      submission_id: VALID_SUBMISSION_ID,
+    };
+
+    const first = await submitWithResend({ fetchMock, payload });
+    const retry = await submitWithResend({ fetchMock, payload });
+
+    expect(first.response.status).toBe(502);
+    expectStableError(first.body, "email_delivery_unknown");
+    expect(retry.response.status).toBe(200);
+    expect(first.body.requestId).not.toBe(retry.body.requestId);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][1].headers["Idempotency-Key"]).toBe(
+      `contact/${VALID_SUBMISSION_ID}`,
+    );
+    expect(fetchMock.mock.calls[1][1].headers["Idempotency-Key"]).toBe(
+      `contact/${VALID_SUBMISSION_ID}`,
+    );
+    expect(fetchMock.mock.calls[1][1].body).toBe(
+      fetchMock.mock.calls[0][1].body,
+    );
+  });
+
   it("returns the honest 502 response without a provider call when the API secret is missing", async () => {
     const result = await submitWithResend({ omitApiKey: true });
 
@@ -1940,10 +1992,10 @@ describe("handleContactRequest Resend delivery boundary", () => {
 
     expect(providerSignal.aborted).toBe(true);
     expect(result.response.status).toBe(502);
-    expectStableError(result.body, "email_send_failed");
+    expectStableError(result.body, "email_delivery_unknown");
     expect(result.info).not.toHaveBeenCalled();
     expect(result.error).toHaveBeenCalledWith({
-      event: "contact_email_failed",
+      event: "contact_email_delivery_unknown",
       requestId: result.body.requestId,
       cfRay: "unknown",
       code: "timeout",
@@ -1962,10 +2014,10 @@ describe("handleContactRequest Resend delivery boundary", () => {
     });
 
     expect(result.response.status).toBe(502);
-    expectStableError(result.body, "email_send_failed");
+    expectStableError(result.body, "email_delivery_unknown");
     expect(result.info).not.toHaveBeenCalled();
     expect(result.error).toHaveBeenCalledWith({
-      event: "contact_email_failed",
+      event: "contact_email_delivery_unknown",
       requestId: result.body.requestId,
       cfRay: "unknown",
       code: "network",
@@ -2016,10 +2068,10 @@ describe("handleContactRequest Resend delivery boundary", () => {
     });
 
     expect(result.response.status).toBe(502);
-    expectStableError(result.body, "email_send_failed");
+    expectStableError(result.body, "email_delivery_unknown");
     expect(result.info).not.toHaveBeenCalled();
     expect(result.error).toHaveBeenCalledWith({
-      event: "contact_email_failed",
+      event: "contact_email_delivery_unknown",
       requestId: result.body.requestId,
       cfRay: "unknown",
       code: "malformed_response",
@@ -2042,10 +2094,10 @@ describe("handleContactRequest Resend delivery boundary", () => {
     });
 
     expect(result.response.status).toBe(502);
-    expectStableError(result.body, "email_send_failed");
+    expectStableError(result.body, "email_delivery_unknown");
     expect(result.info).not.toHaveBeenCalled();
     expect(result.error).toHaveBeenCalledWith({
-      event: "contact_email_failed",
+      event: "contact_email_delivery_unknown",
       requestId: result.body.requestId,
       cfRay: "unknown",
       code: "missing_message_id",

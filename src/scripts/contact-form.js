@@ -21,6 +21,10 @@ async function readJson(response) {
       throw error;
     }
 
+    if (response.ok) {
+      throw new TypeError("The successful response body could not be read.");
+    }
+
     return null;
   }
 }
@@ -28,6 +32,50 @@ async function readJson(response) {
 function isDeliveryUnknownError(error) {
   return error instanceof TypeError || error?.name === "AbortError";
 }
+
+function createSubmissionId() {
+  const cryptoRef = globalThis.crypto;
+  if (typeof cryptoRef?.randomUUID === "function") {
+    return cryptoRef.randomUUID();
+  }
+
+  if (typeof cryptoRef?.getRandomValues === "function") {
+    const bytes = cryptoRef.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join("");
+
+    return [
+      hex.slice(0, 8),
+      hex.slice(8, 12),
+      hex.slice(12, 16),
+      hex.slice(16, 20),
+      hex.slice(20),
+    ].join("-");
+  }
+
+  throw new Error("This browser cannot create an enquiry identity.");
+}
+
+const normaliseSingleLine = (value) =>
+  String(value ?? "")
+    .replace(/[\r\n]+/g, " ")
+    .trim();
+
+const normaliseMultiline = (value) =>
+  String(value ?? "").replace(/\r/g, "");
+
+const createSubmissionSignature = (requestBody) =>
+  JSON.stringify({
+    name: normaliseSingleLine(requestBody.name),
+    email: normaliseSingleLine(requestBody.email),
+    contact_number: normaliseSingleLine(requestBody.contact_number),
+    package_interest: normaliseSingleLine(requestBody.package_interest),
+    automation_request: normaliseMultiline(requestBody.automation_request),
+    tools_involved: normaliseMultiline(requestBody.tools_involved),
+  });
 
 export function createContactFormController({
   form,
@@ -38,6 +86,8 @@ export function createContactFormController({
 }) {
   const submitButton = form.querySelector("button[type='submit']");
   let inFlight = false;
+  let submissionId = "";
+  let submissionSignature = "";
 
   const setStatus = (message, { success = false } = {}) => {
     if (!status) {
@@ -93,6 +143,15 @@ export function createContactFormController({
 
       const token = String(decision?.token ?? "").trim();
       const requestBody = Object.fromEntries(formData.entries());
+      const nextSubmissionSignature = createSubmissionSignature(requestBody);
+      if (
+        !submissionId ||
+        nextSubmissionSignature !== submissionSignature
+      ) {
+        submissionId = createSubmissionId();
+        submissionSignature = nextSubmissionSignature;
+      }
+      requestBody.submission_id = submissionId;
       if (token) {
         requestBody.turnstile_token = token;
       }
@@ -121,6 +180,8 @@ export function createContactFormController({
       const payload = await readJson(response);
 
       if (response.ok && payload?.ok === true) {
+        submissionId = "";
+        submissionSignature = "";
         form.reset();
         setStatus(MESSAGES.success, { success: true });
         return;
