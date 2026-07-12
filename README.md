@@ -26,9 +26,9 @@ git diff --check
 
 ## Deployment
 
-[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) verifies pull requests and `main`. A successful push to `main`, or an explicit manual run selected on `main`, deploys `dist/` to the `oliverhitchings` Cloudflare Pages project. Manual runs selected on another ref cannot deploy production.
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) verifies pull requests and `main`. The production build compiles the retained Pages Function into `dist/_worker.js` and `dist/_routes.json`; a successful push to `main`, or an explicit manual run selected on `main`, deploys that exact verified artifact to the `oliverhitchings` Cloudflare Pages project from a job with no source checkout. Manual runs selected on another ref cannot deploy production.
 
-The contact Worker does not deploy on a push. Its workflow job is deliberately dormant until the provider, secret, live Pages form, rollback version, repository arming variable, and protected-environment approval have all been confirmed. Follow the operations runbook rather than bypassing those gates.
+The contact Worker does not deploy on a push. Its workflow job is deliberately dormant until the provider, all delivery secrets, required/enforced Turnstile, the live Pages form, the active 100% rollback version, repository arming variable, typed confirmation, and protected-environment approval have all been confirmed. Follow the operations runbook rather than bypassing those gates.
 
 ## Contact form
 
@@ -41,3 +41,9 @@ The services form sends JSON to same-origin `POST /api/contact`. The intended pr
 The root domain's existing mail MX and SPF records are outside this flow and must not be replaced. The older Pages Function in [`functions/api/contact.js`](functions/api/contact.js) remains temporarily as a rollback boundary; it must not be removed until the dedicated Worker has passed provider acceptance, delivery, inbox, and reply-to checks in production.
 
 See [`docs/operations/contact-form.md`](docs/operations/contact-form.md) for configuration, release, evidence, rollback, and eventual cleanup instructions.
+
+## Project records
+
+- [`CHANGELOG.md`](CHANGELOG.md) records the user-facing release history.
+- [`docs/superpowers/specs/2026-07-09-website-enquiry-redesign-design.md`](docs/superpowers/specs/2026-07-09-website-enquiry-redesign-design.md) records the approved design direction and implementation pivots.
+- [`docs/superpowers/plans/2026-07-09-website-enquiry-redesign.md`](docs/superpowers/plans/2026-07-09-website-enquiry-redesign.md) records the staged implementation and verification plan.
