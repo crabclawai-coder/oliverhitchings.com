@@ -151,7 +151,7 @@ An invalid Turnstile Worker mode fails closed with `503`; an invalid rate-limit 
 
 The Worker uses structured logs. Correlate records using `requestId` and `cfRay`.
 
-Wrangler enables Cloudflare Workers observability for production. If the dashboard still has observability disabled before the first deployment, enable it there and reconfirm the active version used as the rollback target; do not bypass the strict configuration conflict check.
+The checked-in observability block mirrors Cloudflare's dashboard-generated production settings exactly: the top-level compatibility flag is `false`, while persisted logs and invocation logs are explicitly enabled at a 100% head-sampling rate and traces remain disabled. This representation still stores the Worker's structured logs. Do not simplify it to only `observability.enabled = true`; that produces a strict remote-configuration conflict. Reconfirm the active version used as the rollback target after any dashboard change and never bypass the strict conflict check.
 
 | Event | Fields currently recorded |
 | --- | --- |
