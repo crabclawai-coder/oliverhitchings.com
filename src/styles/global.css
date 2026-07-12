@@ -14,13 +14,8 @@
   --border-strong: rgba(247, 243, 232, 0.2);
   --surface-glass: rgba(5, 5, 5, 0.84);
 
-  /* Compatibility aliases keep existing page selectors stable until Task 8. */
-  --bg: var(--surface);
-  --panel: var(--surface-raised);
-  --panel-2: var(--surface-elevated);
-  --line: var(--border);
+  /* Compatibility aliases retained where existing selectors still consume them. */
   --gold: var(--accent);
-  --blue: var(--accent-cool);
   --green: var(--success);
 
   /* 4/8-based spacing. */
@@ -63,7 +58,6 @@
   --container-max: 72.5rem;
   --container-narrow: 65rem;
   --container-gutter: clamp(1rem, 3vw, 2.5rem);
-  --max: var(--container-max);
 
   --motion-duration-fast: 180ms;
   --motion-duration-enter: 240ms;
@@ -150,6 +144,15 @@ video {
     scroll-behavior: auto;
   }
 
+  .nav-links a,
+  .nav-cta,
+  .availability,
+  .button,
+  .footer-links a,
+  .text-link {
+    transition: none;
+  }
+
   [data-reveal],
   [data-reveal].is-reveal-ready,
   [data-reveal].is-reveal-ready.is-visible {
@@ -228,6 +231,10 @@ video {
   font-family: var(--font-utility);
   font-size: var(--type-size-sm);
   font-weight: var(--weight-semibold);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-out),
+    color var(--motion-duration-fast) var(--motion-ease-out),
+    filter var(--motion-duration-fast) var(--motion-ease-out);
 }
 
 .nav-links a[aria-current="page"] {
@@ -261,6 +268,10 @@ video {
   font-size: 14px;
   font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-out),
+    border-color var(--motion-duration-fast) var(--motion-ease-out),
+    color var(--motion-duration-fast) var(--motion-ease-out);
 }
 
 .availability span {
@@ -317,6 +328,10 @@ h2 {
   color: #070707;
   font-size: 15px;
   font-weight: var(--weight-extrabold);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-out),
+    border-color var(--motion-duration-fast) var(--motion-ease-out),
+    color var(--motion-duration-fast) var(--motion-ease-out);
 }
 
 .button.ghost {
@@ -327,6 +342,7 @@ h2 {
 .button:disabled {
   cursor: wait;
   opacity: 0.62;
+  transition: none;
 }
 
 h3 {
@@ -400,6 +416,13 @@ h3 {
   min-height: 44px;
   margin-top: var(--space-1);
   color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3rem;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-out),
+    text-decoration-color var(--motion-duration-fast) var(--motion-ease-out);
 }
 
 .footer-bottom {
@@ -520,7 +543,7 @@ h3 {
   gap: 8px;
   margin: -4px 0 0;
   color: rgba(255, 255, 255, 0.62);
-  font-size: 14px;
+  font-size: var(--type-size-base);
   font-weight: var(--weight-bold);
   line-height: 1.5;
 }
@@ -547,6 +570,47 @@ h3 {
   text-decoration: underline;
   text-decoration-color: rgba(255, 255, 255, 0.32);
   text-underline-offset: 4px;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-out),
+    text-decoration-color var(--motion-duration-fast) var(--motion-ease-out);
+}
+
+@media (hover: hover) {
+  .nav-links a:hover {
+    background: rgba(247, 243, 232, 0.08);
+    color: var(--text);
+  }
+
+  .nav-links a[aria-current="page"]:hover {
+    background: rgba(247, 243, 232, 0.14);
+  }
+
+  .nav-cta:hover {
+    filter: brightness(1.08);
+  }
+
+  .availability:hover {
+    border-color: rgba(246, 183, 75, 0.58);
+    background: rgba(5, 5, 5, 0.92);
+    color: var(--text);
+  }
+
+  .button:not(:disabled):hover {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
+  .button.ghost:not(:disabled):hover {
+    border-color: var(--border-strong);
+    background: rgba(247, 243, 232, 0.14);
+    color: var(--text);
+  }
+
+  .footer-links a:hover,
+  .text-link:hover {
+    color: var(--text);
+    text-decoration-color: var(--accent);
+  }
 }
 
 @media (max-width: 860px) {
@@ -821,8 +885,8 @@ main.services-page {
 .operator-trace p {
   margin-top: 0.3rem;
   color: var(--muted);
-  font-size: 0.86rem;
-  line-height: 1.45;
+  font-size: var(--type-size-base);
+  line-height: 1.5;
 }
 
 .proof-rail {
@@ -896,7 +960,7 @@ main.services-page {
 .loop-sequence p {
   margin-top: 0.8rem;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: var(--type-size-base);
   line-height: 1.55;
 }
 
@@ -923,7 +987,7 @@ main.services-page {
   padding-top: 1rem;
   border-top: 1px solid var(--border-strong);
   color: var(--text);
-  font-size: 0.92rem;
+  font-size: var(--type-size-base);
   font-weight: var(--weight-semibold);
   line-height: 1.55;
 }
@@ -1138,7 +1202,7 @@ main.services-page {
 .services-hero__trace > p:last-child {
   margin-top: 1.25rem;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: var(--type-size-base);
   line-height: 1.55;
 }
 

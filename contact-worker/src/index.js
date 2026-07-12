@@ -1,4 +1,5 @@
-const CONTACT_EMAIL = "oliverhitch2008@gmail.com";
+import { CONTACT_PACKAGE_VALUES } from "../../shared/contact-config.js";
+
 const FROM_EMAIL =
   "Oliver Hitchings Website <contact@forms.oliverhitchings.com>";
 const MAX_BODY_BYTES = 16 * 1024;
@@ -13,13 +14,7 @@ const TURNSTILE_TIMEOUT_MS = 3_500;
 const TURNSTILE_MAX_AGE_MS = 5 * 60 * 1_000;
 const TURNSTILE_MAX_FUTURE_SKEW_MS = 60 * 1_000;
 
-const ALLOWED_PACKAGES = new Set([
-  "Task Map",
-  "First Build",
-  "Operator System",
-  "Ongoing support",
-  "Not sure yet",
-]);
+export const ALLOWED_PACKAGES = new Set(CONTACT_PACKAGE_VALUES);
 
 const FIELD_LIMITS = {
   name: 120,
@@ -83,7 +78,7 @@ const ERRORS = {
   emailSendFailed: {
     code: "email_send_failed",
     message:
-      "The website could not send the enquiry just now. Please email oliverhitch2008@gmail.com directly.",
+      "The website could not send the enquiry just now. Please use the contact details on this page.",
   },
 };
 
@@ -200,6 +195,23 @@ const logControl = (logger, level, entry) => {
   });
 };
 
+const logRateLimitUnavailable = ({
+  logger,
+  mode,
+  requestId,
+  cfRay,
+  reason,
+}) => {
+  logControl(logger, "error", {
+    event: "contact_rate_limit",
+    mode,
+    requestId,
+    cfRay,
+    outcome: "unavailable",
+    reason,
+  });
+};
+
 const applyRateLimit = async ({ request, env, logger, requestId, cfRay }) => {
   const mode = parseControlMode(env.RATE_LIMIT_MODE);
 
@@ -221,13 +233,24 @@ const applyRateLimit = async ({ request, env, logger, requestId, cfRay }) => {
   const connectingIp = request.headers.get("CF-Connecting-IP");
   const limiter = env.CONTACT_RATE_LIMITER;
 
-  if (!connectingIp || typeof limiter?.limit !== "function") {
-    logControl(logger, "error", {
-      event: "contact_rate_limit",
+  if (!connectingIp) {
+    logRateLimitUnavailable({
+      logger,
       mode,
       requestId,
       cfRay,
-      outcome: "unavailable",
+      reason: "missing_input",
+    });
+    return false;
+  }
+
+  if (typeof limiter?.limit !== "function") {
+    logRateLimitUnavailable({
+      logger,
+      mode,
+      requestId,
+      cfRay,
+      reason: "missing_binding",
     });
     return false;
   }
@@ -237,12 +260,12 @@ const applyRateLimit = async ({ request, env, logger, requestId, cfRay }) => {
   try {
     result = await limiter.limit({ key: connectingIp });
   } catch {
-    logControl(logger, "error", {
-      event: "contact_rate_limit",
+    logRateLimitUnavailable({
+      logger,
       mode,
       requestId,
       cfRay,
-      outcome: "unavailable",
+      reason: "limiter_error",
     });
     return false;
   }
@@ -251,12 +274,12 @@ const applyRateLimit = async ({ request, env, logger, requestId, cfRay }) => {
     !isObjectPayload(result) ||
     typeof result.success !== "boolean"
   ) {
-    logControl(logger, "error", {
-      event: "contact_rate_limit",
+    logRateLimitUnavailable({
+      logger,
       mode,
       requestId,
       cfRay,
-      outcome: "unavailable",
+      reason: "malformed_result",
     });
     return false;
   }
@@ -498,6 +521,55 @@ const isValidEnquiry = (enquiry) =>
     ([field, limit]) => characterCount(enquiry[field]) <= limit,
   );
 
+const readLimitedUtf8Body = async (request) => {
+  let reader;
+
+  try {
+    if (!request.body) {
+      return { outcome: "ok", rawBody: "" };
+    }
+
+    reader = request.body.getReader();
+    const decoder = new TextDecoder("utf-8", { fatal: true });
+    let rawBody = "";
+    let totalBytes = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        rawBody += decoder.decode();
+        return { outcome: "ok", rawBody };
+      }
+
+      if (!(value instanceof Uint8Array)) {
+        throw new TypeError("Request body chunks must be byte arrays.");
+      }
+
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_BODY_BYTES) {
+        try {
+          await reader.cancel();
+        } catch {}
+
+        return { outcome: "too_large" };
+      }
+
+      rawBody += decoder.decode(value, { stream: true });
+    }
+  } catch {
+    if (reader) {
+      try {
+        await reader.cancel();
+      } catch {}
+    }
+
+    return { outcome: "invalid" };
+  } finally {
+    reader?.releaseLock();
+  }
+};
+
 export async function handleContactRequest(request, env, context) {
   const requestId = crypto.randomUUID();
 
@@ -522,17 +594,16 @@ export async function handleContactRequest(request, env, context) {
     return errorJson(ERRORS.payloadTooLarge, 413, requestId);
   }
 
-  let rawBody;
+  const bodyResult = await readLimitedUtf8Body(request);
+  if (bodyResult.outcome === "too_large") {
+    return errorJson(ERRORS.payloadTooLarge, 413, requestId);
+  }
 
-  try {
-    rawBody = await request.text();
-  } catch {
+  if (bodyResult.outcome !== "ok") {
     return errorJson(ERRORS.invalidJson, 400, requestId);
   }
 
-  if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
-    return errorJson(ERRORS.payloadTooLarge, 413, requestId);
-  }
+  const { rawBody } = bodyResult;
 
   let payload;
 
@@ -599,6 +670,24 @@ export async function handleContactRequest(request, env, context) {
     return turnstileResponse;
   }
 
+  const contactOwnerEmail =
+    typeof env.CONTACT_OWNER_EMAIL === "string"
+      ? normalizeSingleLine(env.CONTACT_OWNER_EMAIL)
+      : "";
+
+  if (!isEmail(contactOwnerEmail)) {
+    logSafely(() => {
+      logger.error({
+        event: "contact_email_failed",
+        requestId,
+        cfRay,
+        code: "missing_destination",
+      });
+    });
+
+    return errorJson(ERRORS.emailSendFailed, 502, requestId);
+  }
+
   const subject = `Automation enquiry: ${enquiry.packageInterest}`;
   const submittedAt = new Date().toISOString();
   const text = [
@@ -625,7 +714,7 @@ export async function handleContactRequest(request, env, context) {
     email: {
       from: FROM_EMAIL,
       reply_to: enquiry.email,
-      to: [CONTACT_EMAIL],
+      to: [contactOwnerEmail],
       subject,
       text,
     },

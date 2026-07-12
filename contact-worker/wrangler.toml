@@ -9,7 +9,7 @@ RATE_LIMIT_MODE = "off"
 TURNSTILE_ALLOWED_HOSTNAMES = "oliverhitchings.com,www.oliverhitchings.com"
 
 [secrets]
-required = ["TURNSTILE_SECRET_KEY", "RESEND_API_KEY"]
+required = ["TURNSTILE_SECRET_KEY", "RESEND_API_KEY", "CONTACT_OWNER_EMAIL"]
 
 [observability]
 enabled = true

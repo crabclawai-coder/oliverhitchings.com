@@ -606,6 +606,20 @@ describe("generated Services content", () => {
     ).toBe(true);
   });
 
+  it("keeps rendered package values aligned with the Worker allowlist", async () => {
+    const form = services.querySelector("form[data-contact-form]");
+    const renderedValues = Array.from(
+      form?.querySelectorAll(
+        "select[name='package_interest'] option:not([value=''])",
+      ) ?? [],
+      (option) => option.value,
+    );
+    const workerModule = await import("../contact-worker/src/index.js");
+
+    expect(workerModule.ALLOWED_PACKAGES).toBeInstanceOf(Set);
+    expect([...workerModule.ALLOWED_PACKAGES]).toEqual(renderedValues);
+  });
+
   it("defaults to an inert off-mode container without a Turnstile network reference", () => {
     const form = services.querySelector("form[data-contact-form]");
     const container = form?.querySelector(

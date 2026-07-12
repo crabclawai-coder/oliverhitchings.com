@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { site } from "../data/site.js";
+import { CONTACT_PACKAGE_VALUES } from "../../shared/contact-config.js";
 
 const turnstileMode =
   import.meta.env.PUBLIC_TURNSTILE_MODE?.trim().toLowerCase() || "off";
@@ -250,11 +251,7 @@ const turnstileSiteKey =
               <span>Package interest</span>
               <select name="package_interest" required>
                 <option value="">Choose one</option>
-                <option>Task Map</option>
-                <option>First Build</option>
-                <option>Operator System</option>
-                <option>Ongoing support</option>
-                <option>Not sure yet</option>
+                {CONTACT_PACKAGE_VALUES.map((packageValue) => <option>{packageValue}</option>)}
               </select>
             </label>
           </div>

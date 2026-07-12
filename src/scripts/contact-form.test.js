@@ -2,6 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as contactFormModule from "./contact-form.js";
+import { createTurnstileAdapter } from "./turnstile.js";
 
 const INITIAL_STATUS =
   "This sends the enquiry directly from the website to oliver@example.com.";
@@ -498,6 +499,64 @@ describe("createContactFormController", () => {
 
     expect(fetchImpl).not.toHaveBeenCalled();
     expect(turnstile.destroy).toHaveBeenCalledOnce();
+  });
+
+  it("honours the real required-mode adapter contract before and after verification", async () => {
+    const { form, status, button } = renderForm();
+    const container = document.createElement("div");
+    container.tabIndex = -1;
+    form.append(container);
+    const announce = vi.fn((message) => {
+      status.classList.remove("is-success");
+      status.textContent = message;
+    });
+    const api = {
+      render: vi.fn().mockReturnValue("widget-contract-1"),
+      reset: vi.fn(),
+      remove: vi.fn(),
+    };
+    const adapter = createTurnstileAdapter({
+      mode: "required",
+      siteKey: "1x00000000000000000000AA",
+      container,
+      announce,
+      loadApi: vi.fn().mockResolvedValue(api),
+    });
+    await adapter.ready;
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, { ok: true }));
+    const controller = contactFormModule.createContactFormController({
+      form,
+      status,
+      fetchImpl,
+      turnstile: adapter,
+    });
+    const announcementsBeforeBlockedSubmit = announce.mock.calls.length;
+
+    dispatchSubmit(form);
+
+    expect(button.disabled).toBe(true);
+    await vi.waitFor(() => expect(button.disabled).toBe(false));
+    expect(announce).toHaveBeenCalledTimes(
+      announcementsBeforeBlockedSubmit + 1,
+    );
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(form.elements.namedItem("name").value).toBe("Roger");
+
+    const widgetOptions = api.render.mock.calls[0][1];
+    widgetOptions.callback("real-adapter-token");
+    dispatchSubmit(form);
+
+    await vi.waitFor(() => expect(status.textContent).toBe(SUCCESS_STATUS));
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).toMatchObject({
+      turnstile_token: "real-adapter-token",
+    });
+    expect(api.reset).toHaveBeenCalledOnce();
+    expect(api.reset).toHaveBeenCalledWith("widget-contract-1");
+
+    controller.destroy();
   });
 });
 

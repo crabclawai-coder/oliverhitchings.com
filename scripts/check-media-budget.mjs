@@ -164,10 +164,15 @@ export async function inspectMediaDirectory(
   };
 }
 
-function probe(filePath, fileName, errors) {
+function probe(
+  filePath,
+  fileName,
+  errors,
+  execFileImpl = execFileSync,
+) {
   try {
     return JSON.parse(
-      execFileSync(
+      execFileImpl(
         "ffprobe",
         [
           "-v",
@@ -259,8 +264,8 @@ function expectMetadata(errors, fileName, actual, expected, label) {
   }
 }
 
-function verifyVideo(filePath, expected, errors) {
-  const metadata = probe(filePath, expected.name, errors);
+function verifyVideo(filePath, expected, errors, execFileImpl) {
+  const metadata = probe(filePath, expected.name, errors, execFileImpl);
   if (!metadata) {
     return;
   }
@@ -320,8 +325,8 @@ function verifyVideo(filePath, expected, errors) {
   }
 }
 
-function verifyPoster(filePath, errors) {
-  const metadata = probe(filePath, posterName, errors);
+function verifyPoster(filePath, errors, execFileImpl) {
+  const metadata = probe(filePath, posterName, errors, execFileImpl);
   const stream = (metadata?.streams ?? []).find(
     ({ codec_type: codecType }) => codecType === "video",
   );
@@ -348,6 +353,7 @@ function enforceBudget(errors, label, actual, limit) {
 export async function checkMediaBudget({
   projectRoot = defaultProjectRoot,
   logger = console,
+  execFileImpl = execFileSync,
 } = {}) {
   const videoDirectory = join(projectRoot, "public/videos");
   const posterDirectory = join(projectRoot, "public/images/posters");
@@ -375,12 +381,12 @@ export async function checkMediaBudget({
     }
 
     videoSizes.set(expected.name, entry.size);
-    verifyVideo(entry.absolutePath, expected, errors);
+    verifyVideo(entry.absolutePath, expected, errors, execFileImpl);
   }
 
   const posterSize = posterFile?.size ?? 0;
   if (posterFile) {
-    verifyPoster(posterFile.absolutePath, errors);
+    verifyPoster(posterFile.absolutePath, errors, execFileImpl);
     enforceBudget(errors, "Poster budget", posterSize, posterLimit);
   }
 
@@ -413,10 +419,16 @@ export async function checkMediaBudget({
   return { desktopBytes, errors, mobileBytes, posterSize, totalBytes };
 }
 
-const invokedPath = process.argv[1] ? resolve(process.argv[1]) : null;
-if (moduleFilePath && invokedPath === moduleFilePath) {
-  const result = await checkMediaBudget();
+export async function runMediaBudgetCli(options) {
+  const result = await checkMediaBudget(options);
   if (result.errors.length > 0) {
     process.exitCode = 1;
   }
+
+  return result;
+}
+
+const invokedPath = process.argv[1] ? resolve(process.argv[1]) : null;
+if (moduleFilePath && invokedPath === moduleFilePath) {
+  await runMediaBudgetCli();
 }

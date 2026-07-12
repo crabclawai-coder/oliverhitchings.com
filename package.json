@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev --host 0.0.0.0",
-    "build": "astro build",
+    "build": "astro build && node scripts/build-pages-functions.mjs",
     "preview": "astro preview --host 0.0.0.0",
     "start": "npm run build && sirv dist --host 0.0.0.0 --port ${PORT:-3000}",
     "check:media": "node scripts/check-media-budget.mjs && vitest run src/scripts/media.test.js src/pages-content.output.test.js",

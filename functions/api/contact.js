@@ -1,5 +1,6 @@
-const CONTACT_EMAIL = "oliverhitch2008@gmail.com";
-const MAX_FIELD_LENGTH = 4000;
+const MAX_FIELD_LENGTH = 4_000;
+const PROVIDER_TIMEOUT_MS = 5_000;
+const RESEND_API_URL = "https://api.resend.com/emails";
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -16,7 +17,30 @@ const clean = (value) =>
     .trim()
     .slice(0, MAX_FIELD_LENGTH);
 
+const cleanSingleLine = (value) =>
+  String(value || "")
+    .replace(/[\r\n]+/g, " ")
+    .trim();
+
 const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+const configurationError = () =>
+  json(
+    {
+      message:
+        "The website email destination is not configured yet. Please try again later.",
+    },
+    503,
+  );
+
+const deliveryError = () =>
+  json(
+    {
+      message:
+        "The website could not send the enquiry just now. Please try again later.",
+    },
+    502,
+  );
 
 export async function onRequestPost({ request, env }) {
   let payload;
@@ -24,7 +48,10 @@ export async function onRequestPost({ request, env }) {
   try {
     payload = await request.json();
   } catch {
-    return json({ message: "The enquiry could not be read. Please try again." }, 400);
+    return json(
+      { message: "The enquiry could not be read. Please try again." },
+      400,
+    );
   }
 
   if (clean(payload._honey)) {
@@ -33,20 +60,40 @@ export async function onRequestPost({ request, env }) {
 
   const enquiry = {
     name: clean(payload.name),
-    email: clean(payload.email),
-    contactNumber: clean(payload.contact_number),
-    packageInterest: clean(payload.package_interest),
+    email: cleanSingleLine(payload.email),
+    contactNumber: cleanSingleLine(payload.contact_number),
+    packageInterest: cleanSingleLine(payload.package_interest),
     automationRequest: clean(payload.automation_request),
     toolsInvolved: clean(payload.tools_involved),
   };
 
-  if (!enquiry.name || !isEmail(enquiry.email) || !enquiry.packageInterest || !enquiry.automationRequest) {
-    return json({ message: "Please complete your name, email, package interest, and automation request." }, 400);
+  if (
+    !enquiry.name ||
+    !isEmail(enquiry.email) ||
+    !enquiry.packageInterest ||
+    !enquiry.automationRequest
+  ) {
+    return json(
+      {
+        message:
+          "Please complete your name, email, package interest, and automation request.",
+      },
+      400,
+    );
   }
 
-  const fromEmail = env.CONTACT_FROM_EMAIL || "Oliver Hitchings <onboarding@resend.dev>";
-  const toEmail = env.CONTACT_TO_EMAIL || CONTACT_EMAIL;
-  const submittedFrom = request.headers.get("CF-Connecting-IP") || "unknown";
+  const toEmail = cleanSingleLine(env.CONTACT_TO_EMAIL);
+  if (!isEmail(toEmail)) {
+    return configurationError();
+  }
+
+  if (typeof env.RESEND_API_KEY !== "string" || !env.RESEND_API_KEY.trim()) {
+    return configurationError();
+  }
+
+  const fromEmail =
+    cleanSingleLine(env.CONTACT_FROM_EMAIL) ||
+    "Oliver Hitchings Website <contact@forms.oliverhitchings.com>";
   const submittedAt = new Date().toISOString();
   const subject = `Automation enquiry: ${enquiry.packageInterest}`;
   const text = [
@@ -64,45 +111,60 @@ export async function onRequestPost({ request, env }) {
     enquiry.toolsInvolved || "Not provided",
     "",
     `Submitted at: ${submittedAt}`,
-    `Submitted from: ${submittedFrom}`,
   ].join("\n");
 
-  if (!env.RESEND_API_KEY) {
-    return json(
-      {
-        message:
-          "The website email sender is not configured yet. Please email oliverhitch2008@gmail.com directly for now.",
-      },
-      503,
-    );
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
+
+  try {
+    let response;
+
+    try {
+      response = await fetch(RESEND_API_URL, {
+        method: "POST",
+        redirect: "error",
+        headers: {
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [toEmail],
+          reply_to: enquiry.email,
+          subject,
+          text,
+        }),
+        signal: controller.signal,
+      });
+    } catch {
+      return deliveryError();
+    }
+
+    if (!response.ok) {
+      return deliveryError();
+    }
+
+    let providerResult;
+    try {
+      providerResult = await response.json();
+    } catch {
+      return deliveryError();
+    }
+
+    if (
+      providerResult === null ||
+      typeof providerResult !== "object" ||
+      Array.isArray(providerResult) ||
+      typeof providerResult.id !== "string" ||
+      !providerResult.id.trim()
+    ) {
+      return deliveryError();
+    }
+
+    return json({ ok: true });
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: fromEmail,
-      to: [toEmail],
-      reply_to: enquiry.email,
-      subject,
-      text,
-    }),
-  });
-
-  if (!response.ok) {
-    return json(
-      {
-        message:
-          "The website could not send the enquiry just now. Please email oliverhitch2008@gmail.com directly.",
-      },
-      502,
-    );
-  }
-
-  return json({ ok: true });
 }
 
 export function onRequest() {

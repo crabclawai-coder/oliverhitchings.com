@@ -1,21 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import worker, { handleContactRequest } from "./index.js";
+import { CONTACT_PACKAGE_VALUES as ALLOWED_PACKAGES } from "../../shared/contact-config.js";
 
 const ENDPOINT = "https://oliverhitchings.com/api/contact";
-const CONTACT_EMAIL = "oliverhitch2008@gmail.com";
+const CONTACT_EMAIL = "owner@example.test";
 const FROM_EMAIL =
   "Oliver Hitchings Website <contact@forms.oliverhitchings.com>";
 const RESEND_API_URL = "https://api.resend.com/emails";
 const RESEND_API_KEY = "re_test_secret_value";
 const RESEND_USER_AGENT = "oliverhitchings-contact-worker/1.0";
 const MAX_BODY_BYTES = 16 * 1024;
-const ALLOWED_PACKAGES = [
-  "Task Map",
-  "First Build",
-  "Operator System",
-  "Ongoing support",
-  "Not sure yet",
-];
 const VALID_TURNSTILE_TOKEN = "turnstile-token-test-value";
 
 const VALID_PAYLOAD = {
@@ -50,7 +44,7 @@ function createEmailFake({
   });
 
   return {
-    env: { RESEND_API_KEY },
+    env: { CONTACT_OWNER_EMAIL: CONTACT_EMAIL, RESEND_API_KEY },
     send,
   };
 }
@@ -176,6 +170,8 @@ async function submitWithResend({
   fetchMock,
   apiKey = RESEND_API_KEY,
   omitApiKey = false,
+  contactEmail = CONTACT_EMAIL,
+  omitContactEmail = false,
   captureLogs = true,
   request = {},
 } = {}) {
@@ -193,7 +189,10 @@ async function submitWithResend({
     : { logger: { info() {}, error() {} } };
   const response = await handleContactRequest(
     createPostRequest(VALID_PAYLOAD, request),
-    omitApiKey ? {} : { RESEND_API_KEY: apiKey },
+    {
+      ...(omitApiKey ? {} : { RESEND_API_KEY: apiKey }),
+      ...(omitContactEmail ? {} : { CONTACT_OWNER_EMAIL: contactEmail }),
+    },
     { logger: logging.logger },
   );
 
@@ -459,6 +458,116 @@ describe("handleContactRequest body parsing", () => {
     expect(send).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["missing", undefined],
+    ["understated", "1"],
+  ])(
+    "cancels an oversized chunked body before EOF when Content-Length is %s",
+    async (_label, contentLength) => {
+      const chunks = [
+        new Uint8Array(MAX_BODY_BYTES),
+        new Uint8Array([0x61]),
+        new Uint8Array([0x62]),
+      ];
+      let pullCount = 0;
+      const cancel = vi.fn();
+      const stream = new ReadableStream(
+        {
+          pull(controller) {
+            if (pullCount < chunks.length) {
+              controller.enqueue(chunks[pullCount]);
+              pullCount += 1;
+              return;
+            }
+
+            controller.close();
+          },
+          cancel,
+        },
+        { highWaterMark: 0 },
+      );
+      const request = new Request(ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: new URL(ENDPOINT).origin,
+          "CF-Connecting-IP": "192.0.2.121",
+          "CF-Ray": "ray-oversized-stream",
+          ...(contentLength ? { "Content-Length": contentLength } : {}),
+        },
+        body: stream,
+        duplex: "half",
+      });
+      const limit = vi.fn().mockResolvedValue({ success: true });
+      const providerFetch = vi.fn();
+      vi.stubGlobal("fetch", providerFetch);
+
+      const response = await handleContactRequest(
+        request,
+        {
+          RESEND_API_KEY,
+          ...createTurnstileEnv(),
+          RATE_LIMIT_MODE: "enforce",
+          CONTACT_RATE_LIMITER: { limit },
+        },
+        { logger: { info() {}, error() {} } },
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(413);
+      expectStableError(body, "payload_too_large");
+      expectJsonResponseHeaders(response);
+      expect(request.bodyUsed).toBe(true);
+      expect(pullCount).toBe(2);
+      expect(cancel).toHaveBeenCalledOnce();
+      expect(limit).not.toHaveBeenCalled();
+      expect(providerFetch).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects invalid UTF-8 before rate limiting, verification, or delivery", async () => {
+    const rawBody = JSON.stringify(VALID_PAYLOAD);
+    const nameOffset = rawBody.indexOf(VALID_PAYLOAD.name);
+    expect(nameOffset).toBeGreaterThanOrEqual(0);
+    const encodedBody = new TextEncoder().encode(rawBody);
+    encodedBody[nameOffset] = 0xff;
+    const request = new Request(ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: new URL(ENDPOINT).origin,
+        "CF-Connecting-IP": "192.0.2.122",
+      },
+      body: encodedBody,
+    });
+    const limit = vi.fn().mockResolvedValue({ success: true });
+    const providerFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: "must-not-send" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", providerFetch);
+
+    const response = await handleContactRequest(
+      request,
+      {
+        RESEND_API_KEY,
+        ...createTurnstileEnv(),
+        RATE_LIMIT_MODE: "enforce",
+        CONTACT_RATE_LIMITER: { limit },
+      },
+      { logger: { info() {}, error() {} } },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expectStableError(body, "invalid_json");
+    expectJsonResponseHeaders(response);
+    expect(limit).not.toHaveBeenCalled();
+    expect(providerFetch).not.toHaveBeenCalled();
+  });
+
   it("rejects malformed JSON with stable JSON", async () => {
     const { env, send } = createEmailFake();
     const request = createPostRequest(undefined, { body: "{not-json" });
@@ -531,6 +640,40 @@ describe("handleContactRequest honeypot", () => {
     expectJsonResponseHeaders(result.response);
     expect(result.send).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["null", null],
+    ["number", 42],
+    ["array", ["bot"]],
+    ["object", { value: "bot" }],
+  ])(
+    "rejects a %s honeypot before rate limiting, verification, or delivery",
+    async (_label, honeyValue) => {
+      const limit = vi.fn().mockResolvedValue({ success: true });
+      const providerFetch = vi.fn();
+      vi.stubGlobal("fetch", providerFetch);
+      const result = await submit(
+        { ...VALID_PAYLOAD, _honey: honeyValue },
+        {
+          env: {
+            ...createTurnstileEnv(),
+            RATE_LIMIT_MODE: "enforce",
+            CONTACT_RATE_LIMITER: { limit },
+          },
+          request: {
+            headers: { "CF-Connecting-IP": "192.0.2.120" },
+          },
+        },
+      );
+
+      expect(result.response.status).toBe(400);
+      expectStableError(result.body, "invalid_submission");
+      expectJsonResponseHeaders(result.response);
+      expect(limit).not.toHaveBeenCalled();
+      expect(providerFetch).not.toHaveBeenCalled();
+      expect(result.send).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe("handleContactRequest field validation", () => {
@@ -892,38 +1035,52 @@ describe("handleContactRequest rate limiting", () => {
   });
 
   it.each([
-    ["missing binding", undefined, "203.0.113.1"],
-    ["malformed result", { limit: vi.fn().mockResolvedValue({ allowed: true }) }, "203.0.113.2"],
-    ["missing IP", { limit: vi.fn().mockResolvedValue({ success: false }) }, undefined],
-  ])("fails open in enforce mode for %s", async (_label, binding, connectingIp) => {
-    const result = await submit(VALID_PAYLOAD, {
-      captureLogs: true,
-      env: {
-        RATE_LIMIT_MODE: "enforce",
-        ...(binding ? { CONTACT_RATE_LIMITER: binding } : {}),
-      },
-      request: {
-        headers: {
-          ...(connectingIp ? { "CF-Connecting-IP": connectingIp } : {}),
-          "CF-Ray": "ray-rate-unavailable",
+    ["missing binding", undefined, "203.0.113.1", "missing_binding"],
+    [
+      "malformed result",
+      { limit: vi.fn().mockResolvedValue({ allowed: true }) },
+      "203.0.113.2",
+      "malformed_result",
+    ],
+    [
+      "missing IP",
+      { limit: vi.fn().mockResolvedValue({ success: false }) },
+      undefined,
+      "missing_input",
+    ],
+  ])(
+    "fails open in enforce mode for %s",
+    async (_label, binding, connectingIp, reason) => {
+      const result = await submit(VALID_PAYLOAD, {
+        captureLogs: true,
+        env: {
+          RATE_LIMIT_MODE: "enforce",
+          ...(binding ? { CONTACT_RATE_LIMITER: binding } : {}),
         },
-      },
-    });
+        request: {
+          headers: {
+            ...(connectingIp ? { "CF-Connecting-IP": connectingIp } : {}),
+            "CF-Ray": "ray-rate-unavailable",
+          },
+        },
+      });
 
-    expect(result.response.status).toBe(200);
-    expect(result.send).toHaveBeenCalledOnce();
-    if (!connectingIp && binding) {
-      expect(binding.limit).not.toHaveBeenCalled();
-    }
-    expect(result.error).toHaveBeenCalledWith({
-      event: "contact_rate_limit",
-      mode: "enforce",
-      requestId: result.body.requestId,
-      cfRay: "ray-rate-unavailable",
-      outcome: "unavailable",
-    });
-    expectCapturedLogsToExclude(result, VALID_PAYLOAD, connectingIp);
-  });
+      expect(result.response.status).toBe(200);
+      expect(result.send).toHaveBeenCalledOnce();
+      if (!connectingIp && binding) {
+        expect(binding.limit).not.toHaveBeenCalled();
+      }
+      expect(result.error).toHaveBeenCalledWith({
+        event: "contact_rate_limit",
+        mode: "enforce",
+        requestId: result.body.requestId,
+        cfRay: "ray-rate-unavailable",
+        outcome: "unavailable",
+        reason,
+      });
+      expectCapturedLogsToExclude(result, VALID_PAYLOAD, connectingIp);
+    },
+  );
 
   it("fails open and logs unavailable when the binding throws", async () => {
     const connectingIp = "198.51.100.44";
@@ -953,6 +1110,7 @@ describe("handleContactRequest rate limiting", () => {
       requestId: result.body.requestId,
       cfRay: "ray-rate-thrown",
       outcome: "unavailable",
+      reason: "limiter_error",
     });
     expectCapturedLogsToExclude(result, VALID_PAYLOAD, connectingIp, [
       "binding leaked",
@@ -1737,6 +1895,30 @@ describe("handleContactRequest Resend delivery boundary", () => {
     });
     expectCapturedLogsToExclude(result, VALID_PAYLOAD);
   });
+
+  it.each([
+    ["missing", { omitContactEmail: true }],
+    ["blank", { contactEmail: "   " }],
+    ["invalid", { contactEmail: "not-an-email" }],
+    ["multi-line", { contactEmail: "owner@example.test\r\nBcc: other@example.test" }],
+  ])(
+    "returns an honest 502 without a provider call when the destination is %s",
+    async (_label, options) => {
+      const result = await submitWithResend(options);
+
+      expect(result.response.status).toBe(502);
+      expectStableError(result.body, "email_send_failed");
+      expect(result.fetchMock).not.toHaveBeenCalled();
+      expect(result.info).not.toHaveBeenCalled();
+      expect(result.error).toHaveBeenCalledWith({
+        event: "contact_email_failed",
+        requestId: result.body.requestId,
+        cfRay: "unknown",
+        code: "missing_destination",
+      });
+      expectCapturedLogsToExclude(result, VALID_PAYLOAD);
+    },
+  );
 
   it("aborts Resend after roughly five seconds and reports a privacy-safe timeout", async () => {
     vi.useFakeTimers();

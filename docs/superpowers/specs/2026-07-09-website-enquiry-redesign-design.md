@@ -6,6 +6,8 @@ Status: Approved direction; written specification pending final review
 
 Canonical site: `https://oliverhitchings.com`
 
+> **Implementation pivot — 10 July 2026:** The implemented contact path sends through Resend using the isolated `forms.oliverhitchings.com` sender subdomain. The legacy Pages Function remains temporarily as a production fallback until provider acceptance, delivery, inbox, reply-to, and rollback checks have passed. The dedicated production Worker is gated on required/enforced Turnstile rather than an unprotected delivery-proof interval. Any Cloudflare Email Service, disabled-production-control, or immediate Pages Function deletion instructions below preserve the original planning record and are superseded by the [contact form operations runbook](../../operations/contact-form.md).
+
 ## 1. Objective
 
 Make the site a stronger, more credible founder-led automation consultancy and make its enquiry form a dependable production path. A visitor must be able to complete the form, submit it without opening a mail application, receive honest success or failure feedback, and have the enquiry delivered to Oliver's existing inbox.

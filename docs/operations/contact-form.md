@@ -5,6 +5,7 @@ This runbook covers the enquiry form at `oliverhitchings.com`. It deliberately c
 ## Source of truth and ownership
 
 - The repository's `main` branch is the source of truth for the Astro site, the contact Worker, tests, and deployment workflow.
+- `shared/contact-config.js` is the canonical non-secret source for package form values consumed by Astro and the dedicated Worker.
 - `src/pages/services.astro` and `src/scripts/contact-form.js` own the browser form and its honest pending/success/failure states.
 - `contact-worker/src/index.js` is the intended production backend for `/api/contact`; `contact-worker/wrangler.toml` declares its production routes and non-secret defaults.
 - Cloudflare is the runtime source of truth for Pages deployments, Worker routes and versions, Worker secrets, bindings, logs, and DNS.
@@ -91,8 +92,11 @@ The dormant Worker release gate also checks the repository variable `CONTACT_WOR
 
 Secret names, stored in Cloudflare for `oliverhitchings-contact`:
 
+- `CONTACT_OWNER_EMAIL`
 - `RESEND_API_KEY`
 - `TURNSTILE_SECRET_KEY`
+
+The owner destination is stored as a Worker secret to keep the personal delivery address out of new source, workflow inputs, and logs. It is configuration, not visitor data, and must contain one valid single-line email address.
 
 Non-secret variables:
 
@@ -148,7 +152,7 @@ The frontend and Worker use intentionally different names:
 | Rate limiter | `observe` | Calls and logs the binding but never blocks a request. |
 | Rate limiter | `enforce` | Returns `429` when the binding reports a limit. A missing/failing binding fails open and is logged as unavailable. |
 
-An invalid Turnstile Worker mode fails closed with `503`; an invalid rate-limit mode logs a configuration error and fails open. Do not deploy Worker enforcement before the token-producing Pages frontend is live and tested.
+An invalid Turnstile Worker mode fails closed with `503`; an invalid rate-limit mode logs a configuration error and fails open. Do not deploy Worker enforcement before the token-producing Pages frontend is live and tested. The production Worker gate requires frontend mode `required`, a non-empty public site key, Worker mode `enforce`, and the Turnstile secret. Both anti-abuse controls may remain off in local, preview, and provider-only testing, but not when the dedicated Worker takes production traffic.
 
 ## Privacy-safe observability
 
@@ -160,7 +164,7 @@ The Worker uses structured logs. Correlate records using `requestId` and `cfRay`
 | `contact_email_failed` | `event`, `requestId`, `cfRay`, coarse internal `code` |
 | `contact_turnstile` | `event`, `mode`, `requestId`, `cfRay`, `outcome`, `reason` |
 | `contact_turnstile_configuration` | `event`, invalid `mode`, `requestId`, `cfRay`, `outcome`, `reason` |
-| `contact_rate_limit` | `event`, `mode`, `requestId`, `cfRay`, `outcome` |
+| `contact_rate_limit` | `event`, `mode`, `requestId`, `cfRay`, `outcome`, privacy-safe `reason` when unavailable |
 | `contact_rate_limit_configuration` | `event`, invalid `mode`, `requestId`, `cfRay`, `outcome` |
 
 Do not log names, email addresses, telephone numbers, form text, Turnstile tokens, API keys, provider response bodies, raw IP addresses, or the rate-limit key. `CF-Connecting-IP` is used only as the in-memory input to the Cloudflare rate-limit binding and is not included in structured logs.
@@ -192,22 +196,22 @@ npm run build
 git diff --check
 ```
 
-Pull requests stop after verification. A `main` push or manual dispatch selected on the `main` ref can deploy Pages only after the verification job passes. A manual run selected on any other ref cannot deploy production.
+Pull requests stop after verification. A `main` push or manual dispatch selected on the `main` ref can deploy Pages only after the verification job passes. The build compiles the retained Pages Function into `dist/_worker.js` and `dist/_routes.json`; the exact `dist` artifact is uploaded and deployed from a job with no source checkout, so Wrangler cannot rebuild unverified Functions. A manual run selected on any other ref cannot deploy production.
 
 The contact Worker never deploys from a push. Its manual job remains skipped unless all of these are true:
 
 1. The run is a manual `workflow_dispatch`.
 2. The selected workflow ref is `main`.
-3. Every provider, secret, Pages preflight, and protected-environment-readiness checkbox is explicitly selected. The Pages checkbox is preflight evidence only; the exact deployment from this run is tested while the Worker job waits for approval.
+3. Every provider, secret, abuse-control, Pages preflight, and protected-environment-readiness checkbox is explicitly selected. The Pages checkbox is preflight evidence only; the exact deployment from this run is tested while the Worker job waits for approval.
 4. A non-empty existing Worker rollback version ID is supplied.
 5. `DEPLOY CONTACT WORKER` is typed exactly.
 6. The repository variable `CONTACT_WORKER_DEPLOY_ENABLED` is exactly `true`.
 7. The `contact-worker-production` GitHub Environment grants its separate manual approval. Before arming the repository variable, configure required reviewers, prevent self-review, disable administrator bypass where the account permits, and set deployment branches/tags to selected branches with `main` as the only allowed branch and no tags.
-8. The job validates the rollback version as a full lowercase UUID, confirms it exists in Cloudflare, and checks the returned ID is identical.
-9. The job confirms that a secret named `RESEND_API_KEY` exists for the Worker without reading its value.
+8. The job validates the rollback version as a full lowercase UUID and requires it to be the sole version currently serving 100% of production traffic.
+9. The job confirms that `CONTACT_OWNER_EMAIL`, `RESEND_API_KEY`, and `TURNSTILE_SECRET_KEY` exist for the Worker without reading any value.
 10. The Pages deployment in the same run has completed first.
 
-Until the Resend domain is verified, the required secrets and least-privilege tokens are stored, the live Pages form is tested, and the rollback target is recorded, do not create the arming variable or approve the protected environment. The first production delivery proof happens immediately after this gated deployment; it is the completion gate, not a precondition that would make the release impossible. The workflow contains no automatic Worker deployment path.
+Until the Resend domain is verified, the required secrets and least-privilege tokens are stored, required/enforced Turnstile is tested, the live Pages form is tested, and the active rollback target is recorded, do not create the arming variable or approve the protected environment. The first production delivery proof happens immediately after this gated deployment; it is the completion gate, not a precondition that would make the release impossible. The workflow contains no automatic Worker deployment path.
 
 Production runs share one non-cancelling workflow concurrency lock. A manual run waiting for the protected Worker approval therefore prevents a later `main` run from replacing the Pages deployment that was tested in the manual run. Approve or reject the waiting release promptly; reject it before starting a newer production release.
 
@@ -216,10 +220,10 @@ Production runs share one non-cancelling workflow concurrency lock. A manual run
 Before a production release:
 
 1. Make the full local and CI gate green.
-2. Verify the Resend sending subdomain without changing apex MX or SPF.
-3. Store `RESEND_API_KEY` as a Cloudflare Worker secret; never pass its value through a workflow input.
+2. Verify the Resend sending subdomain without changing apex MX or SPF, then run a provider-level delivery test before routing public traffic to the Worker.
+3. Store `CONTACT_OWNER_EMAIL` and `RESEND_API_KEY` as Cloudflare Worker secrets; never pass either value through a workflow input.
 4. Record the current successful Pages deployment ID, current `main` commit, and current Worker version ID as rollback targets.
-5. Configure the production Turnstile site key/secret only when staging Turnstile; keep both frontend and Worker modes `off` for the initial email-delivery proof.
+5. Configure the production Turnstile site key and secret. Complete the preview sequence `observe` → `required` on the frontend and `observe` → `enforce` on the Worker, then leave production at frontend `required` and Worker `enforce`.
 6. Confirm the repository `CLOUDFLARE_API_TOKEN` remains Pages-only. Configure the protected `contact-worker-production` GitHub Environment with required reviewers, prevention of self-review, no administrator bypass where supported, a `main`-only deployment branch policy, no allowed tags, and its separate `CLOUDFLARE_WORKER_API_TOKEN`. Arm `CONTACT_WORKER_DEPLOY_ENABLED` only for the intended release window.
 
 Release in this order:
@@ -227,13 +231,13 @@ Release in this order:
 1. Start the armed manual workflow on the `main` ref with every preflight input completed, but do not approve the protected environment yet.
 2. Wait for that run's `deploy_pages` job to finish and for `deploy_contact_worker` to show that it is waiting for environment approval.
 3. Test the exact live Pages deployment created by that run. Exercise the `/services/` form's pending, failure, timeout, keyboard, and responsive behaviour; confirm the deployed commit and Pages deployment ID match the release record.
-4. Confirm the live page uses the intended frontend Turnstile mode and, when applicable, can produce a token.
+4. Confirm the live page uses frontend Turnstile mode `required` and can produce a token.
 5. Give the evidence to the independent environment reviewer. Only then should that reviewer approve `contact-worker-production`, allowing the Worker checks and deploy step to run.
 6. Send one labelled live enquiry and complete the five-level proof ladder.
 7. Inspect Worker logs, Resend events, Turnstile analytics when enabled, and route ownership.
 8. Disable or remove `CONTACT_WORKER_DEPLOY_ENABLED` after the intended Worker release.
 
-For a later Turnstile rollout, use the compatibility sequence: frontend `observe`, Worker `observe`, frontend `required`, then Worker `enforce`. Verify each step before advancing. Provision and observe the real rate-limit binding before rate enforcement.
+Provision and observe the real rate-limit binding before enabling rate enforcement. Turnstile enforcement is the minimum production abuse control; rate limiting is an additional layer, not a substitute for a missing or failing binding.
 
 ## Rollback
 

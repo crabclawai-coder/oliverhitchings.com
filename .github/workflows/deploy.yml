@@ -21,6 +21,16 @@ on:
         required: false
         default: false
         type: boolean
+      contact_owner_email_stored:
+        description: "I confirmed CONTACT_OWNER_EMAIL is stored as a Cloudflare Worker secret"
+        required: false
+        default: false
+        type: boolean
+      contact_abuse_controls_ready:
+        description: "I confirmed the Pages frontend requires Turnstile and the Worker enforces it"
+        required: false
+        default: false
+        type: boolean
       pages_frontend_preflight_tested:
         description: "Current main Pages form passed preflight testing; re-test this run before approval"
         required: false
@@ -104,6 +114,19 @@ jobs:
             git show --check --format=fuller "$CURRENT_SHA" --
           fi
 
+      - name: Upload verified Pages artifact
+        if: >-
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-dist-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+          include-hidden-files: true
+
   deploy_pages:
     name: Deploy Cloudflare Pages
     needs: verify
@@ -116,27 +139,18 @@ jobs:
       contents: read
       deployments: write
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - name: Download verified Pages artifact
+        uses: actions/download-artifact@v4
         with:
-          node-version: "22"
-          cache: "npm"
-
-      - name: Install locked dependencies
-        run: npm ci
-
-      - name: Build production site
-        run: npm run build
-        env:
-          PUBLIC_TURNSTILE_MODE: ${{ vars.PUBLIC_TURNSTILE_MODE || 'off' }}
-          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY || '' }}
+          name: pages-dist-${{ github.sha }}
+          path: dist/
 
       - name: Deploy Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.110.0"
           command: pages deploy ./dist --project-name=oliverhitchings --branch=main
 
   deploy_contact_worker:
@@ -149,6 +163,8 @@ jobs:
         inputs.deploy_contact_worker == true &&
         inputs.resend_domain_verified == true &&
         inputs.resend_api_key_stored == true &&
+        inputs.contact_owner_email_stored == true &&
+        inputs.contact_abuse_controls_ready == true &&
         inputs.pages_frontend_preflight_tested == true &&
         inputs.protected_environment_ready == true &&
         inputs.worker_rollback_version != '' &&
@@ -172,7 +188,25 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Verify the recorded rollback version exists
+      - name: Verify production Turnstile is required end to end
+        env:
+          PUBLIC_TURNSTILE_MODE: ${{ vars.PUBLIC_TURNSTILE_MODE }}
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+        run: |
+          if [[ "$PUBLIC_TURNSTILE_MODE" != "required" || -z "$PUBLIC_TURNSTILE_SITE_KEY" ]]; then
+            echo "Pages must be built with required Turnstile and a configured site key." >&2
+            exit 1
+          fi
+          node -e '
+            const { readFileSync } = require("node:fs");
+            const config = readFileSync("contact-worker/wrangler.toml", "utf8");
+            if (!/^TURNSTILE_MODE\s*=\s*"enforce"\s*$/m.test(config)) {
+              console.error("The contact Worker must enforce Turnstile before production deployment.");
+              process.exit(1);
+            }
+          '
+
+      - name: Verify the rollback version is the active production version
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -182,18 +216,27 @@ jobs:
             echo "The rollback version must be a complete lowercase Cloudflare Worker version UUID." >&2
             exit 1
           fi
-          version_json="$(npx wrangler versions view "$ROLLBACK_VERSION" \
+          deployment_json="$(npx wrangler deployments status \
             --config contact-worker/wrangler.toml \
             --json)"
-          VERSION_JSON="$version_json" EXPECTED_VERSION="$ROLLBACK_VERSION" node -e '
-            const version = JSON.parse(process.env.VERSION_JSON || "null");
-            if (version?.id !== process.env.EXPECTED_VERSION) {
-              console.error("Cloudflare returned a different Worker version ID.");
+          DEPLOYMENT_JSON="$deployment_json" EXPECTED_VERSION="$ROLLBACK_VERSION" node -e '
+            const deployment = JSON.parse(process.env.DEPLOYMENT_JSON || "null");
+            const versions = Array.isArray(deployment?.versions)
+              ? deployment.versions
+              : [];
+            const active = versions.length === 1 ? versions[0] : null;
+            if (
+              active?.version_id !== process.env.EXPECTED_VERSION ||
+              Number(active?.percentage) !== 100
+            ) {
+              console.error(
+                "The rollback version must be the sole version serving 100% of production traffic.",
+              );
               process.exit(1);
             }
           '
 
-      - name: Verify RESEND_API_KEY is stored without reading its value
+      - name: Verify contact delivery secrets exist without reading their values
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -212,8 +255,14 @@ jobs:
                       : [],
                 )
               : [];
-            if (!names.includes("RESEND_API_KEY")) {
-              console.error("RESEND_API_KEY is not stored for the contact Worker.");
+            const requiredNames = [
+              "CONTACT_OWNER_EMAIL",
+              "RESEND_API_KEY",
+              "TURNSTILE_SECRET_KEY",
+            ];
+            const missingNames = requiredNames.filter((name) => !names.includes(name));
+            if (missingNames.length > 0) {
+              console.error(`Missing required contact Worker secrets: ${missingNames.join(", ")}`);
               process.exit(1);
             }
           '
@@ -222,4 +271,4 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler deploy --config contact-worker/wrangler.toml
+        run: npx wrangler deploy --strict --config contact-worker/wrangler.toml

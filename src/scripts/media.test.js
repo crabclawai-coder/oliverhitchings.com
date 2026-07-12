@@ -3,12 +3,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import {
-  inspectMediaDirectory,
-  validateFrameRates,
-} from "../../scripts/check-media-budget.mjs";
+import { basename, join } from "node:path";
+import * as mediaBudgetModule from "../../scripts/check-media-budget.mjs";
 import { initializeMedia } from "./media.js";
+
+const { checkMediaBudget, inspectMediaDirectory, validateFrameRates } =
+  mediaBudgetModule;
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
@@ -59,6 +59,135 @@ function renderVideo(loadMode = "eager") {
   video.pause = vi.fn();
 
   return video;
+}
+
+function validVideoMetadata({
+  codec,
+  container,
+  height,
+  level,
+  profile,
+  width,
+}) {
+  return {
+    streams: [
+      {
+        codec_type: "video",
+        codec_name: codec,
+        profile,
+        width,
+        height,
+        pix_fmt: "yuv420p",
+        avg_frame_rate: "24/1",
+        r_frame_rate: "24/1",
+        duration: "8.04",
+        ...(level === undefined ? {} : { level }),
+      },
+    ],
+    format: {
+      duration: "8.04",
+      format_name: container,
+    },
+  };
+}
+
+async function createOversizedMediaFixture() {
+  const projectRoot = await mkdtemp(join(tmpdir(), "media-budget-check-"));
+  const videoDirectory = join(projectRoot, "public/videos");
+  const posterDirectory = join(projectRoot, "public/images/posters");
+  const videoNames = [
+    "hero-1280.webm",
+    "hero-1280.mp4",
+    "hero-960.webm",
+    "hero-960.mp4",
+  ];
+  const videoSize = 3 * 1024 * 1024;
+  const posterSize = 200 * 1024;
+
+  await mkdir(videoDirectory, { recursive: true });
+  await mkdir(posterDirectory, { recursive: true });
+  await Promise.all(
+    videoNames.map((name) =>
+      writeFile(join(videoDirectory, name), Buffer.alloc(videoSize)),
+    ),
+  );
+  await writeFile(
+    join(posterDirectory, "hero.webp"),
+    Buffer.alloc(posterSize),
+  );
+
+  return { posterSize, projectRoot, videoSize };
+}
+
+function createControlledProbeExecutor() {
+  const metadata = new Map([
+    [
+      "hero-1280.webm",
+      {
+        streams: [
+          {
+            codec_type: "video",
+            codec_name: "h264",
+            profile: "Baseline",
+            width: 640,
+            height: 360,
+            pix_fmt: "yuv444p",
+            avg_frame_rate: "30/1",
+            r_frame_rate: "30/1",
+            duration: "3",
+            level: 10,
+          },
+          { codec_type: "audio", codec_name: "aac" },
+        ],
+        format: { duration: "3", format_name: "mov,mp4" },
+      },
+    ],
+    [
+      "hero-1280.mp4",
+      validVideoMetadata({
+        codec: "h264",
+        container: "mov,mp4,m4a,3gp,3g2,mj2",
+        height: 720,
+        level: 40,
+        profile: "High",
+        width: 1280,
+      }),
+    ],
+    [
+      "hero-960.webm",
+      validVideoMetadata({
+        codec: "av1",
+        container: "matroska,webm",
+        height: 540,
+        profile: "Main",
+        width: 960,
+      }),
+    ],
+    [
+      "hero.webp",
+      {
+        streams: [
+          {
+            codec_type: "video",
+            codec_name: "png",
+            width: 640,
+            height: 360,
+            pix_fmt: "rgba",
+          },
+        ],
+        format: { format_name: "image2" },
+      },
+    ],
+  ]);
+
+  return vi.fn((_command, args) => {
+    const fileName = basename(args.at(-1));
+    if (fileName === "hero-960.mp4") {
+      throw new Error("fixture probe failed");
+    }
+
+    return JSON.stringify(metadata.get(fileName));
+  });
 }
 
 function initialize({
@@ -307,6 +436,74 @@ describe("media budget helpers", () => {
       expect(result.totalBytes).toBe(1);
     } finally {
       await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it("reports controlled metadata, probe, and byte-budget failures", async () => {
+    const fixture = await createOversizedMediaFixture();
+    const execFileImpl = createControlledProbeExecutor();
+    const logger = { error: vi.fn(), log: vi.fn() };
+
+    try {
+      const result = await checkMediaBudget({
+        projectRoot: fixture.projectRoot,
+        logger,
+        execFileImpl,
+      });
+
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          "hero-1280.webm: codec is h264, expected av1",
+          "hero-1280.webm: profile is Baseline, expected Main",
+          "hero-1280.webm: width is 640, expected 1280",
+          "hero-1280.webm: height is 360, expected 720",
+          "hero-1280.webm: pixel format is yuv444p, expected yuv420p",
+          "hero-1280.webm: container is mov,mp4, expected webm",
+          "hero-1280.webm: duration is 3, expected approximately 8.04 seconds",
+          "hero-1280.webm: audio stream count is 1, expected 0",
+          "ffprobe failed for hero-960.mp4: fixture probe failed",
+          "hero.webp: codec is png, expected webp",
+          "hero.webp: width is 640, expected 1280",
+          "hero.webp: height is 360, expected 720",
+          "hero.webp: pixel format is rgba, expected yuv420p",
+          `Poster budget: actual ${fixture.posterSize} bytes; limit ${150 * 1024} bytes`,
+          `Retained media total: actual ${fixture.videoSize * 4 + fixture.posterSize} bytes; limit ${8 * 1024 * 1024} bytes`,
+          `Desktop media path: actual ${fixture.videoSize + fixture.posterSize} bytes; limit ${2.5 * 1024 * 1024} bytes`,
+          `Mobile media path: actual ${fixture.videoSize + fixture.posterSize} bytes; limit ${1.75 * 1024 * 1024} bytes`,
+        ]),
+      );
+      expect(result.totalBytes).toBe(
+        fixture.videoSize * 4 + fixture.posterSize,
+      );
+      expect(execFileImpl).toHaveBeenCalledTimes(5);
+      expect(logger.error).toHaveBeenCalledOnce();
+      expect(logger.log).not.toHaveBeenCalled();
+    } finally {
+      await rm(fixture.projectRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("sets a non-zero CLI exit code when the media check fails", async () => {
+    const projectRoot = await mkdtemp(join(tmpdir(), "media-budget-cli-"));
+    const logger = { error: vi.fn(), log: vi.fn() };
+    const initialExitCode = process.exitCode;
+
+    try {
+      process.exitCode = undefined;
+      expect(mediaBudgetModule.runMediaBudgetCli).toBeTypeOf("function");
+
+      const result = await mediaBudgetModule.runMediaBudgetCli({
+        projectRoot,
+        logger,
+      });
+
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(process.exitCode).toBe(1);
+      expect(logger.error).toHaveBeenCalledOnce();
+      expect(logger.log).not.toHaveBeenCalled();
+    } finally {
+      process.exitCode = initialExitCode;
+      await rm(projectRoot, { force: true, recursive: true });
     }
   });
 });
