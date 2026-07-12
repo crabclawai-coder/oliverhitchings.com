@@ -292,8 +292,19 @@ describe("generated site frame", () => {
     expect(availabilityRule).toContain("min-height:44px");
   });
 
-  it("loads site behaviour from a same-origin external module", async () => {
+  it("loads site, scroll-film and media behaviour from same-origin external modules", async () => {
     const siteOrigin = "https://oliverhitchings.com";
+    const layoutSource = await readFile(
+      new URL("./layouts/BaseLayout.astro", import.meta.url),
+      "utf8",
+    );
+    const scrollFilmInitialization = layoutSource.indexOf(
+      "initializeScrollFilms();",
+    );
+    const mediaInitialization = layoutSource.indexOf("initializeMedia();");
+
+    expect(scrollFilmInitialization).toBeGreaterThan(-1);
+    expect(mediaInitialization).toBeGreaterThan(scrollFilmInitialization);
 
     for (const filePath of contentPages) {
       const document = await readPage(filePath);
@@ -324,13 +335,26 @@ describe("generated site frame", () => {
       const behaviourModule = externalSources.find(({ source }) =>
         source.includes("[data-reveal]"),
       );
+      const scrollFilmModule = externalSources.find(({ source }) =>
+        source.includes("video[data-scroll-film]"),
+      );
+      const mediaModule = externalSources.find(({ source }) =>
+        source.includes("video[data-media]"),
+      );
 
       expect(inlineModuleSource, filePath).not.toContain("[data-reveal]");
-      expect(behaviourModule, filePath).toBeDefined();
-      expect(behaviourModule.sourceUrl.origin, filePath).toBe(siteOrigin);
-      expect(behaviourModule.sourceUrl.pathname, filePath).toMatch(
-        /^\/_astro\/[^?#]+\.js$/,
+      expect(inlineModuleSource, filePath).not.toContain(
+        "video[data-scroll-film]",
       );
+      expect(inlineModuleSource, filePath).not.toContain("video[data-media]");
+
+      for (const module of [behaviourModule, scrollFilmModule, mediaModule]) {
+        expect(module, filePath).toBeDefined();
+        expect(module.sourceUrl.origin, filePath).toBe(siteOrigin);
+        expect(module.sourceUrl.pathname, filePath).toMatch(
+          /^\/_astro\/[^?#]+\.js$/,
+        );
+      }
     }
   });
 
