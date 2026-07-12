@@ -742,7 +742,30 @@ main.services-page {
   border-bottom: 1px solid var(--border);
 }
 
-.home-hero__video,
+.motion-film {
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+}
+
+.motion-film__poster,
+.motion-film__video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.motion-film__video {
+  position: absolute;
+  inset: 0;
+}
+
+.motion-film__caption {
+  position: relative;
+}
+
+.home-hero__media,
 .home-hero__scrim {
   position: absolute;
   inset: 0;
@@ -750,8 +773,11 @@ main.services-page {
   height: 100%;
 }
 
-.home-hero__video {
+.home-hero__media {
   z-index: -2;
+}
+
+.home-hero__video {
   object-fit: cover;
   opacity: 0.62;
   filter: saturate(0.72) contrast(1.08);

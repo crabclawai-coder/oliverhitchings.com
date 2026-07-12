@@ -758,11 +758,21 @@ describe("generated page truthfulness and media", () => {
     }
   });
 
-  it("renders the hero poster and deferred decorative-media semantics", () => {
-    const video = home.querySelector(".home-hero__video");
+  it("renders the eager hero poster and deferred decorative-media semantics", () => {
+    const film = home.querySelector('[data-motion-film="hero"]');
+    const poster = film?.querySelector(".motion-film__poster");
+    const video = film?.querySelector(".home-hero__video");
 
-    expect(video?.getAttribute("poster")).toBe("/images/posters/hero.webp");
+    expect(film?.classList.contains("home-hero__media")).toBe(true);
+    expect(poster?.getAttribute("src")).toBe("/images/posters/hero.webp");
+    expect(poster?.getAttribute("width")).toBe("1280");
+    expect(poster?.getAttribute("height")).toBe("720");
+    expect(poster?.getAttribute("loading")).toBe("eager");
+    expect(poster?.getAttribute("fetchpriority")).toBe("high");
+    expect(poster?.getAttribute("alt")).toBe("");
+    expect(poster?.getAttribute("aria-hidden")).toBe("true");
     expect(video?.getAttribute("preload")).toBe("none");
+    expect(video?.hasAttribute("poster")).toBe(false);
     expect(video?.hasAttribute("autoplay")).toBe(false);
     expect(video?.hasAttribute("src")).toBe(false);
     expect(video?.hasAttribute("muted")).toBe(true);
@@ -772,6 +782,7 @@ describe("generated page truthfulness and media", () => {
     expect(video?.getAttribute("tabindex")).toBe("-1");
     expect(video?.hasAttribute("data-media")).toBe(true);
     expect(video?.getAttribute("data-media-load")).toBe("eager");
+    expect(video?.getAttribute("data-media-behaviour")).toBe("loop");
   });
 
   it("emits four unique same-origin deferred sources in responsive order", async () => {

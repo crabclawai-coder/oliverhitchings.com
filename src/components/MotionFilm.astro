@@ -1,0 +1,64 @@
+---
+import { getMotionFilm } from "../data/media-manifest.js";
+
+const {
+  film,
+  loading = "nearby",
+  behaviour = "loop",
+  class: className,
+  videoClass,
+} = Astro.props;
+
+if (!["eager", "nearby"].includes(loading)) {
+  throw new RangeError(`Unknown media loading mode: ${loading}`);
+}
+if (!["loop", "scroll"].includes(behaviour)) {
+  throw new RangeError(`Unknown media behaviour: ${behaviour}`);
+}
+
+const filmData = getMotionFilm(film);
+const sources = [...filmData.variants.mobile, ...filmData.variants.desktop];
+const hasCaption = Astro.slots.has("caption");
+---
+
+<figure
+  class:list={["motion-film", `motion-film--${filmData.orientation}`, className]}
+  data-motion-film={filmData.id}
+>
+  <img
+    class="motion-film__poster"
+    src={filmData.poster.src}
+    width={filmData.poster.width}
+    height={filmData.poster.height}
+    loading={loading === "eager" ? "eager" : "lazy"}
+    fetchpriority={loading === "eager" ? "high" : undefined}
+    alt=""
+    aria-hidden="true"
+  />
+  <video
+    class:list={["motion-film__video", videoClass]}
+    width={filmData.width}
+    height={filmData.height}
+    muted
+    loop
+    playsinline
+    preload="none"
+    aria-hidden="true"
+    tabindex="-1"
+    data-media
+    data-media-load={loading}
+    data-media-behaviour={behaviour}
+    data-scroll-film={behaviour === "scroll" ? "true" : undefined}
+  >
+    {sources.map((source) => (
+      <source
+        data-src={source.src}
+        type={source.type}
+        media={source.media ?? undefined}
+      />
+    ))}
+  </video>
+  {hasCaption && (
+    <figcaption class="motion-film__caption"><slot name="caption" /></figcaption>
+  )}
+</figure>
