@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import MotionFilm from "../components/MotionFilm.astro";
 import { site } from "../data/site.js";
 import { CONTACT_PACKAGE_VALUES } from "../../shared/contact-config.js";
 
@@ -37,7 +38,11 @@ const turnstileSiteKey =
       </div>
     </section>
 
-    <section class="container editorial-section services-method" data-services-method data-reveal>
+    <section
+      class="container editorial-section editorial-section--compact services-method"
+      data-services-method
+      data-reveal
+    >
       <div class="editorial-heading compact-heading">
         <div>
           <p class="eyebrow">Method</p>
@@ -45,26 +50,33 @@ const turnstileSiteKey =
         </div>
       </div>
 
-      <div class="services-editorial-rows">
-        <article data-method-step>
-          <span>01</span>
-          <h3>Map</h3>
-          <p>Name the trigger, inputs, owner, approvals and failure states.</p>
-        </article>
-        <article data-method-step>
-          <span>02</span>
-          <h3>Build</h3>
-          <p>Create a narrow loop with review, logs and clear stop conditions.</p>
-        </article>
-        <article data-method-step>
-          <span>03</span>
-          <h3>Hand over</h3>
-          <p>Leave the prompts, logs, run instructions and change notes with the owner.</p>
-        </article>
+      <div class="services-method__body">
+        <div class="services-editorial-rows">
+          <article data-method-step>
+            <span>01</span>
+            <h3>Map</h3>
+            <p>Name the trigger, inputs, owner, approvals and failure states.</p>
+          </article>
+          <article data-method-step>
+            <span>02</span>
+            <h3>Build</h3>
+            <p>Create a narrow loop with review, logs and clear stop conditions.</p>
+          </article>
+          <article data-method-step>
+            <span>03</span>
+            <h3>Hand over</h3>
+            <p>Leave the prompts, logs, run instructions and change notes with the owner.</p>
+          </article>
+        </div>
+        <MotionFilm film="process" class="services-method__film" />
       </div>
     </section>
 
-    <section id="packages" class="container editorial-section services-packages" data-reveal>
+    <section
+      id="packages"
+      class="container editorial-section editorial-section--compact services-packages"
+      data-reveal
+    >
       <div class="editorial-heading compact-heading">
         <div>
           <p class="eyebrow">Prices and packages</p>
@@ -162,7 +174,10 @@ const turnstileSiteKey =
       </p>
     </section>
 
-    <section class="container editorial-section good-fit-section" data-good-fit>
+    <section
+      class="container editorial-section editorial-section--compact good-fit-section"
+      data-good-fit
+    >
       <div class="editorial-heading compact-heading">
         <div>
           <p class="eyebrow">Good-fit criteria</p>
@@ -194,21 +209,28 @@ const turnstileSiteKey =
       </div>
     </section>
 
-    <section class="container editorial-section handover-section" data-handover data-reveal>
+    <section
+      class="container editorial-section editorial-section--compact handover-section"
+      data-handover
+      data-reveal
+    >
       <p class="eyebrow">Handover</p>
       <div class="handover-section__grid">
-        <h2>What stays with the owner.</h2>
-        <div>
-          <p>
-            First Build and Operator System include prompts, run instructions, logs, review rules,
-            failure states and owner notes—the material needed to operate, inspect and change the
-            system.
-          </p>
-          <p>
-            Task Map ends with the process map and build recommendation, so the next decision is
-            clear before implementation starts.
-          </p>
+        <div class="handover-section__copy">
+          <h2>What stays with the owner.</h2>
+          <div>
+            <p>
+              First Build and Operator System include prompts, run instructions, logs, review rules,
+              failure states and owner notes—the material needed to operate, inspect and change the
+              system.
+            </p>
+            <p>
+              Task Map ends with the process map and build recommendation, so the next decision is
+              clear before implementation starts.
+            </p>
+          </div>
         </div>
+        <MotionFilm film="feature-card" class="handover-section__film" />
       </div>
     </section>
 

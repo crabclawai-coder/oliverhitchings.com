@@ -545,6 +545,69 @@ describe("generated Services content", () => {
     );
   });
 
+  it("restores exactly two nearby looping films in the intended chapters", () => {
+    const films = Array.from(services.querySelectorAll("[data-motion-film]"));
+    const videos = films.map((film) => film.querySelector("video"));
+
+    expect(films.map((film) => film.getAttribute("data-motion-film"))).toEqual([
+      "process",
+      "feature-card",
+    ]);
+    expect(
+      services.querySelector(
+        ".services-method__body > .services-method__film[data-motion-film='process']",
+      ),
+    ).not.toBeNull();
+    expect(
+      services.querySelector(
+        ".handover-section__grid > .handover-section__film[data-motion-film='feature-card']",
+      ),
+    ).not.toBeNull();
+    expect(
+      films.map((film) => ({
+        hidden: film.getAttribute("aria-hidden"),
+        hasCaption: film.querySelector("figcaption") !== null,
+      })),
+    ).toEqual([
+      { hidden: "true", hasCaption: false },
+      { hidden: "true", hasCaption: false },
+    ]);
+    expect(videos.every((video) => video?.getAttribute("data-media-load") === "nearby"))
+      .toBe(true);
+    expect(videos.every((video) => video?.getAttribute("data-media-behaviour") === "loop"))
+      .toBe(true);
+    expect(services.querySelectorAll("[data-scroll-film]")).toHaveLength(0);
+    expect(services.querySelector("#contact [data-motion-film]")).toBeNull();
+  });
+
+  it("compacts only the four middle Services chapters", () => {
+    const method = services.querySelector("[data-services-method]");
+    const packages = services.getElementById("packages");
+    const goodFit = services.querySelector("[data-good-fit]");
+    const handover = services.querySelector("[data-handover]");
+    const contact = services.getElementById("contact");
+
+    expect(
+      [method, packages, goodFit, handover].every((section) =>
+        section?.classList.contains("editorial-section--compact"),
+      ),
+    ).toBe(true);
+    expect(services.querySelectorAll(".editorial-section--compact")).toHaveLength(4);
+    expect(contact?.classList.contains("editorial-section--compact")).toBe(false);
+    expect(servicesStylesheetSource).toMatch(
+      /--editorial-section-space:\s*clamp\(5rem,\s*9vw,\s*8rem\)/,
+    );
+    expect(servicesStylesheetSource).toMatch(
+      /--editorial-section-space-compact:\s*clamp\(4\.25rem,\s*7\.65vw,\s*6\.8rem\)/,
+    );
+    expect(servicesStylesheetSource).toMatch(
+      /\.editorial-section\{[^}]*padding-top:var\(--editorial-section-space\);[^}]*padding-bottom:var\(--editorial-section-space\)/,
+    );
+    expect(servicesStylesheetSource).toMatch(
+      /\.editorial-section--compact\{[^}]*padding-top:var\(--editorial-section-space-compact\);[^}]*padding-bottom:var\(--editorial-section-space-compact\)/,
+    );
+  });
+
   it("preserves the complete enquiry form contract and honest visible copy", () => {
     const section = services.getElementById("contact");
     const form = section?.querySelector("form[data-contact-form]");
@@ -829,9 +892,8 @@ describe("generated page truthfulness and media", () => {
     ).toBe(true);
   });
 
-  it("keeps video off other content pages", () => {
+  it("keeps video off the remaining content pages", () => {
     const otherContentPages = [
-      services,
       about,
       blog,
       ...articlePages.map((post) => post.document),

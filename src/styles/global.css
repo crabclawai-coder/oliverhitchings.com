@@ -58,6 +58,8 @@
   --container-max: 72.5rem;
   --container-narrow: 65rem;
   --container-gutter: clamp(1rem, 3vw, 2.5rem);
+  --editorial-section-space: clamp(5rem, 9vw, 8rem);
+  --editorial-section-space-compact: clamp(4.25rem, 7.65vw, 6.8rem);
 
   --motion-duration-fast: 180ms;
   --motion-duration-enter: 240ms;
@@ -835,9 +837,14 @@ main.services-page {
 }
 
 .editorial-section {
-  padding-top: clamp(5rem, 9vw, 8rem);
-  padding-bottom: clamp(5rem, 9vw, 8rem);
+  padding-top: var(--editorial-section-space);
+  padding-bottom: var(--editorial-section-space);
   border-top: 1px solid var(--border);
+}
+
+.editorial-section--compact {
+  padding-top: var(--editorial-section-space-compact);
+  padding-bottom: var(--editorial-section-space-compact);
 }
 
 .editorial-heading {
@@ -1434,6 +1441,20 @@ main.services-page {
   border-top: 1px solid var(--border-strong);
 }
 
+.services-method__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 0.75fr);
+  gap: clamp(2.5rem, 7vw, 7rem);
+  align-items: start;
+}
+
+.services-method__film {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+
 .services-editorial-rows article {
   display: grid;
   grid-template-columns: 4rem minmax(9rem, 0.45fr) minmax(0, 1.2fr);
@@ -1530,25 +1551,41 @@ main.services-page {
 
 .handover-section__grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(15rem, 0.65fr);
   gap: clamp(3rem, 8vw, 8rem);
+  align-items: start;
 }
 
 .handover-section h2 {
   max-width: 10ch;
 }
 
-.handover-section__grid > div {
+.handover-section__copy {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.82fr) minmax(0, 1.18fr);
+  gap: clamp(2rem, 5vw, 5rem);
+}
+
+.handover-section__copy > div {
   display: grid;
   gap: 1.3rem;
   align-content: start;
   padding-top: 0.4rem;
 }
 
-.handover-section__grid p {
+.handover-section__copy p {
   color: var(--muted);
   font-size: 1.1rem;
   line-height: 1.68;
+}
+
+.handover-section__film {
+  width: 100%;
+  max-width: 24rem;
+  aspect-ratio: 3 / 4;
+  justify-self: end;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
 }
 
 .enquiry-section {
@@ -1623,10 +1660,19 @@ main.services-page {
   .pattern-layout,
   .principles-section__body,
   .home-final-cta__grid,
+  .services-method__body,
   .handover-section__grid,
+  .handover-section__copy,
   .enquiry-section__grid {
     grid-template-columns: 1fr;
     gap: 2.5rem;
+  }
+
+  .services-method__film,
+  .handover-section__film {
+    order: -1;
+    width: min(100%, 32rem);
+    justify-self: start;
   }
 
   .loop-section__film-region {
