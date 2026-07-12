@@ -286,7 +286,11 @@ export function createTurnstileAdapter({
         setState(widgetId === null ? state : "missing", { message: false });
       }
       if (api && widgetId !== null && typeof api.reset === "function") {
-        api.reset(widgetId);
+        try {
+          api.reset(widgetId);
+        } catch {
+          // The consumed token stays cleared even if the provider cannot reset.
+        }
       }
     },
     focus() {

@@ -141,20 +141,25 @@ export function createContactFormController({
       if (timeoutId !== undefined) {
         globalThis.clearTimeout(timeoutId);
       }
-      if (serverAttempted) {
-        turnstile?.reset?.();
-      }
-      inFlight = false;
+      try {
+        if (serverAttempted) {
+          turnstile?.reset?.();
+        }
+      } catch {
+        // Preserve the completed delivery outcome when an adapter cannot reset.
+      } finally {
+        inFlight = false;
 
-      if (initialAriaBusy === null) {
-        form.removeAttribute("aria-busy");
-      } else {
-        form.setAttribute("aria-busy", initialAriaBusy);
-      }
+        if (initialAriaBusy === null) {
+          form.removeAttribute("aria-busy");
+        } else {
+          form.setAttribute("aria-busy", initialAriaBusy);
+        }
 
-      if (submitButton) {
-        submitButton.disabled = initialButtonDisabled;
-        submitButton.textContent = initialButtonText;
+        if (submitButton) {
+          submitButton.disabled = initialButtonDisabled;
+          submitButton.textContent = initialButtonText;
+        }
       }
     }
   };

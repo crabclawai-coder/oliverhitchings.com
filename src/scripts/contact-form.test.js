@@ -44,6 +44,7 @@ function renderForm() {
 
 function setupController({ fetchImpl = vi.fn(), timeoutMs, turnstile } = {}) {
   const elements = renderForm();
+  const addEventListener = vi.spyOn(elements.form, "addEventListener");
   const controller = contactFormModule.createContactFormController({
     form: elements.form,
     status: elements.status,
@@ -51,8 +52,11 @@ function setupController({ fetchImpl = vi.fn(), timeoutMs, turnstile } = {}) {
     timeoutMs,
     turnstile,
   });
+  const handleSubmit = addEventListener.mock.calls.find(
+    ([eventName]) => eventName === "submit",
+  )?.[1];
 
-  return { ...elements, controller, fetchImpl };
+  return { ...elements, controller, fetchImpl, handleSubmit };
 }
 
 function turnstileAdapter({
@@ -453,6 +457,50 @@ describe("createContactFormController", () => {
     await vi.waitFor(() => expect(button.disabled).toBe(false));
     expect(fetchImpl).toHaveBeenCalledOnce();
     expect(turnstile.reset).toHaveBeenCalledOnce();
+  });
+
+  it("restores the failed form when a throwing security reset interrupts cleanup", async () => {
+    const turnstile = turnstileAdapter({ token: "one-use-token" });
+    turnstile.reset.mockImplementation(() => {
+      throw new Error("security reset failed");
+    });
+    const fetchImpl = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+    const { form, status, button, handleSubmit } = setupController({
+      fetchImpl,
+      turnstile,
+    });
+    form.setAttribute("aria-busy", "false");
+    const submit = () =>
+      handleSubmit(new Event("submit", { cancelable: true })).then(
+        () => undefined,
+        (error) => error,
+      );
+
+    const firstError = await submit();
+
+    expect(status.textContent).toBe(DELIVERY_UNKNOWN_STATUS);
+    expect(status.classList.contains("is-success")).toBe(false);
+    expect(form.elements.namedItem("name").value).toBe("Roger");
+    expect(form.elements.namedItem("automation_request").value).toBe(
+      "Automate the weekly report",
+    );
+    expect(form.getAttribute("aria-busy")).toBe("false");
+    expect(button.disabled).toBe(false);
+    expect(button.textContent).toBe("Send enquiry");
+    expect(firstError).toBeUndefined();
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(turnstile.reset).toHaveBeenCalledOnce();
+
+    const retryError = await submit();
+
+    expect(retryError).toBeUndefined();
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(turnstile.reset).toHaveBeenCalledTimes(2);
+    expect(status.textContent).toBe(DELIVERY_UNKNOWN_STATUS);
+    expect(form.elements.namedItem("name").value).toBe("Roger");
+    expect(form.getAttribute("aria-busy")).toBe("false");
+    expect(button.disabled).toBe(false);
+    expect(button.textContent).toBe("Send enquiry");
   });
 
   it("starts the request timeout only after security allows the attempt", async () => {

@@ -405,6 +405,21 @@ describe("createTurnstileAdapter", () => {
     expect(api.remove).toHaveBeenCalledWith("widget-1");
   });
 
+  it("contains provider reset failures after clearing the one-use token", async () => {
+    const api = createApi();
+    api.reset.mockImplementation(() => {
+      throw new Error("provider reset failed");
+    });
+    const { adapter } = createAdapter({ api });
+    await adapter.ready;
+    api.render.mock.calls[0][1].callback("one-use-token");
+
+    expect(() => adapter.reset()).not.toThrow();
+    expect(api.reset).toHaveBeenCalledOnce();
+    expect(api.reset).toHaveBeenCalledWith("widget-1");
+    expect(adapter.getToken()).toBe("");
+  });
+
   it("does not render after destruction while the loader is pending", async () => {
     const load = deferred();
     const api = createApi();
