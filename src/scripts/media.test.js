@@ -97,7 +97,11 @@ function validVideoMetadata({
   };
 }
 
-async function createOversizedMediaFixture() {
+async function createMediaFixture({
+  posterSize = 200 * 1024,
+  sizeOverrides = new Map(),
+  videoSize = 3 * 1024 * 1024,
+} = {}) {
   const projectRoot = await mkdtemp(join(tmpdir(), "media-budget-check-"));
   const videoDirectory = join(projectRoot, "public/videos");
   const posterDirectory = join(projectRoot, "public/images/posters");
@@ -108,14 +112,15 @@ async function createOversizedMediaFixture() {
     ),
   );
   const posterNames = films.map((film) => basename(film.poster.src));
-  const videoSize = 3 * 1024 * 1024;
-  const posterSize = 200 * 1024;
 
   await mkdir(videoDirectory, { recursive: true });
   await mkdir(posterDirectory, { recursive: true });
   await Promise.all(
     videoNames.map((name) =>
-      writeFile(join(videoDirectory, name), Buffer.alloc(videoSize)),
+      writeFile(
+        join(videoDirectory, name),
+        Buffer.alloc(sizeOverrides.get(name) ?? videoSize),
+      ),
     ),
   );
   await Promise.all(
@@ -133,7 +138,10 @@ async function createOversizedMediaFixture() {
   };
 }
 
-function createControlledProbeExecutor() {
+function createControlledProbeExecutor({
+  controlledFailures = true,
+  keyframeResults = new Map(),
+} = {}) {
   const metadata = new Map();
 
   for (const film of Object.values(motionFilms)) {
@@ -167,42 +175,46 @@ function createControlledProbeExecutor() {
     });
   }
 
-  metadata.set("process-1280.webm", {
-    streams: [
-      {
-        codec_type: "video",
-        codec_name: "h264",
-        profile: "Baseline",
-        width: 640,
-        height: 360,
-        pix_fmt: "yuv444p",
-        avg_frame_rate: "30/1",
-        r_frame_rate: "30/1",
-        duration: "3",
-        level: 10,
-      },
-      { codec_type: "audio", codec_name: "aac" },
-    ],
-    format: { duration: "3", format_name: "mov,mp4" },
-  });
-  metadata.set("process.webp", {
-    streams: [
-      {
-        codec_type: "video",
-        codec_name: "png",
-        width: 640,
-        height: 360,
-        pix_fmt: "rgba",
-      },
-    ],
-    format: { format_name: "image2" },
-  });
+  if (controlledFailures) {
+    metadata.set("process-1280.webm", {
+      streams: [
+        {
+          codec_type: "video",
+          codec_name: "h264",
+          profile: "Baseline",
+          width: 640,
+          height: 360,
+          pix_fmt: "yuv444p",
+          avg_frame_rate: "30/1",
+          r_frame_rate: "30/1",
+          duration: "3",
+          level: 10,
+        },
+        { codec_type: "audio", codec_name: "aac" },
+      ],
+      format: { duration: "3", format_name: "mov,mp4" },
+    });
+    metadata.set("process.webp", {
+      streams: [
+        {
+          codec_type: "video",
+          codec_name: "png",
+          width: 640,
+          height: 360,
+          pix_fmt: "rgba",
+        },
+      ],
+      format: { format_name: "image2" },
+    });
+  }
 
   return vi.fn((_command, args) => {
     const fileName = basename(args.at(-1));
     if (args.includes("-skip_frame")) {
       return JSON.stringify({
-        frames: fileName === "process-1280.webm"
+        frames: keyframeResults.has(fileName)
+          ? keyframeResults.get(fileName)
+          : controlledFailures && fileName === "process-1280.webm"
           ? [0, 1, 2.2].map((time) => ({
               best_effort_timestamp_time: String(time),
             }))
@@ -211,7 +223,7 @@ function createControlledProbeExecutor() {
             })),
       });
     }
-    if (fileName === "process-960.mp4") {
+    if (controlledFailures && fileName === "process-960.mp4") {
       throw new Error("fixture probe failed");
     }
 
@@ -493,8 +505,73 @@ describe("media budget helpers", () => {
     }
   });
 
+  it.each([
+    ["empty", [], "process-1280.webm: keyframe scan returned no usable timestamps"],
+    [
+      "non-finite-only",
+      [{ best_effort_timestamp_time: "not-a-number" }],
+      "process-1280.webm: keyframe scan returned no usable timestamps",
+    ],
+    [
+      "single-entry",
+      [{ best_effort_timestamp_time: "0" }],
+      "process-1280.webm: keyframe scan returned 1 usable timestamp, expected at least 2",
+    ],
+    [
+      "sparse",
+      [0, 1].map((time) => ({
+        best_effort_timestamp_time: String(time),
+      })),
+      "process-1280.webm: keyframe timeline ends at 1 seconds, expected within 1.05 seconds of 8.04",
+    ],
+  ])("rejects %s process keyframe results", async (_label, frames, error) => {
+    const fixture = await createMediaFixture({ posterSize: 1, videoSize: 1 });
+    const execFileImpl = createControlledProbeExecutor({
+      controlledFailures: false,
+      keyframeResults: new Map([["process-1280.webm", frames]]),
+    });
+
+    try {
+      const result = await checkMediaBudget({
+        execFileImpl,
+        logger: { error: vi.fn(), log: vi.fn() },
+        projectRoot: fixture.projectRoot,
+      });
+
+      expect(result.errors).toEqual([error]);
+    } finally {
+      await rm(fixture.projectRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("reports an isolated Blog route overage", async () => {
+    const fixture = await createMediaFixture({
+      posterSize: 1,
+      sizeOverrides: new Map([
+        ["cta-footer-1280.webm", 3 * 1024 * 1024],
+      ]),
+      videoSize: 1,
+    });
+
+    try {
+      const result = await checkMediaBudget({
+        execFileImpl: createControlledProbeExecutor({
+          controlledFailures: false,
+        }),
+        logger: { error: vi.fn(), log: vi.fn() },
+        projectRoot: fixture.projectRoot,
+      });
+
+      expect(result.errors).toEqual([
+        `blog media path: actual ${3 * 1024 * 1024 + 1} bytes; limit ${3 * 1024 * 1024} bytes`,
+      ]);
+    } finally {
+      await rm(fixture.projectRoot, { force: true, recursive: true });
+    }
+  });
+
   it("reports controlled metadata, probe, and byte-budget failures", async () => {
-    const fixture = await createOversizedMediaFixture();
+    const fixture = await createMediaFixture();
     const execFileImpl = createControlledProbeExecutor();
     const logger = { error: vi.fn(), log: vi.fn() };
 
@@ -525,6 +602,10 @@ describe("media budget helpers", () => {
           `Tracked media inventory: actual ${fixture.videoSize * fixture.videoCount + fixture.posterSize * fixture.posterCount} bytes; limit ${24 * 1024 * 1024} bytes`,
           `Initial desktop media path: actual ${fixture.videoSize + fixture.posterSize} bytes; limit ${2.5 * 1024 * 1024} bytes`,
           `Initial mobile media path: actual ${fixture.videoSize + fixture.posterSize} bytes; limit ${1.75 * 1024 * 1024} bytes`,
+          `home media path: actual ${(fixture.videoSize + fixture.posterSize) * 5} bytes; limit ${8 * 1024 * 1024} bytes`,
+          `services media path: actual ${(fixture.videoSize + fixture.posterSize) * 2} bytes; limit ${4 * 1024 * 1024} bytes`,
+          `about media path: actual ${fixture.videoSize + fixture.posterSize} bytes; limit ${3 * 1024 * 1024} bytes`,
+          `blog media path: actual ${fixture.videoSize + fixture.posterSize} bytes; limit ${3 * 1024 * 1024} bytes`,
         ]),
       );
       expect(result.inventoryBytes).toBe(

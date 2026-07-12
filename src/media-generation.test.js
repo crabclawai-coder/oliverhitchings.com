@@ -1,10 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { access, mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, dirname, join } from "node:path";
+import { describe, expect, it, vi } from "vitest";
 import {
   SOURCE_COMMIT,
   buildPosterArguments,
   buildVideoArguments,
+  generateMotionMedia,
+  runMediaGeneratorCli,
 } from "../scripts/generate-motion-media.mjs";
-import { motionFilms } from "./data/media-manifest.js";
+import {
+  motionFilms,
+  restoredFilmIds,
+} from "./data/media-manifest.js";
 
 describe("motion media generator", () => {
   it("pins the historical source", () => {
@@ -39,5 +47,118 @@ describe("motion media generator", () => {
     expect(posterArgs).toEqual(expect.arrayContaining([
       "-size", String(140 * 1024),
     ]));
+  });
+
+  it("recovers the pinned sources and enumerates every output through the CLI", async () => {
+    const projectRoot = await mkdtemp(join(tmpdir(), "motion-generator-test-"));
+    const logger = { log: vi.fn() };
+    const runner = vi.fn((command) =>
+      command === "git" ? Buffer.from("source") : undefined,
+    );
+
+    try {
+      await expect(runMediaGeneratorCli({
+        logger,
+        projectRoot,
+        runner,
+      })).resolves.toEqual({ posterCount: 4, videoCount: 16 });
+
+      expect(
+        runner.mock.calls
+          .filter(([command]) => command === "git")
+          .map(([, args]) => args),
+      ).toEqual(
+        restoredFilmIds.map((filmId) => [
+          "show",
+          `${SOURCE_COMMIT}:public/videos/${motionFilms[filmId].legacySource}`,
+        ]),
+      );
+
+      const videoDirectory = join(projectRoot, "public/videos");
+      const posterDirectory = join(projectRoot, "public/images/posters");
+      const publicOutputs = runner.mock.calls.flatMap(([command, args]) => {
+        const outputPath = args.at(-1);
+        if (
+          command === "ffmpeg" &&
+          dirname(outputPath) === videoDirectory
+        ) {
+          return [outputPath];
+        }
+        if (command === "cwebp") {
+          return [outputPath];
+        }
+        return [];
+      });
+      const expectedOutputs = restoredFilmIds.flatMap((filmId) => {
+        const film = motionFilms[filmId];
+        return [
+          ...film.variants.mobile,
+          ...film.variants.desktop,
+        ].map(({ src }) => join(videoDirectory, basename(src))).concat(
+          join(posterDirectory, `${film.id}.webp`),
+        );
+      });
+
+      expect(publicOutputs.sort()).toEqual(expectedOutputs.sort());
+      expect(logger.log).toHaveBeenCalledWith(
+        "Generated 16 video variants and 4 posters.",
+      );
+
+      const recoveredSourcePaths = [...new Set(
+        runner.mock.calls
+          .filter(([command]) => command === "ffmpeg")
+          .map(([, args]) => args[args.indexOf("-i") + 1])
+          .filter((path) =>
+            restoredFilmIds.some(
+              (filmId) => basename(path) === motionFilms[filmId].legacySource,
+            ),
+          ),
+      )];
+      expect(recoveredSourcePaths).toHaveLength(4);
+      for (const sourcePath of recoveredSourcePaths) {
+        await expect(access(sourcePath)).rejects.toMatchObject({
+          code: "ENOENT",
+        });
+      }
+      await expect(access(dirname(recoveredSourcePaths[0]))).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+    } finally {
+      await rm(projectRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("cleans recovered sources when an encoder fails", async () => {
+    const projectRoot = await mkdtemp(join(tmpdir(), "motion-generator-fail-"));
+    const logger = { log: vi.fn() };
+    let recoveredSourcePath;
+    const runner = vi.fn((command, args) => {
+      if (command === "git") {
+        return Buffer.from("source");
+      }
+      if (command === "ffmpeg") {
+        recoveredSourcePath = args[args.indexOf("-i") + 1];
+        throw new Error("controlled encoder failure");
+      }
+      return undefined;
+    });
+
+    try {
+      await expect(generateMotionMedia({
+        logger,
+        projectRoot,
+        runner,
+      })).rejects.toThrow("controlled encoder failure");
+      expect(recoveredSourcePath).toBeTypeOf("string");
+      await expect(access(recoveredSourcePath)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+      await expect(access(dirname(recoveredSourcePath))).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+      expect(logger.log).not.toHaveBeenCalled();
+    } finally {
+      await rm(projectRoot, { force: true, recursive: true });
+    }
   });
 });

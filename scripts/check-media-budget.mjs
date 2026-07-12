@@ -259,10 +259,40 @@ function verifyKeyframeGaps(filePath, expected, errors, execFileImpl) {
     return;
   }
 
-  const timestamps = (metadata.frames ?? [])
-    .map(({ best_effort_timestamp_time: timestamp }) => Number(timestamp))
+  const frames = Array.isArray(metadata.frames) ? metadata.frames : [];
+  const timestamps = frames
+    .map((frame) => Number(frame?.best_effort_timestamp_time))
     .filter(Number.isFinite)
     .sort((left, right) => left - right);
+
+  if (timestamps.length === 0) {
+    errors.push(
+      `${expected.name}: keyframe scan returned no usable timestamps`,
+    );
+    return;
+  }
+  if (timestamps.length < 2) {
+    errors.push(
+      `${expected.name}: keyframe scan returned ${timestamps.length} usable timestamp, expected at least 2`,
+    );
+    return;
+  }
+
+  const firstTimestamp = timestamps[0];
+  const finalTimestamp = timestamps.at(-1);
+  if (firstTimestamp < -0.05 || firstTimestamp > 1.05) {
+    errors.push(
+      `${expected.name}: keyframe timeline starts at ${firstTimestamp} seconds, expected within 1.05 seconds of zero`,
+    );
+  }
+  if (
+    finalTimestamp < expected.durationSeconds - 1.05 ||
+    finalTimestamp > expected.durationSeconds + 0.05
+  ) {
+    errors.push(
+      `${expected.name}: keyframe timeline ends at ${finalTimestamp} seconds, expected within 1.05 seconds of ${expected.durationSeconds}`,
+    );
+  }
 
   for (let index = 1; index < timestamps.length; index += 1) {
     const gap = timestamps[index] - timestamps[index - 1];

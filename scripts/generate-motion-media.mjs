@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import { motionFilms, restoredFilmIds } from "../src/data/media-manifest.js";
 
 export const SOURCE_COMMIT = "26200b9";
+const AV1_CRF = "42";
+const H264_CRF = "32";
 const modulePath = fileURLToPath(import.meta.url);
 const defaultRoot = resolve(dirname(modulePath), "..");
 
@@ -14,7 +16,6 @@ function scaleFilter(width, height) {
 }
 
 export function buildVideoArguments({ film, sourcePath, variant, outputPath }) {
-  const desktop = variant.media === null;
   const common = [
     "-y", "-i", sourcePath, "-an", "-vf",
     scaleFilter(variant.width, variant.height),
@@ -23,12 +24,12 @@ export function buildVideoArguments({ film, sourcePath, variant, outputPath }) {
   if (variant.container === "webm") {
     return [
       ...common, "-c:v", "libsvtav1", "-preset", "6",
-      "-crf", desktop ? "42" : "42", outputPath,
+      "-crf", AV1_CRF, outputPath,
     ];
   }
   return [
     ...common, "-c:v", "libx264", "-preset", "slow",
-    "-crf", desktop ? "32" : "32", "-profile:v", "high",
+    "-crf", H264_CRF, "-profile:v", "high",
     "-level:v", variant.level === 40 ? "4.0" : "3.1",
     "-keyint_min", String(film.gop), "-sc_threshold", "0",
     "-movflags", "+faststart", outputPath,
