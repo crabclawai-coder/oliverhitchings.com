@@ -2,6 +2,19 @@
 
 All notable changes to the website are recorded here.
 
+## [0.1.2.0] - 2026-07-12
+
+### Fixed
+
+- Restored direct website enquiry delivery from Cloudflare Workers to Resend without opening the visitor's email application.
+- Kept success and error outcomes visible while Turnstile refreshes, loads late, or encounters a provider reset failure.
+- Prevented duplicate emails when an unchanged enquiry is retried after a lost, timed-out, or unreadable delivery response.
+
+### Changed
+
+- Distinguished definite provider failures from delivery-unknown outcomes and preserved the visitor's form data in both cases.
+- Documented stable submission identities, privacy-safe delivery logs, and the first-repair rollback limitation in the contact operations runbook.
+
 ## [0.1.1.0] - 2026-07-12
 
 ### Changed
