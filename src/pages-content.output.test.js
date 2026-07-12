@@ -59,6 +59,7 @@ let observeServices;
 let about;
 let blog;
 let articlePages;
+let notFound;
 let servicesModuleSources;
 let homeModuleSources;
 let observeServicesModuleSources;
@@ -271,6 +272,7 @@ beforeAll(async () => {
       document: await readPage(`blog/${post.slug}/index.html`),
     })),
   );
+  notFound = await readPage("404.html");
   servicesModuleSources = await readModuleSources(services, buildDirectory);
   homeModuleSources = await readModuleSources(home, buildDirectory);
   observeServicesModuleSources = await readModuleSources(
@@ -892,14 +894,17 @@ describe("generated page truthfulness and media", () => {
     ).toBe(true);
   });
 
-  it("keeps video off the remaining content pages", () => {
-    const otherContentPages = [
-      about,
-      blog,
-      ...articlePages.map((post) => post.document),
-    ];
+  it("uses the approved film count on every route and keeps articles and 404 static", () => {
+    expect(home.querySelectorAll("video")).toHaveLength(5);
+    expect(services.querySelectorAll("video")).toHaveLength(2);
+    expect(about.querySelectorAll("video")).toHaveLength(1);
+    expect(blog.querySelectorAll("video")).toHaveLength(1);
 
-    for (const document of otherContentPages) {
+    for (const document of [
+      ...articlePages.map((post) => post.document),
+      notFound,
+    ]) {
+      expect(document.querySelectorAll("[data-motion-film]")).toHaveLength(0);
       expect(document.querySelectorAll("video")).toHaveLength(0);
     }
   });
@@ -1011,9 +1016,14 @@ describe("generated page truthfulness and media", () => {
 });
 
 describe("generated About content", () => {
-  it("presents Oliver's working focus and operating sequence without a portrait video", () => {
+  it("pairs Oliver's factual working focus with the approved feature-card film", () => {
     const hero = about.querySelector("[data-about-hero]");
+    const film = hero?.querySelector(
+      ".about-hero__visual > .about-hero__film[data-motion-film='feature-card']",
+    );
+    const video = film?.querySelector("video");
     const identity = hero?.querySelector("[data-about-identity]");
+    const sources = Array.from(film?.querySelectorAll("source") ?? []);
 
     expect(about.querySelectorAll("h1")).toHaveLength(1);
     expect(clean(hero?.querySelector(".eyebrow")?.textContent)).toBe(
@@ -1028,7 +1038,24 @@ describe("generated About content", () => {
     expect(clean(identity?.textContent)).toBe(
       "Oliver Hitchings Automation systems Map → Build → Hand over",
     );
-    expect(about.querySelector("video")).toBeNull();
+    expect(film?.tagName).toBe("FIGURE");
+    expect(film?.getAttribute("aria-hidden")).toBeNull();
+    expect(
+      film?.querySelector(".motion-film__caption > .about-identity"),
+    ).toBe(identity);
+    expect(video?.getAttribute("aria-hidden")).toBe("true");
+    expect(video?.getAttribute("data-media-load")).toBe("nearby");
+    expect(video?.getAttribute("data-media-behaviour")).toBe("loop");
+    expect(video?.hasAttribute("data-scroll-film")).toBe(false);
+    expect(sources).toHaveLength(4);
+    expect(
+      sources.every(
+        (source) =>
+          source.hasAttribute("data-src") && !source.hasAttribute("src"),
+      ),
+    ).toBe(true);
+    expect(about.querySelectorAll("[data-motion-film]")).toHaveLength(1);
+    expect(about.querySelectorAll("[data-scroll-film]")).toHaveLength(0);
   });
 
   it("uses the approved operating stance and four editorial principles", () => {
@@ -1086,18 +1113,41 @@ describe("generated About content", () => {
 });
 
 describe("generated Field Notes landing", () => {
-  it("introduces the field notes with the approved editorial framing", () => {
+  it("introduces the field notes with one contained cta-footer film", () => {
     const hero = blog.querySelector("[data-blog-hero]");
+    const grid = hero?.querySelector(".blog-hero__grid");
+    const copy = hero?.querySelector(".blog-hero__grid > .blog-hero__copy");
+    const film = hero?.querySelector(
+      ".blog-hero__grid > .blog-hero__film[data-motion-film='cta-footer']",
+    );
+    const video = film?.querySelector("video");
+    const sources = Array.from(film?.querySelectorAll("source") ?? []);
 
     expect(blog.querySelectorAll("h1")).toHaveLength(1);
-    expect(clean(hero?.querySelector(".eyebrow")?.textContent)).toBe("Field notes");
-    expect(clean(hero?.querySelector("h1")?.textContent)).toBe(
+    expect(grid).not.toBeNull();
+    expect(clean(copy?.querySelector(".eyebrow")?.textContent)).toBe("Field notes");
+    expect(clean(copy?.querySelector("h1")?.textContent)).toBe(
       "Automation that has to operate, not just demo.",
     );
-    expect(clean(hero?.querySelector(".blog-hero__intro")?.textContent)).toBe(
+    expect(clean(copy?.querySelector(".blog-hero__intro")?.textContent)).toBe(
       "Short writing on task design, human review, logs, failure handling and handover.",
     );
-    expect(blog.querySelector("video")).toBeNull();
+    expect(film?.tagName).toBe("FIGURE");
+    expect(film?.getAttribute("aria-hidden")).toBe("true");
+    expect(film?.querySelector("figcaption")).toBeNull();
+    expect(video?.getAttribute("aria-hidden")).toBe("true");
+    expect(video?.getAttribute("data-media-load")).toBe("nearby");
+    expect(video?.getAttribute("data-media-behaviour")).toBe("loop");
+    expect(video?.hasAttribute("data-scroll-film")).toBe(false);
+    expect(sources).toHaveLength(4);
+    expect(
+      sources.every(
+        (source) =>
+          source.hasAttribute("data-src") && !source.hasAttribute("src"),
+      ),
+    ).toBe(true);
+    expect(blog.querySelectorAll("[data-motion-film]")).toHaveLength(1);
+    expect(blog.querySelectorAll("[data-scroll-film]")).toHaveLength(0);
   });
 
   it("keeps every existing note as a ruled row with category, date and two links", () => {
@@ -1194,7 +1244,7 @@ describe("generated Field Note articles", () => {
 });
 
 describe("supporting-page truthfulness and contact paths", () => {
-  it("introduces no mail action, portrait video or invented proof language", () => {
+  it("introduces no mail action or invented proof language", () => {
     for (const document of [
       about,
       blog,
@@ -1203,7 +1253,6 @@ describe("supporting-page truthfulness and contact paths", () => {
       const mainText = clean(document.querySelector("main")?.textContent);
 
       expect(Boolean(document.querySelector("main a[href^='mailto:']"))).toBe(false);
-      expect(Boolean(document.querySelector("main video"))).toBe(false);
       expect(mainText).not.toMatch(
         /\b(?:testimonial|client results?|client outcomes?|client case stud(?:y|ies)|customer results?|customer outcomes?|award-winning|certified|accredited)\b/i,
       );

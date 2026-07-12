@@ -1907,6 +1907,30 @@ main.services-page {
   min-width: 0;
 }
 
+.about-hero__visual {
+  width: min(100%, 24rem);
+  justify-self: end;
+}
+
+.about-hero__film {
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+
+.about-hero__film .motion-film__poster,
+.about-hero__film .motion-film__video {
+  aspect-ratio: 3 / 4;
+  height: auto;
+}
+
+.about-hero__film .motion-film__video {
+  inset: 0 0 auto;
+}
+
+.about-hero__film .motion-film__caption {
+  background: var(--surface-raised);
+}
+
 .about-hero h1,
 .blog-hero h1,
 .article-header h1 {
@@ -2049,7 +2073,7 @@ main.services-page {
   margin-top: 2rem;
 }
 
-.blog-hero__copy {
+.blog-hero__grid {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.55fr);
   gap: clamp(3rem, 8vw, 8rem);
@@ -2057,8 +2081,7 @@ main.services-page {
 }
 
 .blog-hero__copy .eyebrow {
-  grid-column: 1 / -1;
-  margin-bottom: 0;
+  margin-bottom: 1.5rem;
 }
 
 .blog-hero h1 {
@@ -2067,7 +2090,16 @@ main.services-page {
 }
 
 .blog-hero__intro {
-  margin-top: 0;
+  margin-top: 1.75rem;
+}
+
+.blog-hero__film {
+  width: 100%;
+  max-width: 32rem;
+  aspect-ratio: 16 / 9;
+  justify-self: end;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
 }
 
 .note-ledger {
@@ -2291,7 +2323,7 @@ main.services-page {
   .about-hero__grid,
   .about-stance,
   .about-final-cta__grid,
-  .blog-hero__copy {
+  .blog-hero__grid {
     grid-template-columns: 1fr;
     gap: 2.75rem;
   }
@@ -2299,6 +2331,12 @@ main.services-page {
   .about-hero__copy,
   .blog-hero__copy {
     max-width: 45rem;
+  }
+
+  .about-hero__visual,
+  .blog-hero__film {
+    width: min(100%, 32rem);
+    justify-self: start;
   }
 
   .about-identity {
@@ -2317,10 +2355,6 @@ main.services-page {
 
   .about-final-cta__grid > .eyebrow {
     margin: 0;
-  }
-
-  .blog-hero__copy .eyebrow {
-    grid-column: auto;
   }
 
   .note-row {

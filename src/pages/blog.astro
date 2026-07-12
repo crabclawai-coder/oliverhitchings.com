@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import MotionFilm from "../components/MotionFilm.astro";
 import { posts } from "../data/site.js";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -18,12 +19,15 @@ const formatDate = (date) => dateFormatter.format(new Date(`${date}T00:00:00Z`))
 >
   <main class="subpage blog-page">
     <section class="blog-hero" data-blog-hero>
-      <div class="container blog-hero__copy">
-        <p class="eyebrow">Field notes</p>
-        <h1>Automation that has to operate, not just demo.</h1>
-        <p class="blog-hero__intro">
-          Short writing on task design, human review, logs, failure handling and handover.
-        </p>
+      <div class="container blog-hero__grid">
+        <div class="blog-hero__copy">
+          <p class="eyebrow">Field notes</p>
+          <h1>Automation that has to operate, not just demo.</h1>
+          <p class="blog-hero__intro">
+            Short writing on task design, human review, logs, failure handling and handover.
+          </p>
+        </div>
+        <MotionFilm film="cta-footer" class="blog-hero__film" />
       </div>
     </section>
 
