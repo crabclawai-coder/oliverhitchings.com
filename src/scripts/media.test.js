@@ -5,10 +5,15 @@ import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import * as mediaBudgetModule from "../../scripts/check-media-budget.mjs";
+import { motionFilms } from "../data/media-manifest.js";
 import { initializeMedia } from "./media.js";
 
-const { checkMediaBudget, inspectMediaDirectory, validateFrameRates } =
-  mediaBudgetModule;
+const {
+  calculateTransferBudgets,
+  checkMediaBudget,
+  inspectMediaDirectory,
+  validateFrameRates,
+} = mediaBudgetModule;
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
@@ -64,6 +69,7 @@ function renderVideo(loadMode = "eager") {
 function validVideoMetadata({
   codec,
   container,
+  durationSeconds = 8.04,
   height,
   level,
   profile,
@@ -80,12 +86,12 @@ function validVideoMetadata({
         pix_fmt: "yuv420p",
         avg_frame_rate: "24/1",
         r_frame_rate: "24/1",
-        duration: "8.04",
+        duration: String(durationSeconds),
         ...(level === undefined ? {} : { level }),
       },
     ],
     format: {
-      duration: "8.04",
+      duration: String(durationSeconds),
       format_name: container,
     },
   };
@@ -95,12 +101,13 @@ async function createOversizedMediaFixture() {
   const projectRoot = await mkdtemp(join(tmpdir(), "media-budget-check-"));
   const videoDirectory = join(projectRoot, "public/videos");
   const posterDirectory = join(projectRoot, "public/images/posters");
-  const videoNames = [
-    "hero-1280.webm",
-    "hero-1280.mp4",
-    "hero-960.webm",
-    "hero-960.mp4",
-  ];
+  const films = Object.values(motionFilms);
+  const videoNames = films.flatMap((film) =>
+    [...film.variants.mobile, ...film.variants.desktop].map(({ src }) =>
+      basename(src),
+    ),
+  );
+  const posterNames = films.map((film) => basename(film.poster.src));
   const videoSize = 3 * 1024 * 1024;
   const posterSize = 200 * 1024;
 
@@ -111,78 +118,100 @@ async function createOversizedMediaFixture() {
       writeFile(join(videoDirectory, name), Buffer.alloc(videoSize)),
     ),
   );
-  await writeFile(
-    join(posterDirectory, "hero.webp"),
-    Buffer.alloc(posterSize),
+  await Promise.all(
+    posterNames.map((name) =>
+      writeFile(join(posterDirectory, name), Buffer.alloc(posterSize)),
+    ),
   );
 
-  return { posterSize, projectRoot, videoSize };
+  return {
+    posterCount: posterNames.length,
+    posterSize,
+    projectRoot,
+    videoCount: videoNames.length,
+    videoSize,
+  };
 }
 
 function createControlledProbeExecutor() {
-  const metadata = new Map([
-    [
-      "hero-1280.webm",
+  const metadata = new Map();
+
+  for (const film of Object.values(motionFilms)) {
+    for (const variant of [
+      ...film.variants.mobile,
+      ...film.variants.desktop,
+    ]) {
+      metadata.set(
+        basename(variant.src),
+        validVideoMetadata({
+          ...variant,
+          container: variant.container === "mp4"
+            ? "mov,mp4,m4a,3gp,3g2,mj2"
+            : "matroska,webm",
+          durationSeconds: film.durationSeconds,
+        }),
+      );
+    }
+
+    metadata.set(basename(film.poster.src), {
+      streams: [
+        {
+          codec_type: "video",
+          codec_name: "webp",
+          width: film.poster.width,
+          height: film.poster.height,
+          pix_fmt: "yuv420p",
+        },
+      ],
+      format: { format_name: "webp_pipe" },
+    });
+  }
+
+  metadata.set("process-1280.webm", {
+    streams: [
       {
-        streams: [
-          {
-            codec_type: "video",
-            codec_name: "h264",
-            profile: "Baseline",
-            width: 640,
-            height: 360,
-            pix_fmt: "yuv444p",
-            avg_frame_rate: "30/1",
-            r_frame_rate: "30/1",
-            duration: "3",
-            level: 10,
-          },
-          { codec_type: "audio", codec_name: "aac" },
-        ],
-        format: { duration: "3", format_name: "mov,mp4" },
+        codec_type: "video",
+        codec_name: "h264",
+        profile: "Baseline",
+        width: 640,
+        height: 360,
+        pix_fmt: "yuv444p",
+        avg_frame_rate: "30/1",
+        r_frame_rate: "30/1",
+        duration: "3",
+        level: 10,
+      },
+      { codec_type: "audio", codec_name: "aac" },
+    ],
+    format: { duration: "3", format_name: "mov,mp4" },
+  });
+  metadata.set("process.webp", {
+    streams: [
+      {
+        codec_type: "video",
+        codec_name: "png",
+        width: 640,
+        height: 360,
+        pix_fmt: "rgba",
       },
     ],
-    [
-      "hero-1280.mp4",
-      validVideoMetadata({
-        codec: "h264",
-        container: "mov,mp4,m4a,3gp,3g2,mj2",
-        height: 720,
-        level: 40,
-        profile: "High",
-        width: 1280,
-      }),
-    ],
-    [
-      "hero-960.webm",
-      validVideoMetadata({
-        codec: "av1",
-        container: "matroska,webm",
-        height: 540,
-        profile: "Main",
-        width: 960,
-      }),
-    ],
-    [
-      "hero.webp",
-      {
-        streams: [
-          {
-            codec_type: "video",
-            codec_name: "png",
-            width: 640,
-            height: 360,
-            pix_fmt: "rgba",
-          },
-        ],
-        format: { format_name: "image2" },
-      },
-    ],
-  ]);
+    format: { format_name: "image2" },
+  });
 
   return vi.fn((_command, args) => {
     const fileName = basename(args.at(-1));
-    if (fileName === "hero-960.mp4") {
+    if (args.includes("-skip_frame")) {
+      return JSON.stringify({
+        frames: fileName === "process-1280.webm"
+          ? [0, 1, 2.2].map((time) => ({
+              best_effort_timestamp_time: String(time),
+            }))
+          : Array.from({ length: 9 }, (_, time) => ({
+              best_effort_timestamp_time: String(time),
+            })),
+      });
+    }
+    if (fileName === "process-960.mp4") {
       throw new Error("fixture probe failed");
     }
 
@@ -383,6 +412,31 @@ describe("initializeMedia", () => {
 });
 
 describe("media budget helpers", () => {
+  it("deduplicates route films and budgets the larger selected format", () => {
+    const videoSizes = new Map([
+      ["hero-1280.webm", 100],
+      ["hero-1280.mp4", 110],
+      ["hero-960.webm", 80],
+      ["hero-960.mp4", 75],
+      ["process-1280.webm", 200],
+      ["process-1280.mp4", 190],
+    ]);
+    const posterSizes = new Map([
+      ["hero.webp", 10],
+      ["process.webp", 20],
+    ]);
+
+    expect(calculateTransferBudgets({
+      routes: { home: ["hero", "process", "hero"] },
+      posterSizes,
+      videoSizes,
+    })).toEqual({
+      home: 340,
+      initialDesktop: 120,
+      initialMobile: 90,
+    });
+  });
+
   it("rejects non-finite average and nominal frame rates", async () => {
     const validationErrors = validateFrameRates("bad.webm", {
       avg_frame_rate: "0/0",
@@ -453,29 +507,38 @@ describe("media budget helpers", () => {
 
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          "hero-1280.webm: codec is h264, expected av1",
-          "hero-1280.webm: profile is Baseline, expected Main",
-          "hero-1280.webm: width is 640, expected 1280",
-          "hero-1280.webm: height is 360, expected 720",
-          "hero-1280.webm: pixel format is yuv444p, expected yuv420p",
-          "hero-1280.webm: container is mov,mp4, expected webm",
-          "hero-1280.webm: duration is 3, expected approximately 8.04 seconds",
-          "hero-1280.webm: audio stream count is 1, expected 0",
-          "ffprobe failed for hero-960.mp4: fixture probe failed",
-          "hero.webp: codec is png, expected webp",
-          "hero.webp: width is 640, expected 1280",
-          "hero.webp: height is 360, expected 720",
-          "hero.webp: pixel format is rgba, expected yuv420p",
-          `Poster budget: actual ${fixture.posterSize} bytes; limit ${150 * 1024} bytes`,
-          `Retained media total: actual ${fixture.videoSize * 4 + fixture.posterSize} bytes; limit ${8 * 1024 * 1024} bytes`,
-          `Desktop media path: actual ${fixture.videoSize + fixture.posterSize} bytes; limit ${2.5 * 1024 * 1024} bytes`,
-          `Mobile media path: actual ${fixture.videoSize + fixture.posterSize} bytes; limit ${1.75 * 1024 * 1024} bytes`,
+          "process-1280.webm: codec is h264, expected av1",
+          "process-1280.webm: profile is Baseline, expected Main",
+          "process-1280.webm: width is 640, expected 1280",
+          "process-1280.webm: height is 360, expected 720",
+          "process-1280.webm: pixel format is yuv444p, expected yuv420p",
+          "process-1280.webm: container is mov,mp4, expected webm",
+          "process-1280.webm: duration is 3, expected approximately 8.04 seconds",
+          "process-1280.webm: audio stream count is 1, expected 0",
+          "process-1280.webm: adjacent keyframe gap is 1.2 seconds, limit 1.05 seconds",
+          "ffprobe failed for process-960.mp4: fixture probe failed",
+          "process.webp: codec is png, expected webp",
+          "process.webp: width is 640, expected 1280",
+          "process.webp: height is 360, expected 720",
+          "process.webp: pixel format is rgba, expected yuv420p",
+          `process.webp poster budget: actual ${fixture.posterSize} bytes; limit ${150 * 1024} bytes`,
+          `Tracked media inventory: actual ${fixture.videoSize * fixture.videoCount + fixture.posterSize * fixture.posterCount} bytes; limit ${24 * 1024 * 1024} bytes`,
+          `Initial desktop media path: actual ${fixture.videoSize + fixture.posterSize} bytes; limit ${2.5 * 1024 * 1024} bytes`,
+          `Initial mobile media path: actual ${fixture.videoSize + fixture.posterSize} bytes; limit ${1.75 * 1024 * 1024} bytes`,
         ]),
       );
-      expect(result.totalBytes).toBe(
-        fixture.videoSize * 4 + fixture.posterSize,
+      expect(result.inventoryBytes).toBe(
+        fixture.videoSize * fixture.videoCount +
+          fixture.posterSize * fixture.posterCount,
       );
-      expect(execFileImpl).toHaveBeenCalledTimes(5);
+      expect(result.posterBytes).toBe(
+        fixture.posterSize * fixture.posterCount,
+      );
+      expect(execFileImpl).toHaveBeenCalledTimes(
+        fixture.videoCount + fixture.posterCount +
+          motionFilms.process.variants.mobile.length +
+          motionFilms.process.variants.desktop.length,
+      );
       expect(logger.error).toHaveBeenCalledOnce();
       expect(logger.log).not.toHaveBeenCalled();
     } finally {
