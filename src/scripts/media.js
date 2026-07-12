@@ -1,15 +1,40 @@
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
+function suppressRejection(attempt) {
+  if (attempt && typeof attempt.catch === "function") {
+    attempt.catch(() => {});
+  }
+}
+
 function safelyPlay(video) {
   try {
-    const playAttempt = video.play();
-
-    if (playAttempt && typeof playAttempt.catch === "function") {
-      playAttempt.catch(() => {});
-    }
+    suppressRejection(video.play());
   } catch {
     // A poster remains visible when playback is unavailable.
   }
+}
+
+function safelyPause(video) {
+  try {
+    suppressRejection(video.pause());
+  } catch {
+    // A poster remains visible when playback controls are unavailable.
+  }
+}
+
+function safelyLoad(video) {
+  try {
+    suppressRejection(video.load());
+  } catch {
+    // A poster remains visible when loading is unavailable.
+  }
+}
+
+function canAutoplay(video) {
+  return (
+    video.dataset.mediaBehaviour !== "scroll" ||
+    video.dataset.scrollMode === "loop"
+  );
 }
 
 function promoteSources(video) {
@@ -36,18 +61,20 @@ export function initializeMedia({
     typeof matchMedia === "function" && matchMedia(REDUCED_MOTION_QUERY).matches;
 
   if (prefersReducedMotion || connection?.saveData) {
-    media.forEach((video) => video.pause());
+    media.forEach(safelyPause);
     return null;
   }
 
   const loadedMedia = new WeakSet();
   const visibleMedia = new WeakSet();
+  let destroyed = false;
 
   const playVisibleMedia = (video) => {
     if (
       documentRef.hidden ||
       !loadedMedia.has(video) ||
-      !visibleMedia.has(video)
+      !visibleMedia.has(video) ||
+      !canAutoplay(video)
     ) {
       return;
     }
@@ -64,7 +91,7 @@ export function initializeMedia({
     promoteSources(video);
     video.dataset.mediaLoaded = "true";
     loadedMedia.add(video);
-    video.load();
+    safelyLoad(video);
     playVisibleMedia(video);
   };
 
@@ -86,6 +113,10 @@ export function initializeMedia({
     if (nearbyMedia.length > 0) {
       loadObserver = new IntersectionObserverImpl(
         (entries) => {
+          if (destroyed) {
+            return;
+          }
+
           entries.forEach((entry) => {
             if (!entry.isIntersecting) {
               return;
@@ -101,6 +132,10 @@ export function initializeMedia({
     }
 
     visibilityObserver = new IntersectionObserverImpl((entries) => {
+      if (destroyed) {
+        return;
+      }
+
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           visibleMedia.add(entry.target);
@@ -110,18 +145,22 @@ export function initializeMedia({
 
         visibleMedia.delete(entry.target);
         if (loadedMedia.has(entry.target)) {
-          entry.target.pause();
+          safelyPause(entry.target);
         }
       });
     });
     media.forEach((video) => visibilityObserver.observe(video));
   }
 
-  documentRef.addEventListener("visibilitychange", () => {
+  const handleVisibilityChange = () => {
+    if (destroyed) {
+      return;
+    }
+
     if (documentRef.hidden) {
       media
         .filter((video) => loadedMedia.has(video))
-        .forEach((video) => video.pause());
+        .forEach(safelyPause);
       return;
     }
 
@@ -129,8 +168,27 @@ export function initializeMedia({
       .filter(
         (video) => loadedMedia.has(video) && visibleMedia.has(video),
       )
-      .forEach(safelyPlay);
-  });
+      .forEach(playVisibleMedia);
+  };
 
-  return { loadObserver, visibilityObserver };
+  documentRef.addEventListener("visibilitychange", handleVisibilityChange);
+
+  return {
+    loadObserver,
+    visibilityObserver,
+    destroy() {
+      if (destroyed) {
+        return;
+      }
+
+      destroyed = true;
+      loadObserver?.disconnect();
+      visibilityObserver?.disconnect();
+      documentRef.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
+      media.forEach(safelyPause);
+    },
+  };
 }

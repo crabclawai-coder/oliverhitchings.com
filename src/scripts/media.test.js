@@ -30,6 +30,7 @@ function createObserverHarness() {
     constructor(callback, options = {}) {
       this.callback = callback;
       this.options = options;
+      this.disconnect = vi.fn();
       this.observe = vi.fn();
       this.unobserve = vi.fn();
       instances.push(this);
@@ -311,6 +312,134 @@ describe("initializeMedia", () => {
 
     visibilityObserver.emit([{ target: video, isIntersecting: true }]);
     expect(video.play).toHaveBeenCalledTimes(2);
+  });
+
+  it("loads scrub-controlled scroll media without autoplaying it", () => {
+    const video = renderVideo();
+    const observerHarness = createObserverHarness();
+    video.dataset.mediaBehaviour = "scroll";
+    video.dataset.scrollMode = "scrub";
+
+    initialize({ IntersectionObserver: observerHarness.IntersectionObserver });
+    observerHarness
+      .getVisibilityObserver()
+      .emit([{ target: video, isIntersecting: true }]);
+
+    expect(video.load).toHaveBeenCalledOnce();
+    expect(video.play).not.toHaveBeenCalled();
+  });
+
+  it("does not resume scrub-controlled scroll media after tab visibility changes", () => {
+    const video = renderVideo();
+    video.dataset.mediaBehaviour = "scroll";
+    video.dataset.scrollMode = "scrub";
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      value: true,
+    });
+
+    initialize({ IntersectionObserver: undefined });
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      value: false,
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    expect(video.load).toHaveBeenCalledOnce();
+    expect(video.play).not.toHaveBeenCalled();
+  });
+
+  it("autoplays scroll media configured with the loop fallback", () => {
+    const video = renderVideo();
+    video.dataset.mediaBehaviour = "scroll";
+    video.dataset.scrollMode = "loop";
+
+    initialize({ IntersectionObserver: undefined });
+
+    expect(video.load).toHaveBeenCalledOnce();
+    expect(video.play).toHaveBeenCalledOnce();
+  });
+
+  it("contains exceptions thrown while loading and pausing media", () => {
+    const video = renderVideo();
+    const observerHarness = createObserverHarness();
+    video.load = vi.fn(() => {
+      throw new Error("load unavailable");
+    });
+    video.pause = vi.fn(() => {
+      throw new Error("pause unavailable");
+    });
+
+    expect(() =>
+      initialize({ IntersectionObserver: observerHarness.IntersectionObserver })
+    ).not.toThrow();
+    expect(() =>
+      observerHarness
+        .getVisibilityObserver()
+        .emit([{ target: video, isIntersecting: false }])
+    ).not.toThrow();
+  });
+
+  it("handles rejected load and pause attempts", () => {
+    const video = renderVideo();
+    const catchLoadRejection = vi.fn();
+    const catchPauseRejection = vi.fn();
+    video.load = vi.fn().mockReturnValue({ catch: catchLoadRejection });
+    video.pause = vi.fn().mockReturnValue({ catch: catchPauseRejection });
+
+    const controller = initialize({ IntersectionObserver: undefined });
+    controller.destroy();
+
+    expect(catchLoadRejection).toHaveBeenCalledOnce();
+    expect(catchLoadRejection).toHaveBeenCalledWith(expect.any(Function));
+    expect(catchPauseRejection).toHaveBeenCalledOnce();
+    expect(catchPauseRejection).toHaveBeenCalledWith(expect.any(Function));
+  });
+
+  it("disconnects observers, removes its listener and safely pauses on destroy", () => {
+    const video = renderVideo("nearby");
+    const observerHarness = createObserverHarness();
+    const addEventListener = vi.spyOn(document, "addEventListener");
+    const removeEventListener = vi.spyOn(document, "removeEventListener");
+    video.pause = vi.fn(() => {
+      throw new Error("pause unavailable");
+    });
+
+    const controller = initialize({
+      IntersectionObserver: observerHarness.IntersectionObserver,
+    });
+    const visibilityListener = addEventListener.mock.calls.find(
+      ([eventName]) => eventName === "visibilitychange",
+    )[1];
+
+    expect(() => controller.destroy()).not.toThrow();
+    expect(controller.loadObserver.disconnect).toHaveBeenCalledOnce();
+    expect(controller.visibilityObserver.disconnect).toHaveBeenCalledOnce();
+    expect(removeEventListener).toHaveBeenCalledWith(
+      "visibilitychange",
+      visibilityListener,
+    );
+    expect(video.pause).toHaveBeenCalledOnce();
+  });
+
+  it("ignores observer callbacks delivered after destroy", () => {
+    const video = renderVideo("nearby");
+    const observerHarness = createObserverHarness();
+    const controller = initialize({
+      IntersectionObserver: observerHarness.IntersectionObserver,
+    });
+
+    controller.destroy();
+    observerHarness
+      .getLoadObserver()
+      .emit([{ target: video, isIntersecting: true }]);
+    observerHarness
+      .getVisibilityObserver()
+      .emit([{ target: video, isIntersecting: true }]);
+
+    expect(video.load).not.toHaveBeenCalled();
+    expect(video.play).not.toHaveBeenCalled();
+    expect(video.pause).toHaveBeenCalledOnce();
   });
 
   it("leaves sources unpromoted and pauses media under reduced motion", () => {
