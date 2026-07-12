@@ -41,7 +41,7 @@ const expectedHeroSources = [
     type: 'video/mp4; codecs="avc1.640028"',
   },
 ];
-const obsoleteVideoNames = [
+const rawLegacyVideoNames = [
   "hero.mp4",
   "process.mp4",
   "feature-card.mp4",
@@ -348,10 +348,16 @@ describe("generated homepage content", () => {
 
     expect(proofItems).toHaveLength(2);
     expect(clean(proofItems[0]?.textContent)).toBe(
-      "1 One workflow is selected before a build begins.",
+      "1 workflow Selected before a build begins.",
+    );
+    expect(clean(proofItems[0]?.querySelector(".proof-value")?.textContent)).toBe(
+      "1 workflow",
     );
     expect(clean(proofItems[1]?.textContent)).toBe(
-      "3 Build handover assets: prompts, logs and a runbook.",
+      "3 handover assets Prompts, logs and a runbook stay with the owner.",
+    );
+    expect(clean(proofItems[1]?.querySelector(".proof-value")?.textContent)).toBe(
+      "3 handover assets",
     );
   });
 
@@ -699,6 +705,7 @@ describe("generated page truthfulness and media", () => {
     ];
     const approvedNarrativeClaims = [
       "Accepting 1 client",
+      "1 workflow",
       "30-day improvement period after launch",
     ];
     const claimSignal =
@@ -744,7 +751,66 @@ describe("generated page truthfulness and media", () => {
     }
   });
 
-  it("keeps exactly one atmospheric video on home and none on other content pages", () => {
+  it("restores the five homepage films in their exact narrative placements", () => {
+    const filmIds = Array.from(
+      home.querySelectorAll("[data-motion-film]"),
+      (film) => film.getAttribute("data-motion-film"),
+    );
+
+    expect(filmIds).toEqual([
+      "hero",
+      "process",
+      "bento",
+      "feature-card",
+      "cta-footer",
+    ]);
+    expect(
+      home.querySelector(
+        ".loop-section__film-region > .loop-section__film[data-motion-film='process']",
+      ),
+    ).not.toBeNull();
+    expect(
+      home.querySelector(
+        ".pattern-aside > .pattern-section__film[data-motion-film='bento']",
+      ),
+    ).not.toBeNull();
+    expect(
+      home.querySelector(
+        ".principles-section__body > .principles-section__film[data-motion-film='feature-card']",
+      ),
+    ).not.toBeNull();
+    expect(
+      home.querySelector(
+        ".home-final-cta > .home-final-cta__film[data-motion-film='cta-footer']",
+      ),
+    ).not.toBeNull();
+    expect(home.querySelector("#contact [data-motion-film]")).toBeNull();
+  });
+
+  it("keeps scroll behaviour exclusive to the homepage process film", () => {
+    const scrollFilms = Array.from(home.querySelectorAll("[data-scroll-film]"));
+    const processFilm = home.querySelector('[data-motion-film="process"]');
+    const ambientFilms = Array.from(
+      home.querySelectorAll(
+        '[data-motion-film]:not([data-motion-film="process"]) video',
+      ),
+    );
+
+    expect(scrollFilms).toHaveLength(1);
+    expect(scrollFilms[0]?.closest("[data-motion-film]")).toBe(processFilm);
+    expect(scrollFilms[0]?.getAttribute("data-media-behaviour")).toBe("scroll");
+    expect(processFilm?.closest("[data-scroll-film-region]")).not.toBeNull();
+    expect(ambientFilms).toHaveLength(4);
+    expect(
+      ambientFilms.every(
+        (video) =>
+          video.getAttribute("data-media-behaviour") === "loop" &&
+          !video.hasAttribute("data-scroll-film"),
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps video off other content pages", () => {
     const otherContentPages = [
       services,
       about,
@@ -752,7 +818,6 @@ describe("generated page truthfulness and media", () => {
       ...articlePages.map((post) => post.document),
     ];
 
-    expect(home.querySelectorAll("video")).toHaveLength(1);
     for (const document of otherContentPages) {
       expect(document.querySelectorAll("video")).toHaveLength(0);
     }
@@ -832,11 +897,16 @@ describe("generated page truthfulness and media", () => {
       Array.from(document.querySelectorAll("video:not(.home-hero__video)")),
     );
 
-    for (const obsoleteName of obsoleteVideoNames) {
-      expect(generatedMarkup).not.toContain(`/videos/${obsoleteName}`);
+    for (const rawLegacyName of rawLegacyVideoNames) {
+      expect(generatedMarkup).not.toContain(`/videos/${rawLegacyName}`);
     }
     for (const video of belowFoldVideos) {
-      expect(video.hasAttribute("poster")).toBe(true);
+      expect(
+        video
+          .closest("[data-motion-film]")
+          ?.querySelector(".motion-film__poster")
+          ?.getAttribute("src"),
+      ).toMatch(/^\/images\/posters\/.+\.webp$/);
       expect(video.getAttribute("preload")).toBe("none");
       expect(video.getAttribute("data-media-load")).toBe("nearby");
       expect(video.hasAttribute("autoplay")).toBe(false);
