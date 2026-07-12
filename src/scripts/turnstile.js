@@ -137,6 +137,14 @@ export function createTurnstileAdapter({
   let state = mode === "off" ? "off" : "loading";
   let token = "";
   let widgetId = null;
+  let widgetGeneration = 0;
+  let suppressStatusAnnouncements = false;
+
+  const announceUnlessSuppressed = (message) => {
+    if (!suppressStatusAnnouncements) {
+      announce(message);
+    }
+  };
 
   const messageForState = (nextState) =>
     (mode === "observe" && OBSERVE_STATE_MESSAGES[nextState]) ||
@@ -146,54 +154,61 @@ export function createTurnstileAdapter({
     state = nextState;
     const stateMessage = messageForState(nextState);
     if (message && stateMessage) {
-      announce(stateMessage);
+      announceUnlessSuppressed(stateMessage);
     }
   };
 
-  const widgetOptions = {
-    sitekey: String(siteKey).trim(),
-    action: "contact",
-    theme: "dark",
-    size: "flexible",
-    "response-field": false,
-    callback(responseToken) {
-      if (destroyed) {
-        return;
-      }
+  const createWidgetOptions = () => {
+    const generation = ++widgetGeneration;
+    const isCurrent = () => !destroyed && generation === widgetGeneration;
 
-      token = String(responseToken ?? "").trim();
-      if (!token) {
-        setState("missing");
-        return;
-      }
+    return {
+      sitekey: String(siteKey).trim(),
+      action: "contact",
+      theme: "dark",
+      size: "flexible",
+      "response-field": false,
+      callback(responseToken) {
+        if (!isCurrent()) {
+          return;
+        }
 
-      state = "ready";
-      announce("Security check complete. You can send your enquiry.");
-    },
-    "error-callback"() {
-      if (!destroyed) {
-        token = "";
-        setState("error");
-      }
-    },
-    "expired-callback"() {
-      if (!destroyed) {
-        token = "";
-        setState("expired");
-      }
-    },
-    "timeout-callback"() {
-      if (!destroyed) {
-        token = "";
-        setState("timeout");
-      }
-    },
-    "unsupported-callback"() {
-      if (!destroyed) {
-        token = "";
-        setState("unsupported");
-      }
-    },
+        token = String(responseToken ?? "").trim();
+        if (!token) {
+          setState("missing");
+          return;
+        }
+
+        state = "ready";
+        announceUnlessSuppressed(
+          "Security check complete. You can send your enquiry.",
+        );
+      },
+      "error-callback"() {
+        if (isCurrent()) {
+          token = "";
+          setState("error");
+        }
+      },
+      "expired-callback"() {
+        if (isCurrent()) {
+          token = "";
+          setState("expired");
+        }
+      },
+      "timeout-callback"() {
+        if (isCurrent()) {
+          token = "";
+          setState("timeout");
+        }
+      },
+      "unsupported-callback"() {
+        if (isCurrent()) {
+          token = "";
+          setState("unsupported");
+        }
+      },
+    };
   };
 
   const initialise = async () => {
@@ -231,12 +246,15 @@ export function createTurnstileAdapter({
       }
 
       api = loadedApi;
-      widgetId = api.render(container, widgetOptions);
+      widgetId = api.render(container, createWidgetOptions());
       if (state === "loading") {
         setState("missing");
       }
     } catch {
       if (!destroyed) {
+        token = "";
+        widgetGeneration += 1;
+        widgetId = null;
         setState("error");
       }
     }
@@ -245,7 +263,8 @@ export function createTurnstileAdapter({
   const getSubmissionDecision = () => {
     const allowed = mode === "off" || mode === "observe" || Boolean(token);
     const stateMessage = messageForState(state);
-    if (!allowed && stateMessage) {
+    if (required && !allowed && stateMessage) {
+      suppressStatusAnnouncements = false;
       announce(stateMessage);
     }
 
@@ -270,12 +289,44 @@ export function createTurnstileAdapter({
         return;
       }
 
+      suppressStatusAnnouncements = true;
       token = "";
       if (mode !== "off") {
         setState(widgetId === null ? state : "missing", { message: false });
       }
       if (api && widgetId !== null && typeof api.reset === "function") {
-        api.reset(widgetId);
+        try {
+          api.reset(widgetId);
+        } catch {
+          token = "";
+          widgetGeneration += 1;
+          const failedWidgetId = widgetId;
+          widgetId = null;
+
+          if (typeof api.remove !== "function") {
+            setState("error", { message: false });
+            return;
+          }
+
+          try {
+            api.remove(failedWidgetId);
+          } catch {
+            setState("error", { message: false });
+            return;
+          }
+
+          try {
+            state = "loading";
+            widgetId = api.render(container, createWidgetOptions());
+            if (state === "loading") {
+              setState("missing", { message: false });
+            }
+          } catch {
+            token = "";
+            widgetGeneration += 1;
+            setState("error", { message: false });
+          }
+        }
       }
     },
     focus() {

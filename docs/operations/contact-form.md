@@ -24,7 +24,9 @@ Cloudflare Pages is static and has no contact handler of its own. Requests to `/
 
 ## Request and response contract
 
-The browser submits same-origin JSON to `POST /api/contact`. It never opens a mail application. The request is limited to 16 KiB, and the Worker validates field types, required fields, allowed packages, field lengths, origin, and content type before contacting Resend.
+The browser submits same-origin JSON to `POST /api/contact`. It never opens a mail application. The request is limited to 16 KiB, and the Worker validates field types, required fields, allowed packages, field lengths, origin, content type, and any supplied submission UUID before contacting Resend.
+
+Immediately before the first allowed request, the browser creates a random `submission_id`. It keeps that non-personal ID only in page memory and reuses it while the Worker-normalised enquiry fields are unchanged. A confirmed success clears it; editing a meaningful field creates a new ID. The Worker uses the ID for Resend's idempotency key and a stable email body, so Resend can deduplicate an unchanged retry after a lost response instead of sending a second email. The Worker's separate `requestId` remains unique to each HTTP attempt for Turnstile and observability.
 
 Successful non-honeypot submissions return:
 
@@ -58,7 +60,8 @@ Errors use the stable shape:
 | `405` | `method_not_allowed` | A method other than `POST`; the response includes `Allow: POST`. |
 | `413` | `payload_too_large` | The body is larger than 16 KiB. |
 | `429` | `rate_limited` | The configured rate limiter rejected the request in enforce mode; the response includes `Retry-After: 60`. |
-| `502` | `email_send_failed` | Resend was not configured, timed out, could not be reached, rejected the request, or did not return a message ID. |
+| `502` | `email_send_failed` | Resend is not configured or returned a definite non-success response. |
+| `502` | `email_delivery_unknown` | Resend may have accepted the email, but the Worker timed out, lost the response, or could not confirm a valid message ID. Preserve the form and inspect provider evidence before retrying. |
 | `503` | `turnstile_unavailable` | Turnstile could not be verified while Worker enforcement is enabled, or its mode is invalid. |
 
 Every Worker response is JSON with `Cache-Control: no-store`. A client timeout or lost connection is reported by the browser as delivery unknown because the Worker may have sent the message before the response was lost. Preserve the form values and check the provider logs before retrying.
@@ -156,6 +159,7 @@ The checked-in observability block mirrors Cloudflare's dashboard-generated prod
 | Event | Fields currently recorded |
 | --- | --- |
 | `contact_email_accepted` | `event`, `provider`, `requestId`, `cfRay`, `messageId` |
+| `contact_email_delivery_unknown` | `event`, `requestId`, `cfRay`, coarse internal `code` |
 | `contact_email_failed` | `event`, `requestId`, `cfRay`, coarse internal `code` |
 | `contact_turnstile` | `event`, `mode`, `requestId`, `cfRay`, `outcome`, `reason` |
 | `contact_turnstile_configuration` | `event`, invalid `mode`, `requestId`, `cfRay`, `outcome`, `reason` |
@@ -254,6 +258,8 @@ npx wrangler rollback <recorded-version-id> \
 ```
 
 Confirm the command targets `oliverhitchings-contact` before accepting it. A version rollback may not undo separately changed secrets, DNS, bindings, or dashboard variables; restore those only from the reviewed pre-release record. Then send one controlled test and repeat the proof ladder.
+
+For the first repair of a delivery path that has never passed the proof ladder, the recorded pre-release Worker may be only a safety rollback to a known controlled failure, not a delivery-working version. Record that limitation explicitly. If it must be restored, keep the route and Turnstile protection in place, present the honest send-failure response, and ship a reviewed forward fix; never describe that rollback as restored email delivery. Once a version completes the proof ladder, use that delivery-proven version as the rollback target for later releases.
 
 Do not delete the Worker route as an improvised rollback. Without that route there is deliberately no email backend; investigate or roll back the Worker version instead.
 

@@ -315,9 +315,10 @@ const turnstileSiteKey =
       const container = form?.querySelector("[data-turnstile-container]");
       let adapter = null;
       let destroyed = false;
+      let suppressStatusAnnouncements = false;
 
       const announce = (message) => {
-        if (!status) return;
+        if (suppressStatusAnnouncements || !status) return;
         status.classList.remove("is-success");
         status.textContent = message;
       };
@@ -335,6 +336,7 @@ const turnstileSiteKey =
           return adapter?.required ?? configuredMode !== "observe";
         },
         prepareSubmission() {
+          suppressStatusAnnouncements = false;
           return (
             adapter?.prepareSubmission() ?? {
               allowed: configuredMode === "observe",
@@ -344,6 +346,7 @@ const turnstileSiteKey =
           );
         },
         reset() {
+          suppressStatusAnnouncements = true;
           adapter?.reset();
         },
         focus() {

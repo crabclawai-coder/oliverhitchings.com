@@ -4,6 +4,8 @@ const FROM_EMAIL =
   "Oliver Hitchings Website <contact@forms.oliverhitchings.com>";
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_TURNSTILE_TOKEN_CHARACTERS = 2_048;
+const SUBMISSION_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RESEND_API_URL = "https://api.resend.com/emails";
 const RESEND_TIMEOUT_MS = 5_000;
 const RESEND_USER_AGENT = "oliverhitchings-contact-worker/1.0";
@@ -13,6 +15,12 @@ const TURNSTILE_ACTION = "contact";
 const TURNSTILE_TIMEOUT_MS = 3_500;
 const TURNSTILE_MAX_AGE_MS = 5 * 60 * 1_000;
 const TURNSTILE_MAX_FUTURE_SKEW_MS = 60 * 1_000;
+const DELIVERY_UNKNOWN_CODES = new Set([
+  "timeout",
+  "network",
+  "malformed_response",
+  "missing_message_id",
+]);
 
 export const ALLOWED_PACKAGES = new Set(CONTACT_PACKAGE_VALUES);
 
@@ -80,6 +88,11 @@ const ERRORS = {
     message:
       "The website could not send the enquiry just now. Please use the contact details on this page.",
   },
+  emailDeliveryUnknown: {
+    code: "email_delivery_unknown",
+    message:
+      "We could not confirm delivery. Your enquiry may have been sent; keep this page open and check before retrying.",
+  },
 };
 
 const json = (body, status = 200, extraHeaders = {}) =>
@@ -112,7 +125,7 @@ const logSafely = (writeLog) => {
 const isObjectPayload = (payload) =>
   payload !== null && typeof payload === "object" && !Array.isArray(payload);
 
-const sendWithResend = async ({ apiKey, requestId, email }) => {
+const sendWithResend = async ({ apiKey, submissionId, email }) => {
   if (typeof apiKey !== "string" || !apiKey.trim()) {
     return { ok: false, code: "missing_secret" };
   }
@@ -126,12 +139,12 @@ const sendWithResend = async ({ apiKey, requestId, email }) => {
     try {
       response = await fetch(RESEND_API_URL, {
         method: "POST",
-        redirect: "error",
+        redirect: "manual",
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
           "User-Agent": RESEND_USER_AGENT,
-          "Idempotency-Key": `contact/${requestId}`,
+          "Idempotency-Key": `contact/${submissionId}`,
         },
         body: JSON.stringify(email),
         signal: controller.signal,
@@ -493,6 +506,7 @@ const hasValidFieldTypes = (payload) => {
     "contact_number",
     "tools_involved",
     "turnstile_token",
+    "submission_id",
   ];
 
   return (
@@ -636,6 +650,15 @@ export async function handleContactRequest(request, env, context) {
     return errorJson(ERRORS.invalidSubmission, 400, requestId);
   }
 
+  const submissionId =
+    payload.submission_id === undefined
+      ? requestId
+      : normalizeSingleLine(payload.submission_id);
+
+  if (!SUBMISSION_ID_PATTERN.test(submissionId)) {
+    return errorJson(ERRORS.invalidSubmission, 400, requestId);
+  }
+
   const enquiry = buildEnquiry(payload);
 
   if (!isValidEnquiry(enquiry)) {
@@ -689,7 +712,6 @@ export async function handleContactRequest(request, env, context) {
   }
 
   const subject = `Automation enquiry: ${enquiry.packageInterest}`;
-  const submittedAt = new Date().toISOString();
   const text = [
     "New automation enquiry from oliverhitchings.com",
     "",
@@ -704,13 +726,12 @@ export async function handleContactRequest(request, env, context) {
     "Tools or systems involved:",
     enquiry.toolsInvolved || "Not provided",
     "",
-    `Submitted at: ${submittedAt}`,
-    `Request ID: ${requestId}`,
+    `Submission ID: ${submissionId}`,
   ].join("\n");
 
   const result = await sendWithResend({
     apiKey: env.RESEND_API_KEY,
-    requestId,
+    submissionId,
     email: {
       from: FROM_EMAIL,
       reply_to: enquiry.email,
@@ -721,16 +742,23 @@ export async function handleContactRequest(request, env, context) {
   });
 
   if (!result.ok) {
+    const deliveryUnknown = DELIVERY_UNKNOWN_CODES.has(result.code);
     logSafely(() => {
       logger.error({
-        event: "contact_email_failed",
+        event: deliveryUnknown
+          ? "contact_email_delivery_unknown"
+          : "contact_email_failed",
         requestId,
         cfRay,
         code: result.code,
       });
     });
 
-    return errorJson(ERRORS.emailSendFailed, 502, requestId);
+    return errorJson(
+      deliveryUnknown ? ERRORS.emailDeliveryUnknown : ERRORS.emailSendFailed,
+      502,
+      requestId,
+    );
   }
 
   logSafely(() => {
