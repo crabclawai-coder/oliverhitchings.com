@@ -350,6 +350,45 @@ describe("createTurnstileAdapter", () => {
     expect(announce.mock.calls.at(-1)[0]).toMatch(/not configured correctly/i);
   });
 
+  it("refreshes a submitted token without overwriting the form outcome", async () => {
+    const { adapter, api, announce } = createAdapter();
+    await adapter.ready;
+    const options = api.render.mock.calls[0][1];
+
+    options.callback("submitted-token");
+    announce.mockClear();
+
+    adapter.reset();
+    options.callback("refreshed-token");
+
+    expect(adapter.getSubmissionDecision()).toMatchObject({
+      allowed: true,
+      state: "ready",
+      token: "refreshed-token",
+    });
+    expect(announce).not.toHaveBeenCalled();
+  });
+
+  it("announces a suppressed reset failure when the user retries", async () => {
+    const { adapter, api, announce } = createAdapter();
+    await adapter.ready;
+    const options = api.render.mock.calls[0][1];
+
+    options.callback("submitted-token");
+    announce.mockClear();
+
+    adapter.reset();
+    options["error-callback"]();
+    expect(announce).not.toHaveBeenCalled();
+
+    expect(adapter.prepareSubmission()).toMatchObject({
+      allowed: false,
+      state: "error",
+      token: "",
+    });
+    expect(announce.mock.calls.at(-1)[0]).toMatch(/could not load/i);
+  });
+
   it("resets and removes the rendered widget exactly once per call", async () => {
     const { adapter, api } = createAdapter();
     await adapter.ready;

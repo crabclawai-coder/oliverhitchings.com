@@ -137,6 +137,13 @@ export function createTurnstileAdapter({
   let state = mode === "off" ? "off" : "loading";
   let token = "";
   let widgetId = null;
+  let suppressStatusAnnouncements = false;
+
+  const announceUnlessSuppressed = (message) => {
+    if (!suppressStatusAnnouncements) {
+      announce(message);
+    }
+  };
 
   const messageForState = (nextState) =>
     (mode === "observe" && OBSERVE_STATE_MESSAGES[nextState]) ||
@@ -146,7 +153,7 @@ export function createTurnstileAdapter({
     state = nextState;
     const stateMessage = messageForState(nextState);
     if (message && stateMessage) {
-      announce(stateMessage);
+      announceUnlessSuppressed(stateMessage);
     }
   };
 
@@ -168,7 +175,9 @@ export function createTurnstileAdapter({
       }
 
       state = "ready";
-      announce("Security check complete. You can send your enquiry.");
+      announceUnlessSuppressed(
+        "Security check complete. You can send your enquiry.",
+      );
     },
     "error-callback"() {
       if (!destroyed) {
@@ -245,7 +254,8 @@ export function createTurnstileAdapter({
   const getSubmissionDecision = () => {
     const allowed = mode === "off" || mode === "observe" || Boolean(token);
     const stateMessage = messageForState(state);
-    if (!allowed && stateMessage) {
+    if (required && !allowed && stateMessage) {
+      suppressStatusAnnouncements = false;
       announce(stateMessage);
     }
 
@@ -270,6 +280,7 @@ export function createTurnstileAdapter({
         return;
       }
 
+      suppressStatusAnnouncements = true;
       token = "";
       if (mode !== "off") {
         setState(widgetId === null ? state : "missing", { message: false });
