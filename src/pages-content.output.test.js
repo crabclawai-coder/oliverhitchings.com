@@ -787,6 +787,25 @@ describe("generated page truthfulness and media", () => {
     expect(home.querySelector("#contact [data-motion-film]")).toBeNull();
   });
 
+  it("hides captionless homepage film wrappers from assistive technology", () => {
+    const films = Array.from(home.querySelectorAll("[data-motion-film]"));
+
+    expect(films).toHaveLength(5);
+    expect(
+      films.map((film) => ({
+        hidden: film.getAttribute("aria-hidden"),
+        tagName: film.tagName,
+        hasCaption: film.querySelector("figcaption") !== null,
+      })),
+    ).toEqual(
+      Array.from({ length: 5 }, () => ({
+        hidden: "true",
+        tagName: "FIGURE",
+        hasCaption: false,
+      })),
+    );
+  });
+
   it("keeps scroll behaviour exclusive to the homepage process film", () => {
     const scrollFilms = Array.from(home.querySelectorAll("[data-scroll-film]"));
     const processFilm = home.querySelector('[data-motion-film="process"]');

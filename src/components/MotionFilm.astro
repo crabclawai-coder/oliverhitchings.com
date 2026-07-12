@@ -24,6 +24,7 @@ const hasCaption = Astro.slots.has("caption");
 <figure
   class:list={["motion-film", `motion-film--${filmData.orientation}`, className]}
   data-motion-film={filmData.id}
+  aria-hidden={hasCaption ? undefined : "true"}
 >
   <img
     class="motion-film__poster"
