@@ -2,7 +2,7 @@
 
 Date: 12 July 2026
 
-Status: Approved direction; written specification pending final review
+Status: Approved for local implementation
 
 Canonical site: `https://oliverhitchings.com`
 
