@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { extractCssAtRuleBlocks } from "./css-test-helpers.js";
 
 const projectRoot = new URL("../", import.meta.url);
 const guidePriceNote =
@@ -41,7 +42,7 @@ const expectedHeroSources = [
     type: 'video/mp4; codecs="avc1.640028"',
   },
 ];
-const obsoleteVideoNames = [
+const rawLegacyVideoNames = [
   "hero.mp4",
   "process.mp4",
   "feature-card.mp4",
@@ -59,6 +60,7 @@ let observeServices;
 let about;
 let blog;
 let articlePages;
+let notFound;
 let servicesModuleSources;
 let homeModuleSources;
 let observeServicesModuleSources;
@@ -87,6 +89,20 @@ const expectedPosts = [
 ];
 
 const clean = (value) => value?.replace(/\s+/g, " ").trim() ?? "";
+
+it("does not let a media assertion cross into a later at-rule", () => {
+  const fixture =
+    '@media(max-width:620px){.inside{content:"}"}}' +
+    "@media(min-width:621px){.outside{order:-1}}";
+  const compactBlocks = extractCssAtRuleBlocks(
+    fixture,
+    "@media (max-width: 620px)",
+  );
+
+  expect(compactBlocks).toHaveLength(1);
+  expect(compactBlocks[0]).toContain('.inside{content:"}"}');
+  expect(compactBlocks.join("\n")).not.toContain(".outside");
+});
 
 function textFragments(root) {
   const fragments = [];
@@ -271,6 +287,7 @@ beforeAll(async () => {
       document: await readPage(`blog/${post.slug}/index.html`),
     })),
   );
+  notFound = await readPage("404.html");
   servicesModuleSources = await readModuleSources(services, buildDirectory);
   homeModuleSources = await readModuleSources(home, buildDirectory);
   observeServicesModuleSources = await readModuleSources(
@@ -348,10 +365,16 @@ describe("generated homepage content", () => {
 
     expect(proofItems).toHaveLength(2);
     expect(clean(proofItems[0]?.textContent)).toBe(
-      "1 One workflow is selected before a build begins.",
+      "1 workflow Selected before a build begins.",
+    );
+    expect(clean(proofItems[0]?.querySelector(".proof-value")?.textContent)).toBe(
+      "1 workflow",
     );
     expect(clean(proofItems[1]?.textContent)).toBe(
-      "3 Build handover assets: prompts, logs and a runbook.",
+      "3 handover assets Prompts, logs and a runbook stay with the owner.",
+    );
+    expect(clean(proofItems[1]?.querySelector(".proof-value")?.textContent)).toBe(
+      "3 handover assets",
     );
   });
 
@@ -539,6 +562,116 @@ describe("generated Services content", () => {
     );
   });
 
+  it("restores exactly two nearby looping films in the intended chapters", () => {
+    const films = Array.from(services.querySelectorAll("[data-motion-film]"));
+    const videos = films.map((film) => film.querySelector("video"));
+
+    expect(films.map((film) => film.getAttribute("data-motion-film"))).toEqual([
+      "process",
+      "feature-card",
+    ]);
+    expect(
+      services.querySelector(
+        ".services-method__body > .services-method__film[data-motion-film='process']",
+      ),
+    ).not.toBeNull();
+    expect(
+      services.querySelector(
+        ".handover-section__grid > .handover-section__film[data-motion-film='feature-card']",
+      ),
+    ).not.toBeNull();
+    expect(
+      films.map((film) => ({
+        hidden: film.getAttribute("aria-hidden"),
+        hasCaption: film.querySelector("figcaption") !== null,
+      })),
+    ).toEqual([
+      { hidden: "true", hasCaption: false },
+      { hidden: "true", hasCaption: false },
+    ]);
+    expect(videos.every((video) => video?.getAttribute("data-media-load") === "nearby"))
+      .toBe(true);
+    expect(videos.every((video) => video?.getAttribute("data-media-behaviour") === "loop"))
+      .toBe(true);
+    expect(services.querySelectorAll("[data-scroll-film]")).toHaveLength(0);
+    expect(services.querySelector("#contact [data-motion-film]")).toBeNull();
+  });
+
+  it("compacts only the four middle Services chapters", () => {
+    const method = services.querySelector("[data-services-method]");
+    const packages = services.getElementById("packages");
+    const goodFit = services.querySelector("[data-good-fit]");
+    const handover = services.querySelector("[data-handover]");
+    const contact = services.getElementById("contact");
+
+    expect(
+      [method, packages, goodFit, handover].every((section) =>
+        section?.classList.contains("editorial-section--compact"),
+      ),
+    ).toBe(true);
+    expect(services.querySelectorAll(".editorial-section--compact")).toHaveLength(4);
+    expect(contact?.classList.contains("editorial-section--compact")).toBe(false);
+    expect(servicesStylesheetSource).toMatch(
+      /--editorial-section-space:\s*clamp\(5rem,\s*9vw,\s*8rem\)/,
+    );
+    expect(servicesStylesheetSource).toMatch(
+      /--editorial-section-space-compact:\s*clamp\(4\.25rem,\s*7\.65vw,\s*6\.8rem\)/,
+    );
+    expect(servicesStylesheetSource).toMatch(
+      /\.editorial-section\{[^}]*padding-top:var\(--editorial-section-space\);[^}]*padding-bottom:var\(--editorial-section-space\)/,
+    );
+    expect(servicesStylesheetSource).toMatch(
+      /\.editorial-section--compact\{[^}]*padding-top:var\(--editorial-section-space-compact\);[^}]*padding-bottom:var\(--editorial-section-space-compact\)/,
+    );
+  });
+
+  it("uses one mobile page start, balanced pattern type and stable film crops", () => {
+    const compactCss = extractCssAtRuleBlocks(
+      servicesStylesheetSource,
+      "@media (max-width: 620px)",
+    ).join("\n");
+
+    expect(servicesStylesheetSource).toMatch(
+      /--mobile-page-start:\s*9\.5rem/,
+    );
+    expect(servicesStylesheetSource).toMatch(
+      /\.pattern-heading h2\{[^}]*max-width:9ch;[^}]*text-wrap:balance/,
+    );
+    expect(compactCss).toMatch(
+      /\.home-hero__content,.services-hero,.about-hero,.blog-hero,.article-template,.error-page\{[^}]*padding-top:var\(--mobile-page-start\)/,
+    );
+    expect(compactCss).toMatch(
+      /\.pattern-heading h2\{[^}]*max-width:12ch;[^}]*font-size:clamp\([^}]+\)/,
+    );
+    expect(compactCss).toMatch(
+      /\.about-hero__visual,.blog-hero__film,.services-method__film,.handover-section__film,.pattern-section__film,.principles-section__film\{[^}]*order:-1/,
+    );
+
+    for (const selector of [
+      ".loop-section__film,.home-final-cta__film",
+      ".services-method__film",
+      ".blog-hero__film",
+    ]) {
+      expect(servicesStylesheetSource).toMatch(
+        new RegExp(
+          `${selector.replaceAll(".", "\\.")}\\{[^}]*aspect-ratio:16\\s*\\/\\s*9`,
+        ),
+      );
+    }
+
+    for (const selector of [
+      ".pattern-section__film,.principles-section__film",
+      ".handover-section__film",
+      ".about-hero__film .motion-film__poster,.about-hero__film .motion-film__video",
+    ]) {
+      expect(servicesStylesheetSource).toMatch(
+        new RegExp(
+          `${selector.replaceAll(".", "\\.")}\\{[^}]*aspect-ratio:3\\s*\\/\\s*4`,
+        ),
+      );
+    }
+  });
+
   it("preserves the complete enquiry form contract and honest visible copy", () => {
     const section = services.getElementById("contact");
     const form = section?.querySelector("form[data-contact-form]");
@@ -699,6 +832,7 @@ describe("generated page truthfulness and media", () => {
     ];
     const approvedNarrativeClaims = [
       "Accepting 1 client",
+      "1 workflow",
       "30-day improvement period after launch",
     ];
     const claimSignal =
@@ -744,25 +878,114 @@ describe("generated page truthfulness and media", () => {
     }
   });
 
-  it("keeps exactly one atmospheric video on home and none on other content pages", () => {
-    const otherContentPages = [
-      services,
-      about,
-      blog,
-      ...articlePages.map((post) => post.document),
-    ];
+  it("restores the five homepage films in their exact narrative placements", () => {
+    const filmIds = Array.from(
+      home.querySelectorAll("[data-motion-film]"),
+      (film) => film.getAttribute("data-motion-film"),
+    );
 
-    expect(home.querySelectorAll("video")).toHaveLength(1);
-    for (const document of otherContentPages) {
+    expect(filmIds).toEqual([
+      "hero",
+      "process",
+      "bento",
+      "feature-card",
+      "cta-footer",
+    ]);
+    expect(
+      home.querySelector(
+        ".loop-section__film-region > .loop-section__film[data-motion-film='process']",
+      ),
+    ).not.toBeNull();
+    expect(
+      home.querySelector(
+        ".pattern-aside > .pattern-section__film[data-motion-film='bento']",
+      ),
+    ).not.toBeNull();
+    expect(
+      home.querySelector(
+        ".principles-section__body > .principles-section__film[data-motion-film='feature-card']",
+      ),
+    ).not.toBeNull();
+    expect(
+      home.querySelector(
+        ".home-final-cta > .home-final-cta__film[data-motion-film='cta-footer']",
+      ),
+    ).not.toBeNull();
+    expect(home.querySelector("#contact [data-motion-film]")).toBeNull();
+  });
+
+  it("hides captionless homepage film wrappers from assistive technology", () => {
+    const films = Array.from(home.querySelectorAll("[data-motion-film]"));
+
+    expect(films).toHaveLength(5);
+    expect(
+      films.map((film) => ({
+        hidden: film.getAttribute("aria-hidden"),
+        tagName: film.tagName,
+        hasCaption: film.querySelector("figcaption") !== null,
+      })),
+    ).toEqual(
+      Array.from({ length: 5 }, () => ({
+        hidden: "true",
+        tagName: "FIGURE",
+        hasCaption: false,
+      })),
+    );
+  });
+
+  it("keeps scroll behaviour exclusive to the homepage process film", () => {
+    const scrollFilms = Array.from(home.querySelectorAll("[data-scroll-film]"));
+    const processFilm = home.querySelector('[data-motion-film="process"]');
+    const ambientFilms = Array.from(
+      home.querySelectorAll(
+        '[data-motion-film]:not([data-motion-film="process"]) video',
+      ),
+    );
+
+    expect(scrollFilms).toHaveLength(1);
+    expect(scrollFilms[0]?.closest("[data-motion-film]")).toBe(processFilm);
+    expect(scrollFilms[0]?.getAttribute("data-media-behaviour")).toBe("scroll");
+    expect(processFilm?.closest("[data-scroll-film-region]")).not.toBeNull();
+    expect(ambientFilms).toHaveLength(4);
+    expect(
+      ambientFilms.every(
+        (video) =>
+          video.getAttribute("data-media-behaviour") === "loop" &&
+          !video.hasAttribute("data-scroll-film"),
+      ),
+    ).toBe(true);
+  });
+
+  it("uses the approved film count on every route and keeps articles and 404 static", () => {
+    expect(home.querySelectorAll("video")).toHaveLength(5);
+    expect(services.querySelectorAll("video")).toHaveLength(2);
+    expect(about.querySelectorAll("video")).toHaveLength(1);
+    expect(blog.querySelectorAll("video")).toHaveLength(1);
+
+    for (const document of [
+      ...articlePages.map((post) => post.document),
+      notFound,
+    ]) {
+      expect(document.querySelectorAll("[data-motion-film]")).toHaveLength(0);
       expect(document.querySelectorAll("video")).toHaveLength(0);
     }
   });
 
-  it("renders the hero poster and deferred decorative-media semantics", () => {
-    const video = home.querySelector(".home-hero__video");
+  it("renders the eager hero poster and deferred decorative-media semantics", () => {
+    const film = home.querySelector('[data-motion-film="hero"]');
+    const poster = film?.querySelector(".motion-film__poster");
+    const video = film?.querySelector(".home-hero__video");
 
-    expect(video?.getAttribute("poster")).toBe("/images/posters/hero.webp");
+    expect(film?.classList.contains("home-hero__media")).toBe(true);
+    expect(poster?.getAttribute("src")).toBe("/images/posters/hero.webp");
+    expect(poster?.getAttribute("width")).toBe("1280");
+    expect(poster?.getAttribute("height")).toBe("720");
+    expect(poster?.getAttribute("loading")).toBe("eager");
+    expect(poster?.getAttribute("fetchpriority")).toBe("high");
+    expect(poster?.getAttribute("alt")).toBe("");
+    expect(poster?.getAttribute("aria-hidden")).toBe("true");
     expect(video?.getAttribute("preload")).toBe("none");
+    expect(video?.hasAttribute("poster")).toBe(false);
     expect(video?.hasAttribute("autoplay")).toBe(false);
     expect(video?.hasAttribute("src")).toBe(false);
     expect(video?.hasAttribute("muted")).toBe(true);
@@ -772,6 +995,7 @@ describe("generated page truthfulness and media", () => {
     expect(video?.getAttribute("tabindex")).toBe("-1");
     expect(video?.hasAttribute("data-media")).toBe(true);
     expect(video?.getAttribute("data-media-load")).toBe("eager");
+    expect(video?.getAttribute("data-media-behaviour")).toBe("loop");
   });
 
   it("emits four unique same-origin deferred sources in responsive order", async () => {
@@ -821,11 +1045,16 @@ describe("generated page truthfulness and media", () => {
       Array.from(document.querySelectorAll("video:not(.home-hero__video)")),
     );
 
-    for (const obsoleteName of obsoleteVideoNames) {
-      expect(generatedMarkup).not.toContain(`/videos/${obsoleteName}`);
+    for (const rawLegacyName of rawLegacyVideoNames) {
+      expect(generatedMarkup).not.toContain(`/videos/${rawLegacyName}`);
     }
     for (const video of belowFoldVideos) {
-      expect(video.hasAttribute("poster")).toBe(true);
+      expect(
+        video
+          .closest("[data-motion-film]")
+          ?.querySelector(".motion-film__poster")
+          ?.getAttribute("src"),
+      ).toMatch(/^\/images\/posters\/.+\.webp$/);
       expect(video.getAttribute("preload")).toBe("none");
       expect(video.getAttribute("data-media-load")).toBe("nearby");
       expect(video.hasAttribute("autoplay")).toBe(false);
@@ -849,9 +1078,14 @@ describe("generated page truthfulness and media", () => {
 });
 
 describe("generated About content", () => {
-  it("presents Oliver's working focus and operating sequence without a portrait video", () => {
+  it("pairs Oliver's factual working focus with the approved feature-card film", () => {
     const hero = about.querySelector("[data-about-hero]");
+    const film = hero?.querySelector(
+      ".about-hero__visual > .about-hero__film[data-motion-film='feature-card']",
+    );
+    const video = film?.querySelector("video");
     const identity = hero?.querySelector("[data-about-identity]");
+    const sources = Array.from(film?.querySelectorAll("source") ?? []);
 
     expect(about.querySelectorAll("h1")).toHaveLength(1);
     expect(clean(hero?.querySelector(".eyebrow")?.textContent)).toBe(
@@ -866,7 +1100,24 @@ describe("generated About content", () => {
     expect(clean(identity?.textContent)).toBe(
       "Oliver Hitchings Automation systems Map → Build → Hand over",
     );
-    expect(about.querySelector("video")).toBeNull();
+    expect(film?.tagName).toBe("FIGURE");
+    expect(film?.getAttribute("aria-hidden")).toBeNull();
+    expect(
+      film?.querySelector(".motion-film__caption > .about-identity"),
+    ).toBe(identity);
+    expect(video?.getAttribute("aria-hidden")).toBe("true");
+    expect(video?.getAttribute("data-media-load")).toBe("nearby");
+    expect(video?.getAttribute("data-media-behaviour")).toBe("loop");
+    expect(video?.hasAttribute("data-scroll-film")).toBe(false);
+    expect(sources).toHaveLength(4);
+    expect(
+      sources.every(
+        (source) =>
+          source.hasAttribute("data-src") && !source.hasAttribute("src"),
+      ),
+    ).toBe(true);
+    expect(about.querySelectorAll("[data-motion-film]")).toHaveLength(1);
+    expect(about.querySelectorAll("[data-scroll-film]")).toHaveLength(0);
   });
 
   it("uses the approved operating stance and four editorial principles", () => {
@@ -924,18 +1175,41 @@ describe("generated About content", () => {
 });
 
 describe("generated Field Notes landing", () => {
-  it("introduces the field notes with the approved editorial framing", () => {
+  it("introduces the field notes with one contained cta-footer film", () => {
     const hero = blog.querySelector("[data-blog-hero]");
+    const grid = hero?.querySelector(".blog-hero__grid");
+    const copy = hero?.querySelector(".blog-hero__grid > .blog-hero__copy");
+    const film = hero?.querySelector(
+      ".blog-hero__grid > .blog-hero__film[data-motion-film='cta-footer']",
+    );
+    const video = film?.querySelector("video");
+    const sources = Array.from(film?.querySelectorAll("source") ?? []);
 
     expect(blog.querySelectorAll("h1")).toHaveLength(1);
-    expect(clean(hero?.querySelector(".eyebrow")?.textContent)).toBe("Field notes");
-    expect(clean(hero?.querySelector("h1")?.textContent)).toBe(
+    expect(grid).not.toBeNull();
+    expect(clean(copy?.querySelector(".eyebrow")?.textContent)).toBe("Field notes");
+    expect(clean(copy?.querySelector("h1")?.textContent)).toBe(
       "Automation that has to operate, not just demo.",
     );
-    expect(clean(hero?.querySelector(".blog-hero__intro")?.textContent)).toBe(
+    expect(clean(copy?.querySelector(".blog-hero__intro")?.textContent)).toBe(
       "Short writing on task design, human review, logs, failure handling and handover.",
     );
-    expect(blog.querySelector("video")).toBeNull();
+    expect(film?.tagName).toBe("FIGURE");
+    expect(film?.getAttribute("aria-hidden")).toBe("true");
+    expect(film?.querySelector("figcaption")).toBeNull();
+    expect(video?.getAttribute("aria-hidden")).toBe("true");
+    expect(video?.getAttribute("data-media-load")).toBe("nearby");
+    expect(video?.getAttribute("data-media-behaviour")).toBe("loop");
+    expect(video?.hasAttribute("data-scroll-film")).toBe(false);
+    expect(sources).toHaveLength(4);
+    expect(
+      sources.every(
+        (source) =>
+          source.hasAttribute("data-src") && !source.hasAttribute("src"),
+      ),
+    ).toBe(true);
+    expect(blog.querySelectorAll("[data-motion-film]")).toHaveLength(1);
+    expect(blog.querySelectorAll("[data-scroll-film]")).toHaveLength(0);
   });
 
   it("keeps every existing note as a ruled row with category, date and two links", () => {
@@ -1032,7 +1306,7 @@ describe("generated Field Note articles", () => {
 });
 
 describe("supporting-page truthfulness and contact paths", () => {
-  it("introduces no mail action, portrait video or invented proof language", () => {
+  it("introduces no mail action or invented proof language", () => {
     for (const document of [
       about,
       blog,
@@ -1041,7 +1315,6 @@ describe("supporting-page truthfulness and contact paths", () => {
       const mainText = clean(document.querySelector("main")?.textContent);
 
       expect(Boolean(document.querySelector("main a[href^='mailto:']"))).toBe(false);
-      expect(Boolean(document.querySelector("main video"))).toBe(false);
       expect(mainText).not.toMatch(
         /\b(?:testimonial|client results?|client outcomes?|client case stud(?:y|ies)|customer results?|customer outcomes?|award-winning|certified|accredited)\b/i,
       );

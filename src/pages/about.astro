@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import MotionFilm from "../components/MotionFilm.astro";
 ---
 
 <BaseLayout
@@ -18,15 +19,21 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           </p>
         </div>
 
-        <aside
-          class="about-identity"
-          aria-label="Oliver Hitchings working focus"
-          data-about-identity
-        >
-          <p data-field="Name">Oliver Hitchings</p>
-          <p data-field="Focus">Automation systems</p>
-          <p data-field="Sequence">Map → Build → Hand over</p>
-        </aside>
+        <div class="about-hero__visual">
+          <MotionFilm film="feature-card" class="about-hero__film">
+            <Fragment slot="caption">
+              <aside
+                class="about-identity"
+                aria-label="Oliver Hitchings working focus"
+                data-about-identity
+              >
+                <p data-field="Name">Oliver Hitchings</p>
+                <p data-field="Focus">Automation systems</p>
+                <p data-field="Sequence">Map → Build → Hand over</p>
+              </aside>
+            </Fragment>
+          </MotionFilm>
+        </div>
       </div>
     </section>
 

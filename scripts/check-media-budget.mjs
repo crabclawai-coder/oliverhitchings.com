@@ -1,7 +1,12 @@
 import { execFileSync } from "node:child_process";
 import { lstat, readdir } from "node:fs/promises";
-import { dirname, join, resolve, sep } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  mediaBudgets,
+  mediaRoutes,
+  motionFilms,
+} from "../src/data/media-manifest.js";
 
 const moduleFilePath = import.meta.url.startsWith("file:")
   ? fileURLToPath(import.meta.url)
@@ -9,48 +14,22 @@ const moduleFilePath = import.meta.url.startsWith("file:")
 const defaultProjectRoot = moduleFilePath
   ? resolve(dirname(moduleFilePath), "..")
   : process.cwd();
-const totalLimit = 8 * 1024 * 1024;
-const desktopLimit = 2.5 * 1024 * 1024;
-const mobileLimit = 1.75 * 1024 * 1024;
-const posterLimit = 150 * 1024;
-const posterName = "hero.webp";
-const expectedVideos = [
-  {
-    codec: "av1",
-    container: "webm",
-    height: 720,
-    name: "hero-1280.webm",
-    profile: "Main",
-    width: 1280,
-  },
-  {
-    codec: "h264",
-    container: "mp4",
-    height: 720,
-    level: 40,
-    name: "hero-1280.mp4",
-    profile: "High",
-    width: 1280,
-  },
-  {
-    codec: "av1",
-    container: "webm",
-    height: 540,
-    name: "hero-960.webm",
-    profile: "Main",
-    width: 960,
-  },
-  {
-    codec: "h264",
-    container: "mp4",
-    height: 540,
-    level: 31,
-    name: "hero-960.mp4",
-    profile: "High",
-    width: 960,
-  },
-];
+const expectedVideos = Object.values(motionFilms).flatMap((film) =>
+  [...film.variants.mobile, ...film.variants.desktop].map((source) => ({
+    ...source,
+    durationSeconds: film.durationSeconds,
+    filmId: film.id,
+    gop: film.gop,
+    name: basename(source.src),
+  })),
+);
+const expectedPosters = Object.values(motionFilms).map((film) => ({
+  ...film.poster,
+  filmId: film.id,
+  name: basename(film.poster.src),
+}));
 const expectedVideoNames = expectedVideos.map(({ name }) => name);
+const expectedPosterNames = expectedPosters.map(({ name }) => name);
 
 function portablePath(parts, directory = false) {
   const path = parts.join(sep).split(sep).join("/");
@@ -164,12 +143,7 @@ export async function inspectMediaDirectory(
   };
 }
 
-function probe(
-  filePath,
-  fileName,
-  errors,
-  execFileImpl = execFileSync,
-) {
+function probe(filePath, fileName, errors, execFileImpl = execFileSync) {
   try {
     return JSON.parse(
       execFileImpl(
@@ -264,8 +238,78 @@ function expectMetadata(errors, fileName, actual, expected, label) {
   }
 }
 
+function verifyKeyframeGaps(filePath, expected, errors, execFileImpl) {
+  let metadata;
+  try {
+    metadata = JSON.parse(
+      execFileImpl(
+        "ffprobe",
+        [
+          "-v", "error", "-select_streams", "v:0", "-skip_frame", "nokey",
+          "-show_entries", "frame=best_effort_timestamp_time", "-of", "json",
+          filePath,
+        ],
+        { encoding: "utf8" },
+      ),
+    );
+  } catch (error) {
+    errors.push(
+      `ffprobe keyframe scan failed for ${expected.name}: ${error.message}`,
+    );
+    return;
+  }
+
+  const frames = Array.isArray(metadata.frames) ? metadata.frames : [];
+  const timestamps = frames
+    .map((frame) => Number(frame?.best_effort_timestamp_time))
+    .filter(Number.isFinite)
+    .sort((left, right) => left - right);
+
+  if (timestamps.length === 0) {
+    errors.push(
+      `${expected.name}: keyframe scan returned no usable timestamps`,
+    );
+    return;
+  }
+  if (timestamps.length < 2) {
+    errors.push(
+      `${expected.name}: keyframe scan returned ${timestamps.length} usable timestamp, expected at least 2`,
+    );
+    return;
+  }
+
+  const firstTimestamp = timestamps[0];
+  const finalTimestamp = timestamps.at(-1);
+  if (firstTimestamp < -0.05 || firstTimestamp > 1.05) {
+    errors.push(
+      `${expected.name}: keyframe timeline starts at ${firstTimestamp} seconds, expected within 1.05 seconds of zero`,
+    );
+  }
+  if (
+    finalTimestamp < expected.durationSeconds - 1.05 ||
+    finalTimestamp > expected.durationSeconds + 0.05
+  ) {
+    errors.push(
+      `${expected.name}: keyframe timeline ends at ${finalTimestamp} seconds, expected within 1.05 seconds of ${expected.durationSeconds}`,
+    );
+  }
+
+  for (let index = 1; index < timestamps.length; index += 1) {
+    const gap = timestamps[index] - timestamps[index - 1];
+    if (gap > 1.05) {
+      errors.push(
+        `${expected.name}: adjacent keyframe gap is ${Number(gap.toFixed(6))} seconds, limit 1.05 seconds`,
+      );
+    }
+  }
+}
+
 function verifyVideo(filePath, expected, errors, execFileImpl) {
   const metadata = probe(filePath, expected.name, errors, execFileImpl);
+
+  if (expected.filmId === "process") {
+    verifyKeyframeGaps(filePath, expected, errors, execFileImpl);
+  }
   if (!metadata) {
     return;
   }
@@ -313,9 +357,12 @@ function verifyVideo(filePath, expected, errors, execFileImpl) {
     );
   }
   errors.push(...validateFrameRates(expected.name, stream));
-  if (!Number.isFinite(duration) || Math.abs(duration - 8.04) > 0.05) {
+  if (
+    !Number.isFinite(duration) ||
+    Math.abs(duration - expected.durationSeconds) > 0.05
+  ) {
     errors.push(
-      `${expected.name}: duration is ${duration}, expected approximately 8.04 seconds`,
+      `${expected.name}: duration is ${duration}, expected approximately ${expected.durationSeconds} seconds`,
     );
   }
   if (audioStreams.length !== 0) {
@@ -325,29 +372,60 @@ function verifyVideo(filePath, expected, errors, execFileImpl) {
   }
 }
 
-function verifyPoster(filePath, errors, execFileImpl) {
-  const metadata = probe(filePath, posterName, errors, execFileImpl);
+function verifyPoster(filePath, expected, errors, execFileImpl) {
+  const metadata = probe(filePath, expected.name, errors, execFileImpl);
   const stream = (metadata?.streams ?? []).find(
     ({ codec_type: codecType }) => codecType === "video",
   );
 
   if (!metadata || !stream) {
     if (metadata) {
-      errors.push(`${posterName}: image stream is missing`);
+      errors.push(`${expected.name}: image stream is missing`);
     }
     return;
   }
 
-  expectMetadata(errors, posterName, stream.codec_name, "webp", "codec");
-  expectMetadata(errors, posterName, stream.width, 1280, "width");
-  expectMetadata(errors, posterName, stream.height, 720, "height");
-  expectMetadata(errors, posterName, stream.pix_fmt, "yuv420p", "pixel format");
+  expectMetadata(errors, expected.name, stream.codec_name, "webp", "codec");
+  expectMetadata(errors, expected.name, stream.width, expected.width, "width");
+  expectMetadata(errors, expected.name, stream.height, expected.height, "height");
+  expectMetadata(errors, expected.name, stream.pix_fmt, "yuv420p", "pixel format");
 }
 
 function enforceBudget(errors, label, actual, limit) {
   if (actual > limit) {
     errors.push(`${label}: actual ${actual} bytes; limit ${limit} bytes`);
   }
+}
+
+export function calculateTransferBudgets({
+  manifest = motionFilms,
+  routes = mediaRoutes,
+  videoSizes,
+  posterSizes,
+}) {
+  const selectedBytes = (filmId, rendition) => {
+    const film = manifest[filmId];
+    const videoBytes = Math.max(
+      ...film.variants[rendition].map(
+        ({ src }) => videoSizes.get(basename(src)) ?? 0,
+      ),
+    );
+    return videoBytes + (posterSizes.get(basename(film.poster.src)) ?? 0);
+  };
+
+  return {
+    initialDesktop: selectedBytes("hero", "desktop"),
+    initialMobile: selectedBytes("hero", "mobile"),
+    ...Object.fromEntries(
+      Object.entries(routes).map(([route, ids]) => [
+        route,
+        [...new Set(ids)].reduce(
+          (total, id) => total + selectedBytes(id, "desktop"),
+          0,
+        ),
+      ]),
+    ),
+  };
 }
 
 export async function checkMediaBudget({
@@ -362,17 +440,18 @@ export async function checkMediaBudget({
     mediaType: "video",
   });
   const posterInventory = await inspectMediaDirectory(posterDirectory, {
-    expectedNames: [posterName],
+    expectedNames: expectedPosterNames,
     mediaType: "poster",
   });
   const errors = [...videoInventory.errors, ...posterInventory.errors];
   const videoFiles = new Map(
     videoInventory.rootFiles.map((entry) => [entry.relativePath, entry]),
   );
-  const posterFile = posterInventory.rootFiles.find(
-    ({ relativePath }) => relativePath === posterName,
+  const posterFiles = new Map(
+    posterInventory.rootFiles.map((entry) => [entry.relativePath, entry]),
   );
   const videoSizes = new Map();
+  const posterSizes = new Map();
 
   for (const expected of expectedVideos) {
     const entry = videoFiles.get(expected.name);
@@ -384,39 +463,60 @@ export async function checkMediaBudget({
     verifyVideo(entry.absolutePath, expected, errors, execFileImpl);
   }
 
-  const posterSize = posterFile?.size ?? 0;
-  if (posterFile) {
-    verifyPoster(posterFile.absolutePath, errors, execFileImpl);
-    enforceBudget(errors, "Poster budget", posterSize, posterLimit);
+  for (const expected of expectedPosters) {
+    const entry = posterFiles.get(expected.name);
+    if (!entry) {
+      continue;
+    }
+
+    posterSizes.set(expected.name, entry.size);
+    verifyPoster(entry.absolutePath, expected, errors, execFileImpl);
+    enforceBudget(
+      errors,
+      `${expected.name} poster budget`,
+      entry.size,
+      expected.maxBytes,
+    );
   }
 
-  const totalBytes = videoInventory.totalBytes + posterInventory.totalBytes;
-  const desktopBytes =
-    posterSize +
-    Math.max(
-      videoSizes.get("hero-1280.webm") ?? 0,
-      videoSizes.get("hero-1280.mp4") ?? 0,
-    );
-  const mobileBytes =
-    posterSize +
-    Math.max(
-      videoSizes.get("hero-960.webm") ?? 0,
-      videoSizes.get("hero-960.mp4") ?? 0,
-    );
+  const inventoryBytes = videoInventory.totalBytes + posterInventory.totalBytes;
+  const posterBytes = posterInventory.totalBytes;
+  const transfers = calculateTransferBudgets({ videoSizes, posterSizes });
 
-  enforceBudget(errors, "Retained media total", totalBytes, totalLimit);
-  enforceBudget(errors, "Desktop media path", desktopBytes, desktopLimit);
-  enforceBudget(errors, "Mobile media path", mobileBytes, mobileLimit);
+  enforceBudget(
+    errors,
+    "Tracked media inventory",
+    inventoryBytes,
+    mediaBudgets.inventory,
+  );
+  enforceBudget(
+    errors,
+    "Initial desktop media path",
+    transfers.initialDesktop,
+    mediaBudgets.initialDesktop,
+  );
+  enforceBudget(
+    errors,
+    "Initial mobile media path",
+    transfers.initialMobile,
+    mediaBudgets.initialMobile,
+  );
+  for (const [route, limit] of Object.entries(mediaBudgets.routes)) {
+    enforceBudget(errors, `${route} media path`, transfers[route], limit);
+  }
 
   if (errors.length > 0) {
     logger.error(`Media budget check failed:\n- ${errors.join("\n- ")}`);
   } else {
+    const routeSummary = Object.keys(mediaBudgets.routes)
+      .map((route) => `${route} ${transfers[route]} bytes`)
+      .join("; ");
     logger.log(
-      `Media budget check passed: total ${totalBytes} bytes; desktop ${desktopBytes} bytes; mobile ${mobileBytes} bytes; poster ${posterSize} bytes.`,
+      `Media budget check passed: inventory ${inventoryBytes} bytes; posters ${posterBytes} bytes; initial desktop ${transfers.initialDesktop} bytes; initial mobile ${transfers.initialMobile} bytes; ${routeSummary}.`,
     );
   }
 
-  return { desktopBytes, errors, mobileBytes, posterSize, totalBytes };
+  return { errors, inventoryBytes, posterBytes, transfers };
 }
 
 export async function runMediaBudgetCli(options) {

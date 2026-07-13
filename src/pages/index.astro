@@ -1,4 +1,5 @@
 ---
+import MotionFilm from "../components/MotionFilm.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { site } from "../data/site.js";
 ---
@@ -6,37 +7,13 @@ import { site } from "../data/site.js";
 <BaseLayout>
   <main class="home-page">
     <section class="home-hero">
-      <video
-        class="home-hero__video"
-        poster="/images/posters/hero.webp"
-        muted
-        loop
-        playsinline
-        preload="none"
-        aria-hidden="true"
-        tabindex="-1"
-        data-media
-        data-media-load="eager"
-      >
-        <source
-          data-src="/videos/hero-960.webm"
-          type='video/webm; codecs="av01.0.04M.08"'
-          media="(max-width: 640px)"
-        />
-        <source
-          data-src="/videos/hero-960.mp4"
-          type='video/mp4; codecs="avc1.64001f"'
-          media="(max-width: 640px)"
-        />
-        <source
-          data-src="/videos/hero-1280.webm"
-          type='video/webm; codecs="av01.0.05M.08"'
-        />
-        <source
-          data-src="/videos/hero-1280.mp4"
-          type='video/mp4; codecs="avc1.640028"'
-        />
-      </video>
+      <MotionFilm
+        film="hero"
+        loading="eager"
+        behaviour="loop"
+        class="home-hero__media"
+        videoClass="home-hero__video"
+      />
       <div class="home-hero__scrim"></div>
 
       <div class="container home-hero__content">
@@ -101,12 +78,12 @@ import { site } from "../data/site.js";
     <section class="proof-rail" aria-label="Verified delivery facts">
       <div class="container proof-rail__grid">
         <div data-proof-item>
-          <strong>1</strong>
-          <p>One workflow is selected before a build begins.</p>
+          <strong class="proof-value">1 workflow</strong>
+          <p>Selected before a build begins.</p>
         </div>
         <div data-proof-item>
-          <strong>3</strong>
-          <p>Build handover assets: prompts, logs and a runbook.</p>
+          <strong class="proof-value">3 handover assets</strong>
+          <p>Prompts, logs and a runbook stay with the owner.</p>
         </div>
       </div>
     </section>
@@ -121,6 +98,14 @@ import { site } from "../data/site.js";
           The aim is not to automate everything. It is to make one repeatable path clear enough to
           run, inspect and change.
         </p>
+      </div>
+
+      <div class="loop-section__film-region" data-scroll-film-region>
+        <MotionFilm
+          film="process"
+          behaviour="scroll"
+          class="loop-section__film"
+        />
       </div>
 
       <ol class="loop-sequence">
@@ -149,13 +134,18 @@ import { site } from "../data/site.js";
 
     <section class="editorial-section pattern-section" data-patterns data-reveal>
       <div class="container pattern-layout">
-        <div class="pattern-heading">
-          <p class="eyebrow">Example system patterns</p>
-          <h2>Three useful shapes for repeat work.</h2>
-          <p class="pattern-disclosure">
-            These are example system patterns, not client case studies.
-          </p>
-        </div>
+        <aside class="pattern-aside">
+          <div class="pattern-aside__inner">
+            <div class="pattern-heading">
+              <p class="eyebrow">Example system patterns</p>
+              <h2>Three useful shapes for repeat work.</h2>
+              <p class="pattern-disclosure">
+                These are example system patterns, not client case studies.
+              </p>
+            </div>
+          </div>
+          <MotionFilm film="bento" class="pattern-section__film" />
+        </aside>
 
         <div class="pattern-rows">
           <article data-pattern>
@@ -268,23 +258,28 @@ import { site } from "../data/site.js";
         </div>
       </div>
 
-      <div class="principle-rows">
-        <article>
-          <h3>Inspectability</h3>
-          <p>Visible prompts, rules, assumptions and logs.</p>
-        </article>
-        <article>
-          <h3>Failure handling</h3>
-          <p>Retries, stop conditions and escalation.</p>
-        </article>
-        <article>
-          <h3>Handover</h3>
-          <p>Material needed to operate, review and change the system.</p>
-        </article>
+      <div class="principles-section__body">
+        <div class="principle-rows">
+          <article>
+            <h3>Inspectability</h3>
+            <p>Visible prompts, rules, assumptions and logs.</p>
+          </article>
+          <article>
+            <h3>Failure handling</h3>
+            <p>Retries, stop conditions and escalation.</p>
+          </article>
+          <article>
+            <h3>Handover</h3>
+            <p>Material needed to operate, review and change the system.</p>
+          </article>
+        </div>
+        <MotionFilm film="feature-card" class="principles-section__film" />
       </div>
     </section>
 
     <section class="home-final-cta">
+      <MotionFilm film="cta-footer" class="home-final-cta__film" />
+      <div class="home-final-cta__scrim"></div>
       <div class="container home-final-cta__grid">
         <p class="eyebrow">Have a repeat task in mind?</p>
         <div>
