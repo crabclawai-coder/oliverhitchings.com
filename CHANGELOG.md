@@ -2,6 +2,23 @@
 
 All notable changes to the website are recorded here.
 
+## [0.2.0.0] - 2026-07-13
+
+### Added
+
+- Restored cinematic films across the homepage, services, about and Field Notes pages, with responsive AV1 and H.264 sources plus lightweight poster fallbacks.
+- Added scroll-responsive process motion on larger screens and accessible compact navigation on small screens.
+
+### Changed
+
+- Tightened the editorial structure, section spacing and responsive layouts while preserving the approved redesign and enquiry flow.
+- Made cinematic media load only when useful, pause when hidden or off-screen, and respect reduced-motion and data-saving preferences.
+
+### Fixed
+
+- Preserved media and navigation controllers across browser back-forward cache restores without leaking duplicate listeners.
+- Added fail-closed media, keyframe and route-budget checks so missing or oversized cinematic assets cannot ship unnoticed.
+
 ## [0.1.2.0] - 2026-07-12
 
 ### Fixed
