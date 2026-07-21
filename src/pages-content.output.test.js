@@ -10,7 +10,7 @@ import {
   symlink,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { extractCssAtRuleBlocks } from "./css-test-helpers.js";
@@ -137,16 +137,32 @@ async function fileExists(filePath) {
 }
 
 async function readModuleSources(documentRef, directory) {
-  return Promise.all(
-    Array.from(
-      documentRef.querySelectorAll("script[type='module'][src]"),
-      (script) =>
-        readFile(
-          join(directory, script.getAttribute("src").replace(/^\//, "")),
-          "utf8",
-        ),
-    ),
+  const queue = Array.from(
+    documentRef.querySelectorAll("script[type='module'][src]"),
+    (script) => script.getAttribute("src").replace(/^\//, ""),
   );
+  const visited = new Set();
+  const sources = [];
+
+  while (queue.length > 0) {
+    const modulePath = queue.shift();
+    if (visited.has(modulePath)) continue;
+    visited.add(modulePath);
+
+    const source = await readFile(join(directory, modulePath), "utf8");
+    sources.push(source);
+
+    for (const match of source.matchAll(/\b(?:from|import)\s*["']([^"']+)["']/g)) {
+      const specifier = match[1];
+      if (specifier.startsWith(".")) {
+        queue.push(join(dirname(modulePath), specifier));
+      } else if (specifier.startsWith("/")) {
+        queue.push(specifier.replace(/^\//, ""));
+      }
+    }
+  }
+
+  return sources;
 }
 
 async function readGeneratedFiles(directory) {
@@ -295,13 +311,17 @@ beforeAll(async () => {
     observeBuildDirectory,
   );
   observeGeneratedFiles = await readGeneratedFiles(observeBuildDirectory);
-  const stylesheetPath = services
-    .querySelector("link[rel='stylesheet']")
-    ?.getAttribute("href");
-  servicesStylesheetSource = await readFile(
-    join(buildDirectory, stylesheetPath.replace(/^\//, "")),
-    "utf8",
+  const stylesheetPaths = Array.from(
+    services.querySelectorAll("link[rel='stylesheet']"),
+    (link) => link.getAttribute("href").replace(/^\//, ""),
   );
+  servicesStylesheetSource = (
+    await Promise.all(
+      stylesheetPaths.map((stylesheetPath) =>
+        readFile(join(buildDirectory, stylesheetPath), "utf8"),
+      ),
+    )
+  ).join("\n");
 }, 120_000);
 
 afterAll(async () => {
@@ -364,17 +384,17 @@ describe("generated homepage content", () => {
     const proofItems = Array.from(home.querySelectorAll("[data-proof-item]"));
 
     expect(proofItems).toHaveLength(2);
-    expect(clean(proofItems[0]?.textContent)).toBe(
-      "1 workflow Selected before a build begins.",
-    );
     expect(clean(proofItems[0]?.querySelector(".proof-value")?.textContent)).toBe(
       "1 workflow",
     );
-    expect(clean(proofItems[1]?.textContent)).toBe(
-      "3 handover assets Prompts, logs and a runbook stay with the owner.",
+    expect(clean(proofItems[0]?.querySelector("p")?.textContent)).toBe(
+      "Selected before a build begins.",
     );
     expect(clean(proofItems[1]?.querySelector(".proof-value")?.textContent)).toBe(
       "3 handover assets",
+    );
+    expect(clean(proofItems[1]?.querySelector("p")?.textContent)).toBe(
+      "Prompts, logs and a runbook stay with the owner.",
     );
   });
 
@@ -413,10 +433,18 @@ describe("generated homepage content", () => {
     expect(clean(packages?.querySelector("h2")?.textContent)).toBe(
       "Choose the smallest useful first step.",
     );
-    expect(packageText).toContain("Fixed scope Task Map £250");
-    expect(packageText).toContain("Focused implementation First Build £500");
-    expect(packageText).toContain("Connected workflow Operator System £1,000");
-    expect(packageText).toContain("Optional retainer Ongoing support from £100/month");
+    expect(
+      packageRows.map((row) => [
+        clean(row.querySelector(".eyebrow")?.textContent),
+        clean(row.querySelector("h3")?.textContent),
+        clean(row.querySelector(".price")?.textContent),
+      ]),
+    ).toEqual([
+      ["Fixed scope", "Task Map", "£250"],
+      ["Focused implementation", "First Build", "£500"],
+      ["Connected workflow", "Operator System", "£1,000"],
+      ["Optional retainer", "Ongoing support", "from £100/month"],
+    ]);
     expect(packageText).toContain(guidePriceNote);
     expect(
       packageRows.map((row) => ({
@@ -504,12 +532,20 @@ describe("generated Services content", () => {
       packages?.querySelectorAll(".services-package-row") ?? [],
     );
 
-    expect(text).toContain("Fixed scope Task Map £250");
-    expect(text).toContain("Focused implementation First Build £500");
-    expect(text).toContain("Connected workflow Operator System £1,000");
+    expect(
+      packageRows.map((row) => [
+        clean(row.querySelector(".eyebrow")?.textContent),
+        clean(row.querySelector("h3")?.textContent),
+        clean(row.querySelector(".price")?.textContent),
+      ]),
+    ).toEqual([
+      ["Fixed scope", "Task Map", "£250"],
+      ["Focused implementation", "First Build", "£500"],
+      ["Connected workflow", "Operator System", "£1,000"],
+      ["Optional retainer", "Ongoing support", "from £100/month"],
+    ]);
     expect(text).toContain("Run guide plus two review sessions after first use");
     expect(text).toContain("30-day improvement period after launch");
-    expect(text).toContain("Optional retainer Ongoing support from £100/month");
     expect(text).toContain(guidePriceNote);
     expect(
       packageRows.map((row) => ({
@@ -626,16 +662,20 @@ describe("generated Services content", () => {
   });
 
   it("uses one mobile page start, balanced pattern type and stable film crops", () => {
-    const compactCss = extractCssAtRuleBlocks(
-      servicesStylesheetSource,
+    const compactCss = [
       "@media (max-width: 620px)",
-    ).join("\n");
+      "@media (width <= 620px)",
+    ]
+      .flatMap((prelude) =>
+        extractCssAtRuleBlocks(servicesStylesheetSource, prelude),
+      )
+      .join("\n");
 
     expect(servicesStylesheetSource).toMatch(
       /--mobile-page-start:\s*9\.5rem/,
     );
     expect(servicesStylesheetSource).toMatch(
-      /\.pattern-heading h2\{[^}]*max-width:9ch;[^}]*text-wrap:balance/,
+      /\.pattern-heading h2\{(?=[^}]*max-width:9ch)(?=[^}]*text-wrap:balance)[^}]*\}/,
     );
     expect(compactCss).toMatch(
       /\.home-hero__content,.services-hero,.about-hero,.blog-hero,.article-template,.error-page\{[^}]*padding-top:var\(--mobile-page-start\)/,
@@ -729,14 +769,10 @@ describe("generated Services content", () => {
     expect(
       form?.querySelector("button.button[type='submit']")?.textContent.trim(),
     ).toBe("Send enquiry");
-    expect(
-      servicesModuleSources.some(
-        (source) =>
-          source.includes("[data-contact-form]") &&
-          source.includes('addEventListener("submit"') &&
-          /[A-Za-z_$][\w$]*\(\);?\s*$/.test(source),
-      ),
-    ).toBe(true);
+    const servicesJavaScript = servicesModuleSources.join("\n");
+    expect(servicesJavaScript).toContain("[data-contact-form]");
+    expect(servicesJavaScript).toMatch(/addEventListener\([`'"]submit[`'"]/);
+    expect(/[A-Za-z_$][\w$]*\(\);?/.test(servicesJavaScript)).toBe(true);
   });
 
   it("keeps rendered package values aligned with the Worker allowlist", async () => {
@@ -1097,9 +1133,9 @@ describe("generated About content", () => {
     expect(clean(hero?.querySelector(".about-hero__intro")?.textContent)).toBe(
       "My approach starts with the task: what triggers it, which evidence it uses, where judgement is needed and who owns the result.",
     );
-    expect(clean(identity?.textContent)).toBe(
-      "Oliver Hitchings Automation systems Map → Build → Hand over",
-    );
+    expect(
+      Array.from(identity?.querySelectorAll("p") ?? [], (item) => clean(item.textContent)),
+    ).toEqual(["Oliver Hitchings", "Automation systems", "Map → Build → Hand over"]);
     expect(film?.tagName).toBe("FIGURE");
     expect(film?.getAttribute("aria-hidden")).toBeNull();
     expect(
