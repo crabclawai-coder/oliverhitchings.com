@@ -1,63 +1,51 @@
-# Astro Starter Kit: Blog
+# oliverhitchings.com
 
-```sh
-bun create astro@latest -- --template blog
+Astro source for `oliverhitchings.com`, deployed as a static Cloudflare Pages site with a dedicated Cloudflare Worker for enquiries.
+
+## Local development
+
+```bash
+npm install
+npm run dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+The local server runs on `http://localhost:4321` by default.
 
-Features:
+Run the same checks used by CI before opening a pull request:
 
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and Open Graph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-├── public/
-├── src/
-│   ├── assets/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
-├── astro.config.mjs
-├── README.md
-├── package.json
-└── tsconfig.json
+```bash
+npm ci
+npm audit --audit-level=moderate
+npm test
+npm run check:media
+npm run build
+git diff --check
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+The media checks require `ffprobe`, which is included with `ffmpeg`; CI installs it explicitly.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+`npm run start` rebuilds before serving `dist/`, so local production checks do not use stale output.
 
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
+## Deployment
 
-Any static assets, like images, can be placed in the `public/` directory.
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) verifies pull requests and `main`. A successful push to `main`, or an explicit manual run selected on `main`, deploys the exact verified static artifact to the `oliverhitchings` Cloudflare Pages project from a job with no source checkout. Manual runs selected on another ref cannot deploy production. A release check prevents a second Pages `/api/contact` backend from being reintroduced.
 
-## 🧞 Commands
+The contact Worker does not deploy on a push. Its workflow job is deliberately dormant until the provider, all delivery secrets, required/enforced Turnstile, the live Pages form, the active 100% rollback version, repository arming variable, typed confirmation, and protected-environment approval have all been confirmed. Follow the operations runbook rather than bypassing those gates.
 
-All commands are run from the root of the project, from a terminal:
+## Contact form
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `bun install`             | Installs dependencies                            |
-| `bun dev`             | Starts local dev server at `localhost:4321`      |
-| `bun build`           | Build your production site to `./dist/`          |
-| `bun preview`         | Preview your build locally, before deploying     |
-| `bun astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `bun astro -- --help` | Get help using the Astro CLI                     |
+The services form sends JSON to same-origin `POST /api/contact`. The intended production route is owned by the Worker in [`contact-worker/`](contact-worker/), which validates the request and sends one email through Resend:
 
-## 👀 Want to learn more?
+- sender: `forms.oliverhitchings.com`, which must be verified in Resend before deployment;
+- destination: the configured owner inbox;
+- `Reply-To`: the visitor's validated email address.
 
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+The root domain's existing mail MX and SPF records are outside this flow and must not be replaced. The dedicated Worker is the only contact backend; Cloudflare Pages and its public preview hostname cannot send enquiries independently.
 
-## Credit
+See [`docs/operations/contact-form.md`](docs/operations/contact-form.md) for configuration, release, evidence, rollback, and eventual cleanup instructions.
 
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+## Project records
+
+- [`CHANGELOG.md`](CHANGELOG.md) records the user-facing release history.
+- [`docs/superpowers/specs/2026-07-09-website-enquiry-redesign-design.md`](docs/superpowers/specs/2026-07-09-website-enquiry-redesign-design.md) records the approved design direction and implementation pivots.
+- [`docs/superpowers/plans/2026-07-09-website-enquiry-redesign.md`](docs/superpowers/plans/2026-07-09-website-enquiry-redesign.md) records the staged implementation and verification plan.

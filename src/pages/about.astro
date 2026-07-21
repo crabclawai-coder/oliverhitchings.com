@@ -1,46 +1,109 @@
 ---
-import Layout from '../layouts/BlogPost.astro';
+import BaseLayout from "../layouts/BaseLayout.astro";
+import MotionFilm from "../components/MotionFilm.astro";
 ---
 
-<Layout
-	title="About"
-	description="Oliver Hitchings — IT engineer, AI tinkerer, builder of OpenClaw."
-	pubDate={new Date('2026-04-16')}
+<BaseLayout
+  title="About | Oliver Hitchings"
+  description="About Oliver Hitchings and the practical engineering approach behind inspectable automation systems."
 >
-	<p>
-		I&rsquo;m Oliver Hitchings &mdash; an IT engineer based in the UK. Online I go by
-		<strong>CanYouLikeNot</strong>. I spend most of my free time building with AI: writing autonomous
-		agents, wiring up local models, and figuring out where the limits actually are.
-	</p>
+  <main class="subpage about-page">
+    <section class="about-hero" data-about-hero>
+      <div class="container about-hero__grid">
+        <div class="about-hero__copy">
+          <p class="eyebrow">About Oliver Hitchings</p>
+          <h1>I design small automation systems around the work people already do.</h1>
+          <p class="about-hero__intro">
+            My approach starts with the task: what triggers it, which evidence it uses, where
+            judgement is needed and who owns the result.
+          </p>
+        </div>
 
-	<p>
-		The main project is <strong>OpenClaw</strong>: a local-first autonomous AI platform that runs
-		natively on a <strong>Mac Mini and Mac Studio</strong> in my home office. It runs five
-		specialised agents &mdash; coding, orchestration, reasoning, workflows, and auditing &mdash;
-		alongside its own gateway, automations, memory store, and channels into Telegram and Discord.
-		A local model handles the routine work, with Codex (via free ChatGPT OAuth) and Claude Opus
-		on tap for the heavy lifting. Total cloud cost: $0.
-	</p>
+        <div class="about-hero__visual">
+          <MotionFilm film="feature-card" class="about-hero__film">
+            <Fragment slot="caption">
+              <aside
+                class="about-identity"
+                aria-label="Oliver Hitchings working focus"
+                data-about-identity
+              >
+                <p data-field="Name">Oliver Hitchings</p>
+                <p data-field="Focus">Automation systems</p>
+                <p data-field="Sequence">Map → Build → Hand over</p>
+              </aside>
+            </Fragment>
+          </MotionFilm>
+        </div>
+      </div>
+    </section>
 
-	<p>
-		Day to day I drive <strong>Claude Code</strong> and the <strong>Codex CLI</strong> for almost
-		every coding task. This site is where I write about what works, what doesn&rsquo;t, and what
-		feels like it&rsquo;s about to change everything about how engineers actually work.
-	</p>
+    <section
+      class="container editorial-section about-stance"
+      data-operating-stance
+      data-reveal
+    >
+      <div>
+        <p class="eyebrow">Operating stance</p>
+        <h2>The model call is only one step.</h2>
+      </div>
+      <p class="about-stance__copy">
+        The operational questions come first: which source of truth wins, when the system should
+        stop, what gets logged and what a person should do when confidence is low. Once those
+        boundaries are clear, the build can stay narrow, observable and easier to hand over.
+      </p>
+    </section>
 
-	<h2>What you&rsquo;ll find here</h2>
-	<ul>
-		<li>Practical write-ups on building with AI agents</li>
-		<li>Deep-dives into OpenClaw&rsquo;s architecture as it evolves</li>
-		<li>Workflows, hooks, and tricks for Claude Code and Codex</li>
-		<li>Honest takes on where the future of working is heading</li>
-	</ul>
+    <section
+      class="container editorial-section about-principles"
+      data-about-principles
+      data-reveal
+    >
+      <div class="editorial-heading compact-heading">
+        <div>
+          <p class="eyebrow">Operating principles</p>
+          <h2>Four rules for an operable system.</h2>
+        </div>
+      </div>
 
-	<h2>Find me elsewhere</h2>
-	<ul>
-		<li>GitHub: <a href="https://github.com/CanYouLikeNot">@CanYouLikeNot</a></li>
-		<li>Email: <a href="mailto:oliverhit2008@gmail.com">oliverhit2008@gmail.com</a></li>
-		<li>What I&rsquo;m doing this month: <a href="/now">/now</a></li>
-		<li>Hire me: <a href="/services">work with me</a></li>
-	</ul>
-</Layout>
+      <div class="about-principle-rows">
+        <article>
+          <span aria-hidden="true">01</span>
+          <h3>Show the work</h3>
+          <p>Prompts, rules, assumptions and logs visible enough to review a bad run.</p>
+        </article>
+        <article>
+          <span aria-hidden="true">02</span>
+          <h3>Keep a person responsible</h3>
+          <p>Stop for review when a step is uncertain or consequential.</p>
+        </article>
+        <article>
+          <span aria-hidden="true">03</span>
+          <h3>Design the failure path</h3>
+          <p>Make retries, stop conditions and escalation explicit.</p>
+        </article>
+        <article>
+          <span aria-hidden="true">04</span>
+          <h3>Hand over ownership</h3>
+          <p>Leave run instructions, logs and change notes with the owner.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="about-final-cta" data-about-cta>
+      <div class="container about-final-cta__grid">
+        <p class="eyebrow">A useful starting point</p>
+        <div>
+          <h2>Bring one task that already repeats.</h2>
+          <p class="about-cta__copy">
+            Describe the trigger, inputs, output, tools and reviewer. That is enough to decide
+            whether a Task Map, First Build or Operator System is the sensible starting point.
+          </p>
+          <div class="cta-row left">
+            <a class="button ghost" href="/services#packages">View packages</a>
+            <a class="button" href="/services#contact">Start an enquiry</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

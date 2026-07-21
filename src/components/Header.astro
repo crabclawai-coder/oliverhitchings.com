@@ -1,105 +1,76 @@
 ---
-import Logo from './Logo.astro';
+import Logo from "./Logo.astro";
+import { site } from "../data/site.js";
 
-const path = Astro.url.pathname;
-function isActive(href: string) {
-	if (href === '/') return path === '/' || path === '';
-	return path === href || path === href + '/' || path.startsWith(href + '/');
-}
+const links = [
+  { href: "/", label: "Home" },
+  { href: "/services", label: "Services" },
+  { href: "/about", label: "About" },
+  { href: "/blog", label: "Blog" },
+];
+
+const normalisePath = (value) => value.replace(/\/$/, "") || "/";
+const currentPath = normalisePath(Astro.url.pathname);
+const isActive = (link) => currentPath === normalisePath(link.href);
 ---
 
-<nav class="cinema-nav">
-	<div class="pill">
-		<a href="/" class="brand" aria-label="Oliver Hitchings home">
-			<Logo size={28} fill="white" />
-		</a>
-		<div class="links">
-			<a href="/" class:list={[{ active: isActive('/') }]} aria-current={isActive('/') ? 'page' : undefined}>Home</a>
-			<a href="/services" class:list={[{ active: isActive('/services') }]} aria-current={isActive('/services') ? 'page' : undefined}>Services</a>
-			<a href="/pilot" class:list={[{ active: isActive('/pilot') }]} aria-current={isActive('/pilot') ? 'page' : undefined}>Pilot</a>
-			<a href="/about" class:list={[{ active: isActive('/about') }]} aria-current={isActive('/about') ? 'page' : undefined}>About</a>
-			<a href="/now" class:list={[{ active: isActive('/now') }]} aria-current={isActive('/now') ? 'page' : undefined}>Now</a>
-			<a href="/blog" class:list={[{ active: isActive('/blog') }]} aria-current={isActive('/blog') ? 'page' : undefined}>Blog</a>
-		</div>
-		<a href="/pilot" class="gradient-border-btn cta">Start Pilot</a>
-	</div>
-</nav>
+<header class="site-header">
+  <nav class="nav-pill" aria-label="Primary navigation" data-mobile-navigation>
+    <a class="brand-mark brand-lockup" href="/" aria-label="Oliver Hitchings home">
+      <Logo />
+      <span class="brand-name">{site.name}</span>
+    </a>
+    <div class="nav-links" data-desktop-navigation-links>
+      {links.map((link) => (
+        <a href={link.href} aria-current={isActive(link) ? "page" : undefined}>
+          {link.label}
+        </a>
+      ))}
+    </div>
+    <a
+      class="nav-cta"
+      href={site.cta.contact.href}
+      data-desktop-navigation-cta
+    >{site.cta.contact.label}</a>
+
+    <div class="mobile-navigation-actions" data-mobile-navigation-actions>
+      <a class="nav-cta mobile-nav-cta" href={site.cta.contact.href}>
+        {site.cta.contact.label}
+      </a>
+      <button
+        class="mobile-menu-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="mobile-primary-navigation"
+        data-mobile-menu-toggle
+      >Menu</button>
+    </div>
+
+    <div
+      id="mobile-primary-navigation"
+      class="mobile-navigation-panel"
+      data-mobile-menu-panel
+      inert
+    >
+      {links.map((link) => (
+        <a href={link.href} aria-current={isActive(link) ? "page" : undefined}>
+          {link.label}
+        </a>
+      ))}
+    </div>
+  </nav>
+</header>
 
 <style>
-	.cinema-nav {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		z-index: 50;
-		display: flex;
-		justify-content: center;
-		padding: 1.5rem 1.5rem 0;
-		pointer-events: none;
-	}
-	.pill {
-		pointer-events: auto;
-		display: flex;
-		align-items: center;
-		gap: 2rem;
-		background: rgba(10, 10, 10, 0.7);
-		backdrop-filter: blur(24px) saturate(180%);
-		-webkit-backdrop-filter: blur(24px) saturate(180%);
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		border-radius: 9999px;
-		padding: 0.6rem 0.6rem 0.6rem 1.5rem;
-		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
-	}
-	.pill .brand {
-		display: flex;
-		align-items: center;
-	}
-	.pill .links {
-		display: flex;
-		align-items: center;
-		gap: 1.5rem;
-	}
-	.pill .links a {
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: #a1a1aa;
-		transition: color 0.15s ease;
-		text-decoration: none;
-		position: relative;
-		padding: 0.25rem 0;
-	}
-	.pill .links a:hover {
-		color: #fff;
-	}
-	.pill .links a.active {
-		color: #fff;
-	}
-	.pill .links a.active {
-		color: var(--accent);
-	}
-	.pill .links a.active::after {
-		content: '';
-		position: absolute;
-		left: 50%;
-		transform: translateX(-50%);
-		bottom: -6px;
-		width: 4px;
-		height: 4px;
-		background: var(--accent);
-		border-radius: 50%;
-		box-shadow: 0 0 8px var(--accent);
-	}
-	.pill .cta {
-		font-size: 0.875rem;
-		padding: 0.5rem 1.2rem;
-	}
-	@media (max-width: 720px) {
-		.pill {
-			gap: 0.75rem;
-			padding: 0.5rem 0.5rem 0.5rem 1rem;
-		}
-		.pill .links {
-			display: none;
-		}
-	}
+  .brand-lockup {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    width: auto;
+    min-height: 44px;
+    height: auto;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
 </style>

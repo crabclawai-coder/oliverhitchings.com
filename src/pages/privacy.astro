@@ -1,12 +1,16 @@
 ---
-import Layout from '../layouts/BlogPost.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<Layout
-	title="Privacy notice"
+<BaseLayout
+	title="Privacy notice | Oliver Hitchings"
 	description="How Oliver Hitchings collects, uses, stores and protects personal information."
-	pubDate={new Date('2026-07-22')}
 >
+	<main class="subpage privacy-page">
+		<section class="container editorial-section privacy-shell">
+			<article>
+				<p class="eyebrow">Last updated 22 July 2026</p>
+				<h1>Privacy notice</h1>
 	<p>This notice explains how I use personal information when you visit this site, make an enquiry, become a client, or receive a relevant business introduction from me.</p>
 
 	<h2>Who is responsible for your information</h2>
@@ -67,4 +71,41 @@ import Layout from '../layouts/BlogPost.astro';
 
 	<h2>Changes to this notice</h2>
 	<p>I review this notice when my services or use of personal information changes. The date above shows the latest revision.</p>
-</Layout>
+			</article>
+		</section>
+	</main>
+</BaseLayout>
+
+<style>
+	.privacy-shell {
+		display: block;
+		max-width: 820px;
+		padding-top: clamp(7rem, 11vw, 10rem);
+		padding-bottom: clamp(5rem, 9vw, 8rem);
+	}
+
+	.privacy-shell h1 {
+		max-width: 14ch;
+		margin-bottom: 2rem;
+	}
+
+	.privacy-shell h2 {
+		margin-top: 3rem;
+		margin-bottom: 1rem;
+	}
+
+	.privacy-shell p,
+	.privacy-shell li {
+		max-width: 72ch;
+		color: var(--text-muted);
+		line-height: 1.75;
+	}
+
+	.privacy-shell ul {
+		padding-left: 1.25rem;
+	}
+
+	.privacy-shell li + li {
+		margin-top: 0.65rem;
+	}
+</style>

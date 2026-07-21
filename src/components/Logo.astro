@@ -1,25 +1,17 @@
 ---
-interface Props {
-	class?: string;
-	fill?: string;
-	size?: string | number;
-}
-const { class: className = '', fill = 'white', size = 28 } = Astro.props;
-const px = typeof size === 'number' ? `${size}px` : size;
+const { size = 28 } = Astro.props;
 ---
 
 <svg
-	class={className}
-	width={px}
-	height={px}
-	style={`width:${px};height:${px};flex-shrink:0;`}
-	viewBox="0 0 256 256"
-	xmlns="http://www.w3.org/2000/svg"
-	aria-hidden="true"
+  width={size}
+  height={size}
+  viewBox="0 0 256 256"
+  xmlns="http://www.w3.org/2000/svg"
+  aria-hidden="true"
 >
-	<path
-		fill={fill}
-		d="M128 24c-40 0-72 32-72 72 0 28 16 52 40 64-16 12-28 32-28 56 0 4 4 8 8 8h104c4 0 8-4 8-8 0-24-12-44-28-56 24-12 40-36 40-64 0-40-32-72-72-72zm0 16c30 0 56 26 56 56s-26 56-56 56-56-26-56-56 26-56 56-56zm-48 144h96c12 12 20 28 20 48H60c0-20 8-36 20-48z"
-	></path>
-	<circle cx="128" cy="96" r="24" fill={fill} opacity="0.3"></circle>
+  <path
+    fill="currentColor"
+    d="M128 24c-40 0-72 32-72 72 0 28 16 52 40 64-16 12-28 32-28 56 0 4 4 8 8 8h104c4 0 8-4 8-8 0-24-12-44-28-56 24-12 40-36 40-64 0-40-32-72-72-72zm0 16c30 0 56 26 56 56s-26 56-56 56-56-26-56-56 26-56 56-56zm-48 144h96c12 12 20 28 20 48H60c0-20 8-36 20-48z"
+  />
+  <circle cx="128" cy="96" r="24" fill="currentColor" opacity="0.3" />
 </svg>

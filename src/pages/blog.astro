@@ -1,0 +1,58 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import MotionFilm from "../components/MotionFilm.astro";
+import { posts } from "../data/site.js";
+
+const dateFormatter = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+  year: "numeric",
+});
+
+const formatDate = (date) => dateFormatter.format(new Date(`${date}T00:00:00Z`));
+---
+
+<BaseLayout
+  title="Field notes | Oliver Hitchings"
+  description="Field notes on task design, human review, logs, failure handling, and automation handover."
+>
+  <main class="subpage blog-page">
+    <section class="blog-hero" data-blog-hero>
+      <div class="container blog-hero__grid">
+        <div class="blog-hero__copy">
+          <p class="eyebrow">Field notes</p>
+          <h1>Automation that has to operate, not just demo.</h1>
+          <p class="blog-hero__intro">
+            Short writing on task design, human review, logs, failure handling and handover.
+          </p>
+        </div>
+        <MotionFilm film="cta-footer" class="blog-hero__film" />
+      </div>
+    </section>
+
+    <div class="container note-ledger" aria-label="Published field notes">
+      {
+        posts.map((post) => (
+          <article class="note-row" data-note-row>
+            <div class="note-row__meta">
+              <p data-note-category>{post.category}</p>
+              <time datetime={post.date}>{formatDate(post.date)}</time>
+            </div>
+            <div class="note-row__copy">
+              <h2><a href={`/blog/${post.slug}`}>{post.title}</a></h2>
+              <p data-note-summary>{post.summary}</p>
+            </div>
+            <a
+              class="text-link note-row__action"
+              href={`/blog/${post.slug}`}
+              aria-label={`Read note: ${post.title}`}
+            >
+              Read note
+            </a>
+          </article>
+        ))
+      }
+    </div>
+  </main>
+</BaseLayout>

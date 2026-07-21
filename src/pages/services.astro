@@ -1,1703 +1,408 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
-import Logo from '../components/Logo.astro';
+import BaseLayout from "../layouts/BaseLayout.astro";
+import MotionFilm from "../components/MotionFilm.astro";
+import { site } from "../data/site.js";
+import { CONTACT_PACKAGE_VALUES } from "../../shared/contact-config.js";
 
-const title = 'AI agents, built for your business — Oliver Hitchings';
-const description =
-	'I help small businesses replace repetitive operational work with custom AI agents — built locally, owned by you.';
+const turnstileMode =
+  import.meta.env.PUBLIC_TURNSTILE_MODE?.trim().toLowerCase() || "off";
+const turnstileSiteKey =
+  import.meta.env.PUBLIC_TURNSTILE_SITE_KEY?.trim() || "";
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={title} description={description} />
-	</head>
-	<body data-theme="cinematic">
-		<Header />
+<BaseLayout
+  title="Services | Oliver Hitchings"
+  description="Automation mapping, focused builds, and handover packages for repeatable business tasks."
+>
+  <main class="subpage services-page">
+    <section class="services-hero">
+      <div class="container services-hero__grid">
+        <div class="services-hero__copy">
+          <p class="eyebrow">Services</p>
+          <h1>Start with one repeat task and the right-sized first step.</h1>
+          <p class="services-hero__intro">
+            Choose a mapping sprint, a focused build or a wider operator system. Each option has
+            visible scope, pricing and handover.
+          </p>
+          <div class="cta-row left">
+            <a class="button" href="#packages">Compare packages</a>
+            <a class="button ghost" href="#contact">Start an enquiry</a>
+          </div>
+        </div>
 
-		<!-- ============================================================
-		     1. HERO
-		     ============================================================ -->
-		<main class="hero">
-			<video
-				class="hero-bg"
-				src="/videos/hero.mp4"
-				autoplay
-				muted
-				loop
-				playsinline
-				preload="auto"></video>
-			<div class="hero-fade"></div>
+        <aside class="services-hero__trace" aria-label="Service sequence">
+          <span>Working sequence</span>
+          <p class="method-trace">Map → Build → Hand over</p>
+          <p>One bounded path, with ownership and review made explicit before it grows.</p>
+        </aside>
+      </div>
+    </section>
 
-			<div class="hero-content">
-				<span class="eyebrow animate-float-up">work with me</span>
-				<h1 class="animate-float-up hero-headline">
-					AI agents,<br />
-					built for<br />
-					<span class="muted">your business</span>
-				</h1>
+    <section
+      class="container editorial-section editorial-section--compact services-method"
+      data-services-method
+      data-reveal
+    >
+      <div class="editorial-heading compact-heading">
+        <div>
+          <p class="eyebrow">Method</p>
+          <h2>Map the work before building the loop.</h2>
+        </div>
+      </div>
 
-				<p class="animate-float-up-delay hero-lede">
-					I sit with your team, find the workflows eating their day, and replace them with custom
-					agents you actually understand and own. Local-first. No SaaS lock-in.
-				</p>
+      <div class="services-method__body">
+        <div class="services-editorial-rows">
+          <article data-method-step>
+            <span>01</span>
+            <h3>Map</h3>
+            <p>Name the trigger, inputs, owner, approvals and failure states.</p>
+          </article>
+          <article data-method-step>
+            <span>02</span>
+            <h3>Build</h3>
+            <p>Create a narrow loop with review, logs and clear stop conditions.</p>
+          </article>
+          <article data-method-step>
+            <span>03</span>
+            <h3>Hand over</h3>
+            <p>Leave the prompts, logs, run instructions and change notes with the owner.</p>
+          </article>
+        </div>
+        <MotionFilm film="process" class="services-method__film" />
+      </div>
+    </section>
 
-				<div class="animate-float-up-delay-3 hero-badge">
-					<div class="badge-pill">
-						<Logo size={28} fill="white" />
-						<span class="badge-text">Free 30-min discovery call</span>
-						<svg
-							class="badge-svg"
-							viewBox="0 0 28 28"
-							xmlns="http://www.w3.org/2000/svg"
-							aria-hidden="true"
-						>
-							<defs>
-								<linearGradient id="ring-grad-svc" x1="0" y1="0" x2="1" y2="1">
-									<stop offset="0%" stop-color="#F59E0B" />
-									<stop offset="100%" stop-color="#3B82F6" />
-								</linearGradient>
-							</defs>
-							<circle cx="14" cy="14" r="11" stroke="#3f3f46" stroke-width="3" fill="none"></circle>
-							<circle
-								class="spin-ring"
-								cx="14"
-								cy="14"
-								r="11"
-								stroke="url(#ring-grad-svc)"
-								stroke-width="3"
-								fill="none"
-								stroke-dasharray="18 100"
-								stroke-linecap="round"></circle>
-						</svg>
-					</div>
-				</div>
-			</div>
-		</main>
+    <section
+      id="packages"
+      class="container editorial-section editorial-section--compact services-packages"
+      data-reveal
+    >
+      <div class="editorial-heading compact-heading">
+        <div>
+          <p class="eyebrow">Prices and packages</p>
+          <h2>Choose the smallest useful first step.</h2>
+        </div>
+        <p class="editorial-intro">
+          The scope expands only when the task needs it. Every option names the work and the
+          handover before a build begins.
+        </p>
+      </div>
 
-		<!-- ============================================================
-		     2. STATS GRID
-		     ============================================================ -->
-		<section class="stats">
-			<div class="stats-inner cinema-container">
-				<div class="stat">
-					<div class="stat-num">3</div>
-					<div class="stat-label">Step process</div>
-				</div>
-				<div class="stat">
-					<div class="stat-num">2&ndash;6</div>
-					<div class="stat-label">Weeks typical</div>
-				</div>
-				<div class="stat">
-					<div class="stat-num">$0</div>
-					<div class="stat-label">Monthly recurring</div>
-				</div>
-				<div class="stat last">
-					<div class="stat-num">100%</div>
-					<div class="stat-label">Yours after handover</div>
-				</div>
-			</div>
-			<div class="stats-banner">Free discovery call &middot; Fixed-scope, fixed-price builds</div>
-		</section>
+      <div class="services-package-rows">
+        <article class="services-package-row">
+          <header>
+            <p class="eyebrow">Fixed scope</p>
+            <h3>Task Map</h3>
+            <p class="price">£250</p>
+          </header>
+          <div>
+            <p>
+              Best when you know something should be automated, but the exact build shape is still
+              unclear. This turns one repeat task into a scoped plan.
+            </p>
+            <ul>
+              <li>One discovery session</li>
+              <li>Current process, owner, inputs, and output map</li>
+              <li>Failure points, approval moments, and edge cases</li>
+              <li>Recommended build shape, tools, and next-step estimate</li>
+            </ul>
+            <a class="button ghost" href="#contact">Enquire about Task Map</a>
+          </div>
+        </article>
 
-		<!-- ============================================================
-		     3. FEATURE BLOCK
-		     ============================================================ -->
-		<section class="feature">
-			<div class="feature-inner cinema-container">
-				<div class="feature-text">
-					<h2 class="feature-headline">
-						Master your<br />
-						<span class="muted">team&rsquo;s workflows</span>
-					</h2>
-					<p class="feature-copy">
-						Most businesses have 5&ndash;15 recurring rituals that quietly eat senior time every day
-						&mdash; morning reports, queue triage, status compiles, monitoring. Each one is an
-						agent waiting to be built.
-					</p>
-					<a class="gradient-border-btn feature-btn" href="#process">How it works</a>
-				</div>
+        <article class="services-package-row">
+          <header>
+            <p class="eyebrow">Focused implementation</p>
+            <h3>First Build</h3>
+            <p class="price">£500</p>
+          </header>
+          <div>
+            <p>
+              A focused first implementation for one use case. The aim is to prove the task can run
+              with useful controls before it becomes part of the business.
+            </p>
+            <ul>
+              <li>Task map and implementation plan</li>
+              <li>Working automation using real inputs and outputs</li>
+              <li>Prompts, logs, review rules, and failure handling</li>
+              <li>Run guide plus two review sessions after first use</li>
+            </ul>
+            <a class="button" href="#contact">Enquire about First Build</a>
+          </div>
+        </article>
 
-				<div class="feature-card">
-					<div class="feature-card-glow"></div>
-					<div class="feature-card-inner">
-						<video
-							src="/videos/feature-card.mp4"
-							autoplay
-							muted
-							loop
-							playsinline
-							preload="metadata"></video>
-					</div>
-				</div>
-			</div>
-		</section>
+        <article class="services-package-row">
+          <header>
+            <p class="eyebrow">Connected workflow</p>
+            <h3>Operator System</h3>
+            <p class="price">£1,000</p>
+          </header>
+          <div>
+            <p>
+              For work that has more than one step, owner, or system involved. This creates a more
+              complete operating setup around the automation.
+            </p>
+            <ul>
+              <li>Multiple task paths or departments</li>
+              <li>Monitoring, alerts, reporting, and exception handling</li>
+              <li>Documentation, owner training, and change notes</li>
+              <li>30-day improvement period after launch</li>
+            </ul>
+            <a class="button ghost" href="#contact">Enquire about Operator System</a>
+          </div>
+        </article>
 
-		<!-- ============================================================
-		     4. SCROLL-SCRUBBED SECTION
-		     ============================================================ -->
-		<section class="process" id="process-section">
-			<div class="process-bg">
-				<video
-					id="process-video"
-					src="/videos/process.mp4"
-					muted
-					playsinline
-					preload="auto"></video>
-				<div class="process-fade-top"></div>
-				<div class="process-fade-bottom"></div>
-			</div>
+        <article class="services-package-row services-package-row--support">
+          <header>
+            <p class="eyebrow">Optional retainer</p>
+            <h3>Ongoing support</h3>
+            <p class="price">from £100/month</p>
+          </header>
+          <div>
+            <p>
+              For teams that want a light monthly support layer after launch: monitoring, small
+              improvements, fixes, usage checks, and one review call.
+            </p>
+            <a class="button ghost" href="#contact">Enquire about ongoing support</a>
+          </div>
+        </article>
+      </div>
 
-			<div class="process-content cinema-container">
-				<h2 class="animate-float-up process-headline">
-					Where workflows<br />
-					get rebuilt
-				</h2>
-				<p class="animate-float-up-delay process-sub">
-					From your team&rsquo;s daily friction to a working agent in 2&ndash;6 weeks. You own the
-					code, the prompts, the cost.
-				</p>
-				<a
-					href="mailto:oliverhit2008@gmail.com?subject=AI agents for my business"
-					class="animate-float-up-delay-3 process-btn">Get in touch</a
-				>
-			</div>
-		</section>
+      <p class="package-note">
+        Guide prices. VAT, third-party software, model usage and hosting are separate where they
+        apply.
+      </p>
+    </section>
 
-		<!-- ============================================================
-		     5. BENTO GRID (the 4 steps)
-		     ============================================================ -->
-		<section class="bento" id="process">
-			<div class="bento-inner cinema-container">
-				<h2 class="bento-header">How it <span class="muted">works</span></h2>
+    <section
+      class="container editorial-section editorial-section--compact good-fit-section"
+      data-good-fit
+    >
+      <div class="editorial-heading compact-heading">
+        <div>
+          <p class="eyebrow">Good-fit criteria</p>
+          <h2>Frequent enough to matter. Clear enough to inspect.</h2>
+        </div>
+        <p class="editorial-intro">
+          A useful first candidate usually has a named trigger, repeat inputs, an expected output
+          and a person who can review it.
+        </p>
+      </div>
 
-				<div class="bento-grid">
-					<!-- Step 01 — Map -->
-					<div class="bento-card">
-						<div class="bento-card-bg">
-							<video
-								src="/videos/bento.mp4"
-								autoplay
-								muted
-								loop
-								playsinline
-								preload="metadata"
-								style="object-position: top left;"></video>
-							<div class="bento-fade"></div>
-						</div>
-						<div class="bento-card-content">
-							<div class="step-num">01</div>
-							<h3>Map the work</h3>
-							<p>
-								A 30-minute call. We list every recurring information-gathering ritual on your
-								team &mdash; standups, weekly status, monthly board, morning pulls. I tell you
-								which are real candidates.
-							</p>
-							<span class="step-note">Free. No commitment.</span>
-						</div>
-					</div>
+      <div class="criteria-rows">
+        <article>
+          <h3>Frequent</h3>
+          <p>The task happens often enough for repeatability to matter.</p>
+        </article>
+        <article>
+          <h3>Structured</h3>
+          <p>The trigger, inputs and expected output can be named.</p>
+        </article>
+        <article>
+          <h3>Reviewable</h3>
+          <p>A person can inspect the result and approve what happens next.</p>
+        </article>
+        <article>
+          <h3>Contained</h3>
+          <p>The first useful boundary is small enough to map and test.</p>
+        </article>
+      </div>
+    </section>
 
-					<!-- Step 02 — Pilot -->
-					<div class="bento-card">
-						<div class="bento-card-bg">
-							<video
-								src="/videos/bento.mp4"
-								autoplay
-								muted
-								loop
-								playsinline
-								preload="metadata"
-								style="object-position: top right;"></video>
-							<div class="bento-fade"></div>
-						</div>
-						<div class="bento-card-content">
-							<div class="step-num">02</div>
-							<h3>Pick one and prove it</h3>
-							<p>
-								One automation, end-to-end, in two weeks. Local model, delivered to wherever your
-								team already lives (Slack, Teams, email). If it doesn&rsquo;t land, you
-								don&rsquo;t pay the build fee.
-							</p>
-							<span class="step-note">Refunded if it doesn&rsquo;t land.</span>
-						</div>
-					</div>
+    <section
+      class="container editorial-section editorial-section--compact handover-section"
+      data-handover
+      data-reveal
+    >
+      <p class="eyebrow">Handover</p>
+      <div class="handover-section__grid">
+        <div class="handover-section__copy">
+          <h2>What stays with the owner.</h2>
+          <div>
+            <p>
+              First Build and Operator System include prompts, run instructions, logs, review rules,
+              failure states and owner notes—the material needed to operate, inspect and change the
+              system.
+            </p>
+            <p>
+              Task Map ends with the process map and build recommendation, so the next decision is
+              clear before implementation starts.
+            </p>
+          </div>
+        </div>
+        <MotionFilm film="feature-card" class="handover-section__film" />
+      </div>
+    </section>
 
-					<!-- Step 03 — Pattern -->
-					<div class="bento-card">
-						<div class="bento-card-bg">
-							<video
-								src="/videos/bento.mp4"
-								autoplay
-								muted
-								loop
-								playsinline
-								preload="metadata"
-								style="object-position: bottom left;"></video>
-							<div class="bento-fade"></div>
-						</div>
-						<div class="bento-card-content">
-							<div class="step-num">03</div>
-							<h3>Pattern out the rest</h3>
-							<p>
-								Once one is running, the 41st is cheap. We wire up the next handful on the same
-								infrastructure. Every new job takes a day, not a week.
-							</p>
-							<span class="step-note">Same infra. Same patterns.</span>
-						</div>
-					</div>
+    <section id="contact" class="container editorial-section contact-panel enquiry-section">
+      <div class="enquiry-section__grid">
+        <div class="enquiry-section__heading">
+          <p class="eyebrow">Start the conversation</p>
+          <h2>Describe the repeat task.</h2>
+          <p class="contact-intro">
+            Tell me what happens now, which tools are involved, who checks the output and what a
+            useful result would look like. This form sends the enquiry directly from the website.
+          </p>
+        </div>
 
-					<!-- Step 04 — Handover -->
-					<div class="bento-card">
-						<div class="bento-card-bg">
-							<video
-								src="/videos/bento.mp4"
-								autoplay
-								muted
-								loop
-								playsinline
-								preload="metadata"
-								style="object-position: bottom right;"></video>
-							<div class="bento-fade"></div>
-						</div>
-						<div class="bento-card-content">
-							<div class="step-num">04</div>
-							<h3>Hand over the keys</h3>
-							<p>
-								The box lives on your premises. You get the runbook, the configuration, and enough
-								training to add automations yourselves. I stay on retainer for the tricky ones.
-							</p>
-							<span class="step-note">Optional retainer.</span>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
+        <form
+          class="contact-form"
+          action="/api/contact"
+          method="POST"
+          aria-describedby="contact-form-status"
+          data-contact-form
+          data-turnstile-mode={turnstileMode}
+          data-turnstile-site-key={turnstileSiteKey}
+        >
+          <input type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true" />
 
-		<!-- ============================================================
-		     5a. PRICING TIERS
-		     ============================================================ -->
-		<section class="pricing">
-			<div class="pricing-inner cinema-container">
-				<div class="pricing-header">
-					<span class="pricing-eyebrow">pricing</span>
-					<h2 class="pricing-h2">
-						Fixed fees.<br />
-						<span class="muted">No retainers you can&rsquo;t leave.</span>
-					</h2>
-				</div>
+          <div class="form-grid">
+            <label>
+              <span>Name</span>
+              <input name="name" type="text" autocomplete="name" required />
+            </label>
+            <label>
+              <span>Email</span>
+              <input name="email" type="email" autocomplete="email" required />
+            </label>
+            <label>
+              <span>Contact number (optional)</span>
+              <input name="contact_number" type="tel" autocomplete="tel" />
+            </label>
+            <label>
+              <span>Package interest</span>
+              <select name="package_interest" required>
+                <option value="">Choose one</option>
+                {CONTACT_PACKAGE_VALUES.map((packageValue) => <option>{packageValue}</option>)}
+              </select>
+            </label>
+          </div>
 
-				<div class="tiers">
-					<!-- The Pilot -->
-					<div class="tier">
-						<div class="tier-inner">
-							<span class="tier-name">The Pilot</span>
-							<div class="tier-price">
-								<span class="big">&pound;2k</span>
-								<span class="sub">5 automations</span>
-							</div>
-							<ul class="tier-points">
-								<li><span class="check">&#10003;</span><span>5 automations, built &amp; deployed</span></li>
-								<li><span class="check">&#10003;</span><span>Runs on your Mac Mini (or mine, loaned)</span></li>
-								<li><span class="check">&#10003;</span><span>2 weeks, end-to-end</span></li>
-								<li><span class="check">&#10003;</span><span>Refunded if it doesn&rsquo;t land</span></li>
-							</ul>
-							<a class="tier-cta secondary" href="mailto:oliverhit2008@gmail.com?subject=The Pilot — AI agent for my business">Book a call</a>
-						</div>
-					</div>
+          <label>
+            <span>What do you want automated?</span>
+            <textarea
+              name="automation_request"
+              rows="5"
+              required
+              placeholder="Tell me the repeat task, who handles it now, and what a good result would look like."
+            ></textarea>
+          </label>
 
-					<!-- The Rollout — highlighted -->
-					<div class="tier highlight">
-						<div class="halo"></div>
-						<div class="tier-inner">
-							<span class="tier-name">The Rollout</span>
-							<div class="tier-price">
-								<span class="big">&pound;4k</span>
-								<span class="sub">12 automations</span>
-							</div>
-							<ul class="tier-points">
-								<li><span class="check">&#10003;</span><span>12 automations on shared infra</span></li>
-								<li><span class="check">&#10003;</span><span>1 month build + 1 month iteration</span></li>
-								<li><span class="check">&#10003;</span><span>Telegram, Slack, Discord, Teams &amp; WhatsApp delivery</span></li>
-								<li><span class="check">&#10003;</span><span>Full handover pack</span></li>
-								<li><span class="check">&#10003;</span><span>Monthly retainer optional</span></li>
-							</ul>
-							<a class="tier-cta primary" href="mailto:oliverhit2008@gmail.com?subject=The Rollout — AI agent program for my business">Start here &rarr;</a>
-						</div>
-					</div>
+          <label>
+            <span>Tools or systems involved</span>
+            <textarea
+              name="tools_involved"
+              rows="3"
+              placeholder="For example: Gmail, Outlook, Sheets, Notion, Slack, CRM, website forms, internal docs."
+            ></textarea>
+          </label>
 
-					<!-- Retainer -->
-					<div class="tier">
-						<div class="tier-inner">
-							<span class="tier-name">Retainer</span>
-							<div class="tier-price">
-								<span class="big">&pound;1k</span>
-								<span class="sub">per month, cancel anytime</span>
-							</div>
-							<ul class="tier-points">
-								<li><span class="check">&#10003;</span><span>Monitor, iterate, add automations</span></li>
-								<li><span class="check">&#10003;</span><span>Response within one working day</span></li>
-								<li><span class="check">&#10003;</span><span>Cancel anytime</span></li>
-								<li><span class="check">&#10003;</span><span>Built on top of a Pilot or Rollout</span></li>
-							</ul>
-							<a class="tier-cta secondary" href="mailto:oliverhit2008@gmail.com?subject=Ongoing retainer enquiry">Book a call</a>
-						</div>
-					</div>
-				</div>
+          <div
+            class="turnstile-check"
+            role="group"
+            aria-label="Security check"
+            aria-describedby="contact-form-status"
+            data-turnstile-container
+            tabindex="-1"
+            hidden={turnstileMode === "off"}
+          ></div>
 
-				<p class="pricing-fine">
-					All prices ex. VAT. UK-based. Remote-first. Happy to come in for a day if you&rsquo;re in
-					London.
-				</p>
-			</div>
-		</section>
+          <button class="button" type="submit">Send enquiry</button>
+          <p
+            id="contact-form-status"
+            class="form-status"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            data-contact-status
+          >
+            This sends the enquiry directly from the website to {site.email}.
+          </p>
+        </form>
+      </div>
+    </section>
+  </main>
 
-		<!-- ============================================================
-		     5b. WHO THIS IS FOR
-		     ============================================================ -->
-		<section class="fit">
-			<div class="fit-inner cinema-container">
-				<h2 class="fit-header">Who this is <span class="muted">for</span></h2>
-				<div class="fit-grid">
-					<div class="fit-col yes">
-						<h3>Good fit</h3>
-						<ul>
-							<li>You&rsquo;re a 10&ndash;100 person business doing real operational work.</li>
-							<li>Your team is drowning in admin, scheduling, support, or reporting.</li>
-							<li>You want to own what you build, not rent it forever.</li>
-							<li>You&rsquo;re comfortable being early &mdash; this is genuinely new territory.</li>
-						</ul>
-					</div>
-					<div class="fit-col no">
-						<h3>Not a fit</h3>
-						<ul>
-							<li>You want a chatbot for your website (cheaper tools exist for that).</li>
-							<li>You need enterprise compliance, SOC 2, dedicated TAMs.</li>
-							<li>You want someone to white-label OpenAI and call it AI strategy.</li>
-							<li>You&rsquo;re not ready to give an AI access to real systems.</li>
-						</ul>
-					</div>
-				</div>
-			</div>
-		</section>
+  <script>
+    import { initContactForms } from "../scripts/contact-form.js";
 
-		<!-- ============================================================
-		     5c. WHY ME
-		     ============================================================ -->
-		<section class="why">
-			<div class="why-inner cinema-container">
-				<h2 class="why-header">Why <span class="muted">me</span></h2>
-				<div class="why-grid">
-					<div class="why-card">
-						<div class="why-num">10+</div>
-						<div class="why-label">Years in IT engineering</div>
-						<p>I&rsquo;ve worked inside business systems before AI was the answer to anything. I know what an integration actually costs to maintain.</p>
-					</div>
-					<div class="why-card">
-						<div class="why-num">5</div>
-						<div class="why-label">Autonomous agents I run daily</div>
-						<p>OpenClaw runs five specialised agents on a Mac Mini and Mac Studio in my home office &mdash; coding, orchestration, reasoning, workflows, auditing.</p>
-					</div>
-					<div class="why-card">
-						<div class="why-num">40+</div>
-						<div class="why-label">Automations running 24/7</div>
-						<p>Morning briefs, market watchlists, security audits, vault gardening. Real automation I trust enough to wake up to. <a href="/blog">See how they work &rarr;</a></p>
-					</div>
-					<div class="why-card">
-						<div class="why-num">$0</div>
-						<div class="why-label">Monthly cloud spend</div>
-						<p>Local-first by default. A local model handles the routine, Codex/Claude for the heavy lifting. You get the same architecture for your business.</p>
-					</div>
-				</div>
-				<p class="why-coda">
-					Based in the UK, available remote globally or on-site across the UK.
-				</p>
-			</div>
-		</section>
+    const configuredMode =
+      import.meta.env.PUBLIC_TURNSTILE_MODE?.trim().toLowerCase() || "off";
 
-		<!-- ============================================================
-		     5d. FAQ
-		     ============================================================ -->
-		<section class="faq">
-			<div class="faq-inner cinema-container">
-				<h2 class="faq-header">Frequently <span class="muted">asked</span></h2>
-				<div class="faq-list">
-					<details class="faq-item" open>
-						<summary>What does this typically cost?</summary>
-						<p>
-							Audits are free. Builds are fixed-scope, fixed-price &mdash; we agree the deliverable
-							and the number before we start. Most projects land between &pound;2k and &pound;4k
-							depending on scope and integration complexity. No retainers required, no hourly
-							meters running.
-						</p>
-					</details>
-					<details class="faq-item">
-						<summary>Where do my agents actually run?</summary>
-						<p>
-							Default is on a machine you own &mdash; usually a small Mac Mini or a
-							dedicated VM &mdash; with local models doing the routine work. When something
-							needs more horsepower, the agent calls out to Codex or Claude through your own
-							OpenAI / Anthropic account. You see every API call. You can pull the plug
-							whenever you want.
-						</p>
-					</details>
-					<details class="faq-item">
-						<summary>What happens if you disappear / move on?</summary>
-						<p>
-							You own the code, the prompts, the docs, the deployment. I train one of your
-							team during handover so the system isn&rsquo;t a black box. Optional retainer
-							for ongoing tuning at a flat monthly rate, but you&rsquo;re never forced into
-							it.
-						</p>
-					</details>
-					<details class="faq-item">
-						<summary>How long does a build take?</summary>
-						<p>
-							Most projects ship in 2&ndash;6 weeks from kickoff. Audit is half a day. Build
-							is the bulk. Handover plus a week of supervised running is the tail.
-						</p>
-					</details>
-					<details class="faq-item">
-						<summary>Can you work with my existing tools?</summary>
-						<p>
-							Yes &mdash; that&rsquo;s usually the brief. Slack, email, Google Workspace,
-							Microsoft 365, your CRM, your spreadsheets, your bespoke internal apps. If it
-							has an API or a script-able interface, an agent can use it. If it doesn&rsquo;t,
-							we figure out a workaround in the audit.
-						</p>
-					</details>
-				</div>
-			</div>
-		</section>
+    if (configuredMode === "off") {
+      initContactForms();
+    } else {
+      const form = document.querySelector("[data-contact-form]");
+      const status = form?.querySelector("[data-contact-status]");
+      const container = form?.querySelector("[data-turnstile-container]");
+      let adapter = null;
+      let destroyed = false;
+      let suppressStatusAnnouncements = false;
 
-		<!-- ============================================================
-		     6. COMBINED CTA + FOOTER
-		     ============================================================ -->
-		<section class="combined" id="combined-section">
-			<div class="combined-bg">
-				<video
-					id="combined-video"
-					src="/videos/cta-footer.mp4"
-					muted
-					playsinline
-					preload="auto"></video>
-				<div class="combined-fade"></div>
-			</div>
+      const announce = (message) => {
+        if (suppressStatusAnnouncements || !status) return;
+        status.classList.remove("is-success");
+        status.textContent = message;
+      };
+      const pendingMessage =
+        configuredMode === "observe"
+          ? "Security check is loading. You can still send your enquiry."
+          : configuredMode === "required"
+            ? "Security check is loading. Wait a moment, then try again."
+            : "The enquiry form security mode is not configured correctly. Email Oliver directly.";
 
-			<div class="cta-block">
-				<div class="cta-inner cinema-container">
-					<div class="cta-logo-box animate-float-up">
-						<Logo size={40} fill="white" />
-					</div>
+      announce(pendingMessage);
 
-					<h2 class="animate-float-up cta-headline">
-						Ready to talk?
-					</h2>
+      const turnstile = {
+        get required() {
+          return adapter?.required ?? configuredMode !== "observe";
+        },
+        prepareSubmission() {
+          suppressStatusAnnouncements = false;
+          return (
+            adapter?.prepareSubmission() ?? {
+              allowed: configuredMode === "observe",
+              state: "loading",
+              token: "",
+            }
+          );
+        },
+        reset() {
+          suppressStatusAnnouncements = true;
+          adapter?.reset();
+        },
+        focus() {
+          if (adapter) {
+            adapter.focus();
+          } else {
+            container?.focus();
+          }
+        },
+        destroy() {
+          destroyed = true;
+          adapter?.destroy();
+        },
+      };
 
-					<p class="animate-float-up-delay cta-copy">
-						Email me one paragraph about your business and what&rsquo;s eating your team&rsquo;s
-						time. If it sounds like a fit, I&rsquo;ll book a free discovery call.
-					</p>
+      initContactForms({ turnstile });
 
-					<div class="animate-float-up-delay-3 cta-buttons">
-						<a
-							class="cta-primary"
-							href="mailto:oliverhit2008@gmail.com?subject=AI agents for my business&body=Hi Oliver,%0D%0A%0D%0AAbout my business: %0D%0A%0D%0AWhat's eating my team's time: %0D%0A%0D%0A"
-							>Email me</a
-						>
-						<a class="cta-secondary" href="/blog">Read the blog</a>
-					</div>
-				</div>
-			</div>
-
-			<footer class="cinema-footer">
-				<div class="cinema-footer-inner cinema-container">
-					<div class="footer-top">
-						<div class="footer-brand">
-							<div class="brand-row">
-								<Logo size={28} fill="white" />
-								<span class="brand-text">OLIVER HITCHINGS</span>
-							</div>
-							<p class="brand-tagline">
-								AI agents for real businesses. Built locally. Owned by you.
-							</p>
-						</div>
-
-						<div class="footer-columns">
-							<div>
-								<h4>Site</h4>
-								<a href="/">Home</a>
-								<a href="/services">Services</a>
-								<a href="/about">About</a>
-								<a href="/now">Now</a>
-							</div>
-							<div>
-								<h4>Writing</h4>
-								<a href="/blog">Blog</a>
-								<a href="/rss.xml">RSS</a>
-								<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener"
-									>GitHub</a
-								>
-							</div>
-							<div>
-								<h4>Contact</h4>
-								<a href="mailto:oliverhit2008@gmail.com">Email</a>
-								<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener"
-									>GitHub</a
-								>
-							</div>
-						</div>
-					</div>
-
-					<div class="footer-bottom">
-						<div class="bottom-left">
-							<span class="copyright">&copy; 2026 Oliver Hitchings &middot; CanYouLikeNot</span>
-							<span class="built-on">Built on a Mac Mini + Mac Studio in the UK.</span>
-						</div>
-						<div class="socials">
-							<a href="https://github.com/CanYouLikeNot" target="_blank" rel="noopener">GITHUB</a>
-							<a href="mailto:oliverhit2008@gmail.com">EMAIL</a>
-						</div>
-					</div>
-				</div>
-			</footer>
-		</section>
-
-		<script>
-			import { initScrollScrubbedVideos, scrubFallback } from '../scripts/scroll-video';
-
-			const pairs: { video: HTMLVideoElement; container: HTMLElement }[] = [];
-
-			const processVideo = document.getElementById('process-video') as HTMLVideoElement | null;
-			const processSection = document.getElementById('process-section') as HTMLElement | null;
-			if (processVideo && processSection) pairs.push({ video: processVideo, container: processSection });
-
-			const combinedVideo = document.getElementById('combined-video') as HTMLVideoElement | null;
-			const combinedSection = document.getElementById('combined-section') as HTMLElement | null;
-			if (combinedVideo && combinedSection)
-				pairs.push({ video: combinedVideo, container: combinedSection });
-
-			if (pairs.length > 0) {
-				initScrollScrubbedVideos(pairs);
-				scrubFallback(pairs.map((p) => p.video));
-			}
-		</script>
-
-		<style>
-			.muted {
-				color: #71717a;
-			}
-
-			/* ===== HERO ===== */
-			.hero {
-				position: relative;
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-				justify-content: flex-start;
-				padding: 140px 1.5rem 6rem;
-				text-align: center;
-				min-height: 100vh;
-				overflow: hidden;
-			}
-			.hero-bg {
-				position: absolute;
-				inset: 0;
-				width: 100%;
-				height: 100%;
-				object-fit: cover;
-				pointer-events: none;
-				z-index: 0;
-				transform: scale(1.5) translateY(25%) rotate(-36deg);
-				opacity: 0.5;
-			}
-			.hero-fade {
-				position: absolute;
-				inset: 0;
-				background:
-					radial-gradient(ellipse 70% 55% at 50% 42%, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.45) 55%, transparent 100%),
-					linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, transparent 30%, transparent 65%, #000 100%);
-				z-index: 10;
-				pointer-events: none;
-			}
-			.hero-content {
-				position: relative;
-				z-index: 20;
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-			}
-			.eyebrow {
-				display: inline-block;
-				font-family: var(--font-mono);
-				font-size: 0.78rem;
-				color: #fff;
-				background: rgba(255, 255, 255, 0.08);
-				border: 1px solid rgba(255, 255, 255, 0.15);
-				padding: 0.35em 0.9em;
-				border-radius: 999px;
-				margin-bottom: 1.5em;
-				letter-spacing: 0.05em;
-			}
-			.hero-headline {
-				font-size: 60px;
-				line-height: 1.05;
-				letter-spacing: -0.04em;
-				font-weight: 600;
-				color: #fff;
-				max-width: 700px;
-				margin: 0;
-			}
-			.hero-lede {
-				margin-top: 2rem;
-				font-size: 1.125rem;
-				color: #a1a1aa;
-				max-width: 480px;
-				line-height: 1.6;
-			}
-			.hero-badge {
-				margin-top: 4rem;
-			}
-			.badge-pill {
-				background: rgba(24, 24, 27, 0.8);
-				backdrop-filter: blur(24px);
-				border-radius: 20px;
-				box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-				border: 1px solid #27272a;
-				padding: 1rem 1.5rem;
-				display: flex;
-				align-items: center;
-				gap: 1rem;
-			}
-			.badge-text {
-				font-size: 0.875rem;
-				font-weight: 500;
-				color: #e4e4e7;
-				white-space: nowrap;
-			}
-			.badge-svg {
-				width: 1.75rem;
-				height: 1.75rem;
-			}
-			@media (max-width: 720px) {
-				.hero-headline {
-					font-size: 40px;
-				}
-				.badge-text {
-					font-size: 0.75rem;
-				}
-			}
-
-			/* ===== STATS ===== */
-			.stats {
-				position: relative;
-				z-index: 20;
-				background: #000;
-				border-top: 1px solid #27272a;
-				border-bottom: 1px solid #27272a;
-			}
-			.stats-inner {
-				display: grid;
-				grid-template-columns: repeat(4, 1fr);
-			}
-			.stat {
-				padding: 3rem;
-				border-right: 1px solid #27272a;
-				display: flex;
-				flex-direction: column;
-				gap: 1rem;
-			}
-			.stat.last {
-				border-right: none;
-			}
-			.stat-num {
-				font-size: 3rem;
-				font-weight: 600;
-				letter-spacing: -0.02em;
-				color: #fff;
-			}
-			.stat-label {
-				font-size: 0.75rem;
-				color: #71717a;
-				text-transform: uppercase;
-				letter-spacing: 0.15em;
-			}
-			.stats-banner {
-				text-align: center;
-				padding: 1.5rem 1rem;
-				border-top: 1px solid #27272a;
-				font-size: 0.75rem;
-				color: #52525b;
-				text-transform: uppercase;
-				letter-spacing: 0.3em;
-			}
-			@media (max-width: 900px) {
-				.stats-inner {
-					grid-template-columns: repeat(2, 1fr);
-				}
-				.stat {
-					border-right: 1px solid #27272a;
-					border-bottom: 1px solid #27272a;
-					padding: 2rem 1.5rem;
-				}
-				.stat:nth-child(2),
-				.stat:nth-child(4) {
-					border-right: none;
-				}
-				.stat-num {
-					font-size: 2.5rem;
-				}
-			}
-
-			/* ===== FEATURE ===== */
-			.feature {
-				position: relative;
-				z-index: 20;
-				padding: 8rem 0;
-				background: #000;
-			}
-			.feature-inner {
-				display: grid;
-				grid-template-columns: 1fr 1fr;
-				gap: 5rem;
-				align-items: center;
-			}
-			.feature-headline {
-				font-size: 60px;
-				line-height: 1.05;
-				letter-spacing: -0.04em;
-				font-weight: 600;
-				margin: 0 0 2rem;
-				color: #fff;
-			}
-			.feature-copy {
-				font-size: 1.125rem;
-				color: #a1a1aa;
-				max-width: 28em;
-				line-height: 1.6;
-				margin-bottom: 2.5rem;
-			}
-			.feature-btn {
-				padding: 0.8rem 2rem;
-			}
-			.feature-card {
-				position: relative;
-			}
-			.feature-card-glow {
-				position: absolute;
-				inset: -1rem;
-				background: linear-gradient(to right, rgba(245, 158, 11, 0.2), rgba(59, 130, 246, 0.2));
-				border-radius: 32px;
-				filter: blur(40px);
-				opacity: 0.5;
-				transition: opacity 0.5s ease;
-				pointer-events: none;
-			}
-			.feature-card:hover .feature-card-glow {
-				opacity: 1;
-			}
-			.feature-card-inner {
-				position: relative;
-				background: rgba(24, 24, 27, 0.8);
-				backdrop-filter: blur(24px);
-				border: 1px solid #27272a;
-				border-radius: 32px;
-				overflow: hidden;
-				box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-				aspect-ratio: 3 / 4;
-			}
-			.feature-card-inner video {
-				width: 100%;
-				height: 100%;
-				object-fit: cover;
-				opacity: 0.9;
-				transition: opacity 0.5s ease;
-			}
-			.feature-card:hover .feature-card-inner video {
-				opacity: 1;
-			}
-			@media (max-width: 900px) {
-				.feature-inner {
-					grid-template-columns: 1fr;
-					gap: 3rem;
-				}
-				.feature-headline {
-					font-size: 42px;
-				}
-			}
-
-			/* ===== PROCESS ===== */
-			.process {
-				position: relative;
-				display: flex;
-				flex-direction: column;
-				align-items: flex-start;
-				justify-content: flex-end;
-				padding: 10rem 1.5rem;
-				text-align: left;
-				background: #000;
-				border-top: 1px solid #18181b;
-				margin-top: -200px;
-				overflow: hidden;
-				min-height: 900px;
-			}
-			.process-bg {
-				position: absolute;
-				inset: 0;
-				z-index: 0;
-			}
-			.process-bg video {
-				width: 100%;
-				height: 100%;
-				object-fit: cover;
-				object-position: top;
-				opacity: 0.6;
-			}
-			.process-fade-top {
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				height: 40%;
-				background: linear-gradient(to bottom, #000, rgba(0, 0, 0, 0.4), transparent);
-				z-index: 10;
-			}
-			.process-fade-bottom {
-				position: absolute;
-				bottom: 0;
-				left: 0;
-				right: 0;
-				height: 65%;
-				background: linear-gradient(
-					to top,
-					#000 0%,
-					rgba(0, 0, 0, 0.95) 30%,
-					rgba(0, 0, 0, 0.6) 60%,
-					transparent 100%
-				);
-				z-index: 10;
-			}
-			.process-content {
-				position: relative;
-				z-index: 20;
-				display: flex;
-				flex-direction: column;
-				align-items: flex-start;
-				margin-bottom: 5rem;
-				width: 100%;
-			}
-			.process-headline {
-				font-size: 80px;
-				line-height: 1;
-				letter-spacing: -0.05em;
-				font-weight: 600;
-				color: #fff;
-				max-width: 900px;
-				margin: 0;
-			}
-			.process-sub {
-				margin-top: 2.5rem;
-				font-size: 1.125rem;
-				color: #a1a1aa;
-				max-width: 40em;
-				line-height: 1.6;
-			}
-			.process-btn {
-				display: inline-block;
-				margin-top: 3.5rem;
-				background: #fff;
-				color: #000;
-				padding: 1.1rem 3rem;
-				border-radius: 9999px;
-				font-weight: 700;
-				font-size: 1.125rem;
-				transition:
-					transform 0.2s ease,
-					background 0.2s ease;
-				box-shadow: 0 20px 40px rgba(255, 255, 255, 0.1);
-				text-decoration: none;
-			}
-			.process-btn:hover {
-				background: #e4e4e7;
-				transform: scale(1.05);
-			}
-			@media (max-width: 720px) {
-				.process {
-					padding: 6rem 1.5rem;
-					min-height: 700px;
-				}
-				.process-headline {
-					font-size: 46px;
-				}
-				.process-btn {
-					font-size: 1rem;
-					padding: 0.9rem 2rem;
-				}
-			}
-
-			/* ===== BENTO ===== */
-			.bento {
-				position: relative;
-				z-index: 20;
-				padding: 10rem 0;
-				background: #000;
-				scroll-margin-top: 4rem;
-			}
-			.bento-header {
-				text-align: center;
-				font-size: 60px;
-				line-height: 1.05;
-				letter-spacing: -0.04em;
-				font-weight: 600;
-				margin: 0 0 6rem;
-				color: #fff;
-			}
-			.bento-grid {
-				display: grid;
-				grid-template-columns: 1fr 1fr;
-				gap: 2rem;
-			}
-			.bento-card {
-				position: relative;
-				background: rgba(24, 24, 27, 0.8);
-				backdrop-filter: blur(24px);
-				border: 1px solid #27272a;
-				border-radius: 40px;
-				padding: 3rem;
-				display: flex;
-				flex-direction: column;
-				justify-content: space-between;
-				transition: border-color 0.5s ease;
-				box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-				overflow: hidden;
-				min-height: 400px;
-			}
-			.bento-card:hover {
-				border-color: #52525b;
-			}
-			.bento-card-wide {
-				grid-column: 1 / -1;
-			}
-			/* 4-card layout: 2x2 grid, all equal-size cards */
-			.bento-grid {
-				grid-auto-rows: 1fr;
-			}
-			.bento-card-bg {
-				position: absolute;
-				inset: 0;
-				z-index: 0;
-			}
-			.bento-card-bg video {
-				width: 100%;
-				height: 100%;
-				object-fit: cover;
-				opacity: 1;
-			}
-			.bento-fade {
-				position: absolute;
-				inset: 0;
-				background: linear-gradient(
-					to right,
-					rgba(0, 0, 0, 0.92) 0%,
-					rgba(0, 0, 0, 0.85) 30%,
-					rgba(0, 0, 0, 0.5) 65%,
-					rgba(0, 0, 0, 0.2) 100%
-				);
-				z-index: 10;
-			}
-			.bento-card-content {
-				position: relative;
-				z-index: 20;
-			}
-			.step-num {
-				font-family: var(--font-mono);
-				font-size: 0.85rem;
-				color: #f59e0b;
-				margin-bottom: 1.2rem;
-				letter-spacing: 0.05em;
-			}
-			.bento-card-content h3 {
-				font-size: 2.25rem;
-				font-weight: 600;
-				margin: 0 0 1rem;
-				letter-spacing: -0.02em;
-				color: #fff;
-			}
-			.bento-card-content p {
-				font-size: 1.05rem;
-				color: #a1a1aa;
-				line-height: 1.6;
-				margin: 0 0 1rem;
-				max-width: 36em;
-			}
-			.step-note {
-				display: inline-block;
-				font-family: var(--font-mono);
-				font-size: 0.78rem;
-				color: #71717a;
-				letter-spacing: 0.02em;
-			}
-			@media (max-width: 900px) {
-				.bento {
-					padding: 6rem 0;
-				}
-				.bento-header {
-					font-size: 42px;
-					margin-bottom: 3rem;
-				}
-				.bento-grid {
-					grid-template-columns: 1fr;
-					gap: 1.5rem;
-				}
-				.bento-card {
-					border-radius: 28px;
-					padding: 2rem;
-					min-height: 320px;
-				}
-				.bento-card-wide {
-					grid-column: 1;
-				}
-				.bento-card-content h3 {
-					font-size: 1.75rem;
-				}
-			}
-
-			/* ===== PRICING TIERS ===== */
-			.pricing {
-				position: relative;
-				z-index: 20;
-				padding: 8rem 0 6rem;
-				background: #000;
-			}
-			.pricing-header {
-				text-align: center;
-				margin-bottom: 4rem;
-			}
-			.pricing-eyebrow {
-				display: inline-block;
-				font-size: 0.75rem;
-				text-transform: uppercase;
-				letter-spacing: 0.22em;
-				color: #71717a;
-				font-weight: 500;
-				margin-bottom: 1.2rem;
-			}
-			.pricing-h2 {
-				font-size: 60px;
-				line-height: 1.02;
-				letter-spacing: -0.04em;
-				font-weight: 600;
-				margin: 0;
-				color: #fff;
-			}
-			.tiers {
-				display: grid;
-				grid-template-columns: repeat(3, 1fr);
-				gap: 1.25rem;
-				max-width: 1100px;
-				margin: 0 auto;
-			}
-			.tier {
-				position: relative;
-				border: 1px solid #27272a;
-				border-radius: 32px;
-				background: transparent;
-				overflow: hidden;
-				transition: border-color 0.3s ease, transform 0.3s ease;
-			}
-			.tier:hover {
-				border-color: #3f3f46;
-				transform: translateY(-3px);
-			}
-			.tier.highlight {
-				background: #0a0a0a;
-				border-color: rgba(245, 158, 11, 0.3);
-			}
-			.tier .halo {
-				position: absolute;
-				inset: -30px;
-				background: radial-gradient(
-					closest-side,
-					rgba(245, 158, 11, 0.18),
-					rgba(59, 130, 246, 0.12) 55%,
-					transparent 75%
-				);
-				filter: blur(24px);
-				pointer-events: none;
-			}
-			.tier-inner {
-				position: relative;
-				padding: 2.4rem 2rem;
-			}
-			.tier-name {
-				display: block;
-				font-size: 0.75rem;
-				text-transform: uppercase;
-				letter-spacing: 0.22em;
-				color: #71717a;
-				font-weight: 500;
-			}
-			.tier-price {
-				display: flex;
-				align-items: baseline;
-				gap: 0.75rem;
-				margin-top: 1.2rem;
-			}
-			.tier-price .big {
-				font-size: 3rem;
-				font-weight: 600;
-				letter-spacing: -0.03em;
-				line-height: 1;
-				color: #fff;
-			}
-			.tier.highlight .tier-price .big {
-				background: linear-gradient(135deg, #f59e0b, #3b82f6);
-				-webkit-background-clip: text;
-				background-clip: text;
-				-webkit-text-fill-color: transparent;
-			}
-			.tier-price .sub {
-				color: #71717a;
-				font-size: 0.875rem;
-			}
-			.tier-points {
-				list-style: none;
-				padding: 0;
-				margin: 1.8rem 0 0;
-				display: flex;
-				flex-direction: column;
-				gap: 0.7rem;
-			}
-			.tier-points li {
-				display: flex;
-				gap: 0.7rem;
-				color: #d4d4d8;
-				font-size: 0.92rem;
-				line-height: 1.5;
-			}
-			.tier-points .check {
-				flex-shrink: 0;
-				color: #f59e0b;
-				font-weight: 700;
-				margin-top: 1px;
-			}
-			.tier-cta {
-				display: inline-block;
-				width: 100%;
-				margin-top: 1.8rem;
-				padding: 0.85rem 1.4rem;
-				border-radius: 9999px;
-				font-weight: 600;
-				font-size: 0.95rem;
-				text-decoration: none;
-				text-align: center;
-				transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-			}
-			.tier-cta.primary {
-				background: #fff;
-				color: #000;
-				border: 1px solid #fff;
-			}
-			.tier-cta.primary:hover {
-				background: #e4e4e7;
-				transform: scale(1.02);
-			}
-			.tier-cta.secondary {
-				background: transparent;
-				color: #fff;
-				border: 1px solid #27272a;
-			}
-			.tier-cta.secondary:hover {
-				border-color: #52525b;
-			}
-			.pricing-fine {
-				color: #71717a;
-				font-size: 0.875rem;
-				text-align: center;
-				margin: 3rem auto 0;
-				max-width: 40em;
-				line-height: 1.6;
-			}
-			@media (max-width: 900px) {
-				.pricing {
-					padding: 6rem 1.5rem 4rem;
-				}
-				.pricing-h2 {
-					font-size: 36px;
-				}
-				.tiers {
-					grid-template-columns: 1fr;
-					gap: 1rem;
-				}
-			}
-
-			/* ===== WHO IT'S FOR ===== */
-			.fit {
-				position: relative;
-				z-index: 20;
-				padding: 8rem 0 6rem;
-				background: #000;
-			}
-			.fit-header,
-			.why-header,
-			.faq-header {
-				text-align: center;
-				font-size: 60px;
-				line-height: 1.05;
-				letter-spacing: -0.04em;
-				font-weight: 600;
-				margin: 0 0 4rem;
-				color: #fff;
-			}
-			.fit-grid {
-				display: grid;
-				grid-template-columns: 1fr 1fr;
-				gap: 2rem;
-				max-width: 960px;
-				margin: 0 auto;
-			}
-			.fit-col {
-				background: rgba(24, 24, 27, 0.6);
-				border: 1px solid #27272a;
-				border-radius: 24px;
-				padding: 2.5rem;
-			}
-			.fit-col h3 {
-				font-family: var(--font-mono);
-				font-size: 0.85rem;
-				font-weight: 500;
-				text-transform: uppercase;
-				letter-spacing: 0.12em;
-				margin: 0 0 1.5rem;
-				color: var(--text-muted);
-			}
-			.fit-col.yes h3 {
-				color: var(--accent);
-			}
-			.fit-col ul {
-				list-style: none;
-				padding: 0;
-				margin: 0;
-			}
-			.fit-col li {
-				position: relative;
-				padding-left: 1.8rem;
-				margin-bottom: 1rem;
-				color: #d4d4d8;
-				line-height: 1.55;
-				font-size: 1rem;
-			}
-			.fit-col.yes li::before {
-				content: '\2713';
-				position: absolute;
-				left: 0;
-				top: 0;
-				color: var(--accent);
-				font-weight: 700;
-				font-size: 1.1em;
-			}
-			.fit-col.no li::before {
-				content: '\d7';
-				position: absolute;
-				left: 0;
-				top: -2px;
-				color: #71717a;
-				font-weight: 700;
-				font-size: 1.4em;
-				line-height: 1;
-			}
-			@media (max-width: 720px) {
-				.fit {
-					padding: 5rem 0;
-				}
-				.fit-header,
-				.why-header,
-				.faq-header {
-					font-size: 36px;
-					margin-bottom: 2.5rem;
-				}
-				.fit-grid {
-					grid-template-columns: 1fr;
-					gap: 1.5rem;
-				}
-				.fit-col {
-					padding: 1.8rem;
-					border-radius: 20px;
-				}
-			}
-
-			/* ===== WHY ME ===== */
-			.why {
-				position: relative;
-				z-index: 20;
-				padding: 6rem 0 8rem;
-				background: #000;
-			}
-			.why-grid {
-				display: grid;
-				grid-template-columns: repeat(2, 1fr);
-				gap: 1.5rem;
-				max-width: 960px;
-				margin: 0 auto;
-			}
-			.why-card {
-				background: rgba(24, 24, 27, 0.6);
-				border: 1px solid #27272a;
-				border-radius: 24px;
-				padding: 2rem;
-				transition: border-color 0.3s ease, transform 0.3s ease;
-			}
-			.why-card:hover {
-				border-color: #52525b;
-				transform: translateY(-2px);
-			}
-			.why-num {
-				font-size: 2.5rem;
-				font-weight: 600;
-				color: #fff;
-				letter-spacing: -0.02em;
-				line-height: 1;
-				margin-bottom: 0.4rem;
-				background: linear-gradient(135deg, #f59e0b, #3b82f6);
-				-webkit-background-clip: text;
-				background-clip: text;
-				-webkit-text-fill-color: transparent;
-				color: transparent;
-			}
-			.why-label {
-				font-family: var(--font-mono);
-				font-size: 0.78rem;
-				color: var(--text-faint);
-				text-transform: uppercase;
-				letter-spacing: 0.12em;
-				margin-bottom: 1.2rem;
-			}
-			.why-card p {
-				margin: 0;
-				color: #a1a1aa;
-				font-size: 0.95rem;
-				line-height: 1.6;
-			}
-			.why-card a {
-				color: var(--accent);
-				text-decoration: underline;
-				text-underline-offset: 3px;
-			}
-			.why-coda {
-				text-align: center;
-				color: var(--text-faint);
-				font-family: var(--font-mono);
-				font-size: 0.85rem;
-				margin: 3rem 0 0;
-				letter-spacing: 0.02em;
-			}
-			@media (max-width: 720px) {
-				.why-grid {
-					grid-template-columns: 1fr;
-				}
-				.why-num {
-					font-size: 2rem;
-				}
-			}
-
-			/* ===== FAQ ===== */
-			.faq {
-				position: relative;
-				z-index: 20;
-				padding: 4rem 0 8rem;
-				background: #000;
-			}
-			.faq-list {
-				max-width: 760px;
-				margin: 0 auto;
-				display: flex;
-				flex-direction: column;
-				gap: 1rem;
-			}
-			.faq-item {
-				background: rgba(24, 24, 27, 0.6);
-				border: 1px solid #27272a;
-				border-radius: 16px;
-				padding: 1.4rem 1.8rem;
-				transition: border-color 0.2s ease;
-			}
-			.faq-item:hover {
-				border-color: #3f3f46;
-			}
-			.faq-item[open] {
-				border-color: var(--accent);
-			}
-			.faq-item summary {
-				cursor: pointer;
-				color: #fafafa;
-				font-weight: 600;
-				font-size: 1.05rem;
-				list-style: none;
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-				gap: 1rem;
-			}
-			.faq-item summary::-webkit-details-marker {
-				display: none;
-			}
-			.faq-item summary::after {
-				content: '+';
-				font-size: 1.5rem;
-				color: var(--text-faint);
-				font-weight: 300;
-				line-height: 1;
-				transition: transform 0.2s ease;
-			}
-			.faq-item[open] summary::after {
-				content: '\2212';
-				color: var(--accent);
-			}
-			.faq-item p {
-				margin: 1rem 0 0;
-				color: #a1a1aa;
-				line-height: 1.65;
-				font-size: 0.95rem;
-			}
-			@media (max-width: 720px) {
-				.faq {
-					padding: 3rem 0 5rem;
-				}
-				.faq-item {
-					padding: 1.2rem 1.4rem;
-				}
-				.faq-item summary {
-					font-size: 0.95rem;
-				}
-			}
-
-			/* ===== COMBINED CTA + FOOTER ===== */
-			.combined {
-				position: relative;
-				z-index: 20;
-				background: #000;
-				overflow: hidden;
-			}
-			.combined-bg {
-				position: absolute;
-				inset: 0;
-				z-index: 0;
-			}
-			.combined-bg video {
-				width: 100%;
-				height: 100%;
-				object-fit: cover;
-				opacity: 0.3;
-			}
-			.combined-fade {
-				position: absolute;
-				inset: 0;
-				background: linear-gradient(to bottom, #000, transparent, #000);
-				z-index: 10;
-			}
-			.cta-block {
-				position: relative;
-				z-index: 20;
-				padding: 12rem 0;
-				text-align: center;
-			}
-			.cta-inner {
-				max-width: 1024px;
-			}
-			.cta-logo-box {
-				display: inline-flex;
-				align-items: center;
-				justify-content: center;
-				width: 5rem;
-				height: 5rem;
-				background: rgba(24, 24, 27, 0.8);
-				backdrop-filter: blur(24px);
-				border: 1px solid #27272a;
-				border-radius: 24px;
-				box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-				margin-bottom: 4rem;
-			}
-			.cta-headline {
-				font-size: 80px;
-				line-height: 1;
-				letter-spacing: -0.05em;
-				font-weight: 600;
-				color: #fff;
-				margin: 0 0 2.5rem;
-			}
-			.cta-copy {
-				font-size: 1.25rem;
-				color: #a1a1aa;
-				margin: 0 auto 4rem;
-				max-width: 38em;
-				line-height: 1.6;
-			}
-			.cta-buttons {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				gap: 2rem;
-				flex-wrap: wrap;
-			}
-			.cta-primary {
-				background: #fff;
-				color: #000;
-				padding: 1.1rem 3rem;
-				border-radius: 9999px;
-				font-weight: 700;
-				font-size: 1.125rem;
-				transition:
-					background 0.2s ease,
-					transform 0.2s ease;
-				box-shadow: 0 20px 40px rgba(255, 255, 255, 0.1);
-				text-decoration: none;
-			}
-			.cta-primary:hover {
-				background: #e4e4e7;
-				transform: scale(1.05);
-			}
-			.cta-secondary {
-				background: transparent;
-				color: #fff;
-				border: 1px solid #27272a;
-				padding: 1.1rem 3rem;
-				border-radius: 9999px;
-				font-weight: 700;
-				font-size: 1.125rem;
-				text-decoration: none;
-				transition: background 0.2s ease;
-			}
-			.cta-secondary:hover {
-				background: rgba(255, 255, 255, 0.05);
-			}
-			@media (max-width: 720px) {
-				.cta-block {
-					padding: 6rem 0;
-				}
-				.cta-headline {
-					font-size: 44px;
-				}
-				.cta-copy {
-					font-size: 1.05rem;
-				}
-				.cta-primary,
-				.cta-secondary {
-					font-size: 1rem;
-					padding: 0.9rem 2rem;
-					width: 100%;
-					text-align: center;
-				}
-				.cta-buttons {
-					flex-direction: column;
-					gap: 1rem;
-				}
-			}
-
-			.cinema-footer {
-				position: relative;
-				z-index: 20;
-				padding: 6rem 0;
-			}
-			.footer-top {
-				display: grid;
-				grid-template-columns: 1fr 2fr;
-				gap: 4rem;
-				margin-bottom: 6rem;
-			}
-			.brand-row {
-				display: flex;
-				align-items: center;
-				gap: 0.75rem;
-				margin-bottom: 1rem;
-			}
-			.brand-text {
-				font-size: 1.25rem;
-				font-weight: 600;
-				letter-spacing: -0.02em;
-			}
-			.brand-tagline {
-				color: #71717a;
-				max-width: 20em;
-				line-height: 1.6;
-				margin: 0;
-			}
-			.footer-columns {
-				display: grid;
-				grid-template-columns: repeat(3, 1fr);
-				gap: 3rem;
-			}
-			.footer-columns h4 {
-				font-size: 0.75rem;
-				font-weight: 700;
-				color: #a1a1aa;
-				text-transform: uppercase;
-				letter-spacing: 0.15em;
-				margin: 0 0 1rem;
-			}
-			.footer-columns a {
-				display: block;
-				font-size: 0.9rem;
-				color: #71717a;
-				margin-bottom: 0.75rem;
-				text-decoration: none;
-				transition: color 0.15s ease;
-			}
-			.footer-columns a:hover {
-				color: #fff;
-			}
-			.footer-bottom {
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-				gap: 1.5rem;
-				padding-top: 3rem;
-			}
-			.bottom-left {
-				display: flex;
-				flex-direction: column;
-				gap: 0.4rem;
-			}
-			.copyright {
-				font-size: 0.875rem;
-				color: #52525b;
-			}
-			.built-on {
-				font-family: var(--font-mono);
-				font-size: 0.78rem;
-				color: #52525b;
-				opacity: 0.8;
-			}
-			.socials {
-				display: flex;
-				gap: 2rem;
-				font-size: 0.75rem;
-				color: #71717a;
-				text-transform: uppercase;
-				letter-spacing: 0.15em;
-				font-weight: 700;
-			}
-			.socials a {
-				text-decoration: none;
-				transition: color 0.15s ease;
-			}
-			.socials a:hover {
-				color: #fff;
-			}
-			@media (max-width: 900px) {
-				.footer-top {
-					grid-template-columns: 1fr;
-					gap: 3rem;
-				}
-				.footer-bottom {
-					flex-direction: column;
-					align-items: flex-start;
-				}
-			}
-			@media (max-width: 600px) {
-				.footer-columns {
-					grid-template-columns: 1fr 1fr;
-				}
-			}
-		</style>
-	</body>
-</html>
+      import("../scripts/turnstile.js")
+        .then(({ createTurnstileAdapter }) => {
+          adapter = createTurnstileAdapter({
+            mode: configuredMode,
+            siteKey: form?.dataset.turnstileSiteKey || "",
+            container,
+            announce,
+          });
+          if (destroyed) adapter.destroy();
+        })
+        .catch(() => {
+          announce(
+            configuredMode === "observe"
+              ? "The security check could not load. You can still send your enquiry."
+              : "The security check could not load. Refresh the page or email Oliver directly.",
+          );
+        });
+    }
+  </script>
+</BaseLayout>

@@ -1,21 +1,33 @@
 {
-  "name": "oliverhitchings.com",
+  "name": "oliverhitchings-com",
+  "version": "0.1.0",
+  "private": true,
   "type": "module",
-  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev --host 0.0.0.0",
+    "build": "astro build",
+    "preview": "astro preview --host 0.0.0.0",
+    "start": "npm run build && sirv dist --host 0.0.0.0 --port ${PORT:-3000}",
+    "generate:motion-media": "node scripts/generate-motion-media.mjs",
+    "check:media": "node scripts/check-media-budget.mjs && vitest run src/scripts/media.test.js src/pages-content.output.test.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
   "engines": {
     "node": ">=22.12.0"
   },
-  "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
-  },
   "dependencies": {
-    "@astrojs/mdx": "^5.0.3",
-    "@astrojs/rss": "^4.0.18",
-    "@astrojs/sitemap": "^3.7.2",
+    "@astrojs/sitemap": "^3.6.0",
+    "@fontsource-variable/archivo": "5.2.8",
     "astro": "^6.1.7",
-    "sharp": "^0.34.3"
+    "sirv-cli": "^3.0.1"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "4.1.10",
+    "jsdom": "29.1.1",
+    "smol-toml": "1.7.0",
+    "vitest": "4.1.10",
+    "wrangler": "4.110.0"
   }
 }
